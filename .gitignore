@@ -1,0 +1,10 @@
+.vscode
+
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+ext/project_path.hpp
+Makefile
+salmon
+
+.DS_Store
