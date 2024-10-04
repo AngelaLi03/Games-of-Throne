@@ -217,6 +217,19 @@ void WorldSystem::restart_game() {
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
+	// create new floor tile
+	// The number of tiles along the width and height.
+	const int floor_number_width = 20;
+	const int floor_number_height = 20;
+	float tile_scale = 30.f;
+	// Iterate through tile numbers to generate and set position for each tile.
+	for (int i = 0; i < floor_number_width; ++i){
+		for (int j = 0; j < floor_number_height; ++j){
+			vec2 pos = {i * tile_scale, j * tile_scale};
+			createFloorTile(renderer, pos, tile_scale);
+		}
+	}
+
 	// create a new Salmon
 	player_salmon = createSalmon(renderer, { window_width_px/2, window_height_px - 200 });
 	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});

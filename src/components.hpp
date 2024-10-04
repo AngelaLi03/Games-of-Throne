@@ -113,7 +113,9 @@ struct Mesh
 enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	EEL = FISH + 1,
-	TEXTURE_COUNT = EEL + 1
+	// Added FLOOR_TILE texture.
+	FLOOR_TILE = EEL + 1,
+	TEXTURE_COUNT = FLOOR_TILE + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -134,6 +136,8 @@ enum class GEOMETRY_BUFFER_ID {
 	DEBUG_LINE = EGG + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
 	GEOMETRY_COUNT = SCREEN_TRIANGLE + 1
+	// // Defined FLOOR_TILE geometry.
+	// FLOOR_TILE = GEOMETRY_COUNT + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 

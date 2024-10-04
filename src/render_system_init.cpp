@@ -189,6 +189,23 @@ void RenderSystem::initializeGlGeometryBuffers()
 	meshes[geom_index].vertex_indices = egg_indices;
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::EGG, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
 
+	// //////////////////////////
+	// // Initialize floor tile. Utilizing the sprite code given above as template.
+	// // The position corresponds to the center of the texture.
+	// std::vector<TexturedVertex> floor_tile_vertices(4);
+	// floor_tile_vertices[0].position = { -1.f/2, +1.f/2, 0.f };
+	// floor_tile_vertices[1].position = { +1.f/2, +1.f/2, 0.f };
+	// floor_tile_vertices[2].position = { +1.f/2, -1.f/2, 0.f };
+	// floor_tile_vertices[3].position = { -1.f/2, -1.f/2, 0.f };
+	// floor_tile_vertices[0].texcoord = { 0.f, 1.f };
+	// floor_tile_vertices[1].texcoord = { 1.f, 1.f };
+	// floor_tile_vertices[2].texcoord = { 1.f, 0.f };
+	// floor_tile_vertices[3].texcoord = { 0.f, 0.f };
+
+	// // Counterclockwise as it's the default opengl front winding direction.
+	// const std::vector<uint16_t> floor_tile_indices = { 0, 3, 1, 1, 3, 2 };
+	// bindVBOandIBO(GEOMETRY_BUFFER_ID::FLOOR_TILE, floor_tile_vertices, floor_tile_indices);
+
 	//////////////////////////////////
 	// Initialize debug line
 	std::vector<ColoredVertex> line_vertices;

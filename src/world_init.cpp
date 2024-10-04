@@ -1,5 +1,32 @@
 #include "world_init.hpp"
 #include "tiny_ecs_registry.hpp"
+#include "iostream"
+
+// Create floor tile entity and add to registry. Utilizing the existing createSalmon code as template.
+Entity createFloorTile(RenderSystem* renderer, vec2 pos, float tile_scale)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = { 0.f, 0.f };
+	motion.scale = {mesh.original_size.x * tile_scale, mesh.original_size.x * tile_scale};
+	std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
+	// create an empty floor tile component for our character
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::FLOOR_TILE, 
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE });
+
+	return entity;
+}
 
 Entity createSalmon(RenderSystem* renderer, vec2 pos)
 {
