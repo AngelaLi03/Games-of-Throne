@@ -28,3 +28,7 @@ Entity createEgg(vec2 pos, vec2 size);
 
 // the floor tile
 Entity createFloorTile(RenderSystem* renderer, vec2 pos, float tile_size);
+
+// a Wall
+Entity createWall(RenderSystem* renderer, vec2 pos, float wall_scale);
+
