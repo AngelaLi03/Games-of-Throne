@@ -217,16 +217,34 @@ void WorldSystem::restart_game() {
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
-	// create new floor tile
-	// The number of tiles along the width and height.
-	const int floor_number_width = 20;
-	const int floor_number_height = 20;
+	int screen_width, screen_height;
+	glfwGetWindowSize(window, &screen_width, &screen_height);
+
 	float tile_scale = 30.f;
+
+	// Calculate how many tiles are needed to cover the screen
+	int floor_number_width = screen_width / tile_scale+1;
+	int floor_number_height = screen_height / tile_scale+1;
 	// Iterate through tile numbers to generate and set position for each tile.
-	for (int i = 0; i < floor_number_width; ++i){
-		for (int j = 0; j < floor_number_height; ++j){
-			vec2 pos = {i * tile_scale, j * tile_scale};
+	for (int i = 0; i < floor_number_width; ++i) {
+		for (int j = 0; j < floor_number_height; ++j) {
+			// Create the floor tile
+			vec2 pos = { i * tile_scale, j * tile_scale };
 			createFloorTile(renderer, pos, tile_scale);
+
+			// Now place walls on certain positions
+			// Example: Place walls around the border (edges)
+			if (i == 0 || i == floor_number_width - 1 || j == 0 || j == floor_number_height - 1) {
+				createWall(renderer, pos, tile_scale);
+			}
+			// Example: Place walls to form a corridor
+			if (((i > 5 && i < 30)|| (i > 31)) && (j == 8 || j == 13)) {
+				createWall(renderer, pos, tile_scale);
+			}
+
+			if ((i == 5)  && (j <= 8 || j >= 13)) {
+				createWall(renderer, pos, tile_scale);
+			}
 		}
 	}
 
@@ -341,3 +359,6 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
 
 	(vec2)mouse_position; // dummy to avoid compiler warning
 }
+
+
+//toby

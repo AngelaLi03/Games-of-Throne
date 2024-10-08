@@ -115,7 +115,9 @@ enum class TEXTURE_ASSET_ID {
 	EEL = FISH + 1,
 	// Added FLOOR_TILE texture.
 	FLOOR_TILE = EEL + 1,
-	TEXTURE_COUNT = FLOOR_TILE + 1
+	// Added Wall texture.
+	WALL = FLOOR_TILE + 1,
+	TEXTURE_COUNT = WALL + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 

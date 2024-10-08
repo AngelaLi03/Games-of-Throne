@@ -28,6 +28,35 @@ Entity createFloorTile(RenderSystem* renderer, vec2 pos, float tile_scale)
 	return entity;
 }
 
+Entity createWall(RenderSystem* renderer, vec2 pos, float wall_scale)
+{
+	auto entity = Entity();
+
+	// Get the mesh for the wall, similar to how you got the floor mesh
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Set initial motion values, ensuring the wall is properly scaled and positioned
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;  // Use the same position or adjust for wall placement
+	motion.angle = 0.f;
+	motion.velocity = { 0.f, 0.f };
+	motion.scale = { mesh.original_size.x * wall_scale, mesh.original_size.x * wall_scale };
+
+	// Print mesh size for debugging if needed
+	std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
+
+	// Set up the render request for the wall
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::WALL,  // Make sure to use a wall texture
+		  EFFECT_ASSET_ID::TEXTURED,
+		  GEOMETRY_BUFFER_ID::SPRITE });
+
+	return entity;
+}
+
+
 Entity createSalmon(RenderSystem* renderer, vec2 pos)
 {
 	auto entity = Entity();
