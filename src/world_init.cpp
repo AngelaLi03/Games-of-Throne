@@ -69,7 +69,8 @@ Entity createSpy(RenderSystem* renderer, vec2 pos)
 	motion.position = pos;
 	motion.angle = 0.f;
 	motion.velocity = { 0.f, 0.f };
-	motion.scale = mesh.original_size * 300.f;
+	motion.scale = mesh.original_size * 150.f;
+	motion.scale.x *= 0.8;
 
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);

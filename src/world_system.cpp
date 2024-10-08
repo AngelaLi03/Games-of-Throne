@@ -9,16 +9,10 @@
 #include "physics_system.hpp"
 
 // Game configuration
-const size_t MAX_NUM_EELS = 15;
-const size_t MAX_NUM_FISH = 5;
-const size_t EEL_SPAWN_DELAY_MS = 2000 * 3;
-const size_t FISH_SPAWN_DELAY_MS = 5000 * 3;
 
 // create the underwater world
 WorldSystem::WorldSystem()
-	: points(0)
-	, next_eel_spawn(0.f)
-	, next_fish_spawn(0.f) {
+	: points(0){
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
 }
@@ -314,7 +308,23 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 		current_speed += 0.1f;
 		printf("Current speed = %f\n", current_speed);
 	}
+	Motion& motion = registry.motions.get(registry.players.entities[0]);
 	current_speed = fmax(0.f, current_speed);
+	// close when esc key is pressed
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+		motion.position += vec2(20, 0);
+    } else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS){
+		motion.position -= vec2(20, 0);
+	} else if (key == GLFW_KEY_UP && action == GLFW_PRESS){	
+		motion.position -= vec2(0, 20);
+	} else if (key == GLFW_KEY_DOWN && action == GLFW_PRESS){
+		motion.position += vec2(0, 20);
+	}
+
 }
 
 void WorldSystem::on_mouse_move(vec2 mouse_position) {
