@@ -32,3 +32,4 @@ Entity createFloorTile(RenderSystem* renderer, vec2 pos, float tile_size);
 // a Wall
 Entity createWall(RenderSystem* renderer, vec2 pos, float wall_scale);
 
+Entity createSpy(RenderSystem* renderer, vec2 pos);
