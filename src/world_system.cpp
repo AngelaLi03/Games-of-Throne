@@ -193,7 +193,7 @@ void WorldSystem::restart_game() {
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 
-	float tile_scale = 30.f;
+	float tile_scale = 60.f;
 
 	// Calculate how many tiles are needed to cover the screen
 	int floor_number_width = screen_width / tile_scale+1;
