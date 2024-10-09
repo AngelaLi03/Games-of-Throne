@@ -234,12 +234,12 @@ void WorldSystem::restart_game()
 				createWall(renderer, pos, tile_scale);
 			}
 			// Example: Place walls to form a corridor
-			if (((i > 2 && i < 15) || (i > 17)) && (j == 4 || j == 7))
+			if (((i > 5 && i < 30) || (i > 31)) && (j == 8 || j == 13))
 			{
 				createWall(renderer, pos, tile_scale);
 			}
 
-			if ((i == 3) && (j <= 4 || j >= 7))
+			if ((i == 5) && (j <= 8 || j >= 13))
 			{
 				createWall(renderer, pos, tile_scale);
 			}
