@@ -83,6 +83,35 @@ Entity createSpy(RenderSystem* renderer, vec2 pos)
 	return entity;
 }
 
+Entity createWeapon(RenderSystem* renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = { 0.f, 0.f };
+	motion.scale = mesh.original_size * 100.f;
+	motion.scale.x *= -0.45;
+	motion.scale.y *= 1.7;
+
+
+	// create an empty Spy component for our character
+	registry.weapons.emplace(entity);
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::WEAPON, // TEXTURE_COUNT indicates that no texture is needed
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE });
+
+	return entity;
+}
+
 Entity createSalmon(RenderSystem* renderer, vec2 pos)
 {
 	auto entity = Entity();

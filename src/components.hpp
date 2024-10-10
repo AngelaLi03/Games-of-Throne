@@ -26,6 +26,11 @@ struct Enemy{
 
 };
 
+struct Weapon {
+    Entity weapon;  // weapon
+    vec2 offset;           // weapon offset relative to player's position
+};
+
 // All data relevant to the shape and motion of entities
 struct Motion {
 	vec2 position = { 0, 0 };
@@ -123,7 +128,8 @@ enum class TEXTURE_ASSET_ID {
 	WALL = FLOOR_TILE + 1,
 	SPY = WALL + 1,
 	ENEMY = SPY + 1,
-	TEXTURE_COUNT = ENEMY + 1
+	WEAPON = ENEMY + 1,
+	TEXTURE_COUNT = WEAPON + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 

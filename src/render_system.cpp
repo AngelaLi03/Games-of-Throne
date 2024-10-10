@@ -198,7 +198,6 @@ void RenderSystem::draw()
 	// Clearing backbuffer
 	glViewport(0, 0, w, h);
 	glDepthRange(0.00001, 10);
-	// glClearColor(GLfloat(172 / 255), GLfloat(216 / 255), GLfloat(255 / 255), 1.0);
 	glClearColor(GLfloat(150 / 255.0f), GLfloat(150 / 255.0f), GLfloat(150 / 255.0f), 1.0);
 	glClearDepth(10.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -217,6 +216,17 @@ void RenderSystem::draw()
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize
 		drawTexturedMesh(entity, projection_2D);
+	}
+
+	Entity& spy = registry.players.entities[0];
+	Motion& player_motion = registry.motions.get(spy);
+	if(registry.weapons.has(spy)){
+		Weapon& player_weapon = registry.weapons.get(spy);
+		Entity weapon = player_weapon.weapon;
+		Motion& weapon_motion = registry.motions.get(weapon);
+        weapon_motion.position = player_motion.position + player_weapon.offset;
+        drawTexturedMesh(weapon, projection_2D);
+		// drawTexturedMesh(spy, projection_2D); //draw again so player is on top of weapon
 	}
 
 	// Truely render to the screen
