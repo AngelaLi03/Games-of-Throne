@@ -35,3 +35,5 @@ Entity createWall(RenderSystem* renderer, vec2 pos, float wall_scale);
 Entity createSpy(RenderSystem* renderer, vec2 pos);
 
 Entity createEnemy(RenderSystem* renderer, vec2 pos);
+
+Entity createWeapon(RenderSystem* renderer, vec2 pos);

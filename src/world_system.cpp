@@ -247,7 +247,17 @@ void WorldSystem::restart_game()
 		}
 	}
 	player_spy = createSpy(renderer, {window_width_px / 2, window_height_px - 200});
-	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
+
+	// Create the weapon entity
+	Entity weapon = createWeapon(renderer, {window_width_px / 2, window_height_px - 200});
+
+	vec2 weapon_offset = vec2(45.f, -28.f);  // Adjust this based on your design
+
+	Weapon& player_weapon = registry.weapons.emplace(player_spy);
+	player_weapon.weapon = weapon;
+	player_weapon.offset = weapon_offset;
+
+	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	// create a new Salmon
 	// player_salmon = createSalmon(renderer, { window_width_px/2, window_height_px - 200 });
 	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
