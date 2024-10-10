@@ -9,6 +9,7 @@
 #include "physics_system.hpp"
 
 // Game configuration
+int ENEMIES_COUNT = 5;
 
 // create the underwater world
 WorldSystem::WorldSystem()
@@ -250,6 +251,12 @@ void WorldSystem::restart_game()
 	// create a new Salmon
 	// player_salmon = createSalmon(renderer, { window_width_px/2, window_height_px - 200 });
 	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
+
+	while(registry.enemies.components.size() < ENEMIES_COUNT) {
+		// create enemy with random initial position
+        createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
+		// createEnemy(renderer, vec2(200, 200));
+	}
 }
 
 // Compute collisions between entities

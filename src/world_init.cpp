@@ -17,7 +17,7 @@ Entity createFloorTile(RenderSystem* renderer, vec2 pos, float tile_scale)
 	motion.angle = 0.f;
 	motion.velocity = { 0.f, 0.f };
 	motion.scale = {mesh.original_size.x * tile_scale, mesh.original_size.x * tile_scale};
-	std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
+	// std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
 	// create an empty floor tile component for our character
 	registry.renderRequests.insert(
 		entity,
@@ -44,7 +44,7 @@ Entity createWall(RenderSystem* renderer, vec2 pos, float wall_scale)
 	motion.scale = { mesh.original_size.x * wall_scale, mesh.original_size.x * wall_scale };
 
 	// Print mesh size for debugging if needed
-	std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
+	// std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
 
 	// Set up the render request for the wall
 	registry.renderRequests.insert(
@@ -110,36 +110,35 @@ Entity createSalmon(RenderSystem* renderer, vec2 pos)
 	return entity;
 }
 
-// Entity createSoldierSmall(RenderSystem* renderer, vec2 position)
-// {
-// 	// Reserve en entity
-// 	auto entity = Entity();
+Entity createEnemy(RenderSystem* renderer, vec2 position)
+{
+	// Reserve en entity
+	auto entity = Entity();
 
-// 	// Store a reference to the potentially re-used mesh object
-// 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-// 	registry.meshPtrs.emplace(entity, &mesh);
+	// Store a reference to the potentially re-used mesh object
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
 
-// 	// Initialize the position, scale, and physics components
-// 	auto& motion = registry.motions.emplace(entity);
-// 	motion.angle = 0.f;
-// 	motion.velocity = { -10, 0 };
-// 	motion.position = position;
+	// Initialize the position, scale, and physics components
+	auto& motion = registry.motions.emplace(entity);
+	motion.angle = 0.f;
+	motion.velocity = { 0, 0 };
+	motion.position = position;
+	motion.scale = mesh.original_size * 100.f;
+	motion.scale.x *= -0.8;
 
-// 	// Setting initial values, scale is negative to make it face the opposite way
-// 	motion.scale = vec2({ -FISH_BB_WIDTH, FISH_BB_HEIGHT });
+	// Create an (empty) Bug component to be able to refer to all bug
+	registry.enemies.emplace(entity);
+	registry.renderRequests.insert(
+		entity,
+		{
+			TEXTURE_ASSET_ID::ENEMY,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE
+		});
 
-// 	// Create an (empty) Bug component to be able to refer to all bug
-// 	registry.eatables.emplace(entity);
-// 	registry.renderRequests.insert(
-// 		entity,
-// 		{
-// 			TEXTURE_ASSET_ID::FISH,
-// 			EFFECT_ASSET_ID::TEXTURED,
-// 			GEOMETRY_BUFFER_ID::SPRITE
-// 		});
-
-// 	return entity;
-// }
+	return entity;
+}
 
 Entity createFish(RenderSystem* renderer, vec2 position)
 {
