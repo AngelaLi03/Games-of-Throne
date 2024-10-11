@@ -1,7 +1,7 @@
 // Header
 #include "world_system.hpp"
 #include "world_init.hpp"
-
+#include "iostream"
 // stlib
 #include <cassert>
 #include <sstream>
@@ -10,6 +10,8 @@
 
 // Game configuration
 int ENEMIES_COUNT = 5;
+bool is_spacebar_pressed = false;
+
 
 // create the underwater world
 WorldSystem::WorldSystem()
@@ -188,7 +190,29 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// reduce window brightness if the salmon is dying
 	screen.darken_screen_factor = 1 - min_counter_ms / 3000;
 
-	// !!! TODO A1: update LightUp timers and remove if time drops below zero, similar to the death counter
+	for (Entity entity : registry.interpolations.entities) {
+
+		Interpolation& interpolate = registry.interpolations.get(entity);
+		Motion& motion = registry.motions.get(entity);
+
+		interpolate.elapsed_time += elapsed_ms_since_last_update;
+
+		float interpolation_factor = (float)interpolate.elapsed_time / (float)interpolate.total_time_to_0_ms;
+		interpolation_factor = std::min(interpolation_factor, 1.0f);
+
+		motion.velocity.x = (1.0f - interpolation_factor) * interpolate.initial_velocity.x;
+		motion.velocity.y = (1.0f - interpolation_factor) * interpolate.initial_velocity.y;
+
+		// Remove the entity if the interpolation is complete (velocity should be near zero)
+		if (interpolation_factor >= 1.0f) {
+			registry.interpolations.remove(entity);
+			std::cout << "removed entity from newton/momentum entities" << std::endl;
+			motion.velocity = vec2(0.f, 0.f); 
+		}
+
+		std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
+	}
+
 
 	return true;
 }
@@ -370,25 +394,92 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	if (action == GLFW_PRESS || action == GLFW_RELEASE)
+	//if (action == GLFW_PRESS || action == GLFW_RELEASE)
+	//{
+	//	float sign = action == GLFW_PRESS ? 1.f : -1.f;
+	//	float speed = 60.f;
+	//	if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
+	//	{
+	//		motion.velocity.x += sign * speed;
+	//	}
+	//	else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
+	//	{
+	//		motion.velocity.x -= sign * speed;
+	//	}
+	//	else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
+	//	{
+	//		motion.velocity.y -= sign * speed;
+	//	}
+	//	else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
+	//	{
+	//		motion.velocity.y += sign * speed;
+	//	}
+	// 
+	//}
+
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 	{
-		float sign = action == GLFW_PRESS ? 1.f : -1.f;
-		float speed = 60.f;
+		is_spacebar_pressed = true;
+	}
+	else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+	{
+		is_spacebar_pressed = false; 
+	}
+
+
+	float normal_speed = 60.f;
+	float burst_speed = 200.f; 
+	float speed = is_spacebar_pressed ? burst_speed : normal_speed;
+
+	if (action == GLFW_PRESS)
+	{
+
 		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
 		{
-			motion.velocity.x += sign * speed;
+			motion.velocity.x = speed;
 		}
 		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
 		{
-			motion.velocity.x -= sign * speed;
+			motion.velocity.x = -speed;
 		}
 		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
 		{
-			motion.velocity.y -= sign * speed;
+			motion.velocity.y = -speed;
 		}
 		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
 		{
-			motion.velocity.y += sign * speed;
+			motion.velocity.y = speed;
+		}
+
+		// No interpolation since player is moving
+		if (registry.interpolations.has(player_spy))
+		{
+			registry.interpolations.remove(player_spy);
+			std::cout << "Momentum removed due to active movement" << std::endl;
+		}
+	}
+
+	// On key release event
+	if (action == GLFW_RELEASE)
+	{
+		// If any movement key is released, we apply momentum and stop direct movement
+		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
+			key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D)
+		{
+			// logic to add interpolation
+			if (motion.velocity.x != 0.f || motion.velocity.y != 0.f)
+			{
+				Interpolation interpolate;
+				interpolate.elapsed_time = 0.f;
+				interpolate.initial_velocity = motion.velocity; 
+				if (!registry.interpolations.has(player_spy)) {
+					registry.interpolations.emplace(player_spy, interpolate);
+
+				}
+			}
+
+			// Stop direct movement
+			motion.velocity = vec2(0.f, 0.f);
 		}
 	}
 }

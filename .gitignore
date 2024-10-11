@@ -6,5 +6,7 @@ cmake_install.cmake
 ext/project_path.hpp
 Makefile
 salmon
+.vs/
+out/
 
 .DS_Store

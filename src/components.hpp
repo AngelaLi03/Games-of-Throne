@@ -39,6 +39,12 @@ struct Motion {
 	vec2 scale = { 10, 10 };
 };
 
+struct Interpolation {
+	float elapsed_time; 
+	float total_time_to_0_ms = 1500; // 1.5 second time to observe effect
+	vec2 initial_velocity; // velocity when button is released
+};
+
 // Stucture to store collision information
 struct Collision
 {
