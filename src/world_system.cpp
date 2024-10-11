@@ -12,7 +12,6 @@
 int ENEMIES_COUNT = 5;
 bool is_spacebar_pressed = false;
 
-
 // create the underwater world
 WorldSystem::WorldSystem()
 		: points(0)
@@ -190,10 +189,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// reduce window brightness if the salmon is dying
 	screen.darken_screen_factor = 1 - min_counter_ms / 3000;
 
-	for (Entity entity : registry.interpolations.entities) {
+	for (Entity entity : registry.interpolations.entities)
+	{
 
-		Interpolation& interpolate = registry.interpolations.get(entity);
-		Motion& motion = registry.motions.get(entity);
+		Interpolation &interpolate = registry.interpolations.get(entity);
+		Motion &motion = registry.motions.get(entity);
 
 		interpolate.elapsed_time += elapsed_ms_since_last_update;
 
@@ -204,15 +204,15 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		motion.velocity.y = (1.0f - interpolation_factor) * interpolate.initial_velocity.y;
 
 		// Remove the entity if the interpolation is complete (velocity should be near zero)
-		if (interpolation_factor >= 1.0f) {
+		if (interpolation_factor >= 1.0f)
+		{
 			registry.interpolations.remove(entity);
-			std::cout << "removed entity from newton/momentum entities" << std::endl;
-			motion.velocity = vec2(0.f, 0.f); 
+			// std::cout << "removed entity from newton/momentum entities" << std::endl;
+			motion.velocity = vec2(0.f, 0.f);
 		}
 
-		std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
+		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
 	}
-
 
 	return true;
 }
@@ -259,12 +259,11 @@ void WorldSystem::restart_game()
 				createWall(renderer, pos, tile_scale);
 			}
 			// Example: Place walls to form a corridor
-			if (((i > 5 && i < 30) || (i > 31)) && (j == 8 || j == 13))
+			else if (((i > 5 && i < 30) || (i > 31)) && (j == 8 || j == 13))
 			{
 				createWall(renderer, pos, tile_scale);
 			}
-
-			if ((i == 5) && (j <= 8 || j >= 13))
+			else if ((i == 5) && (j <= 8 || j >= 13))
 			{
 				createWall(renderer, pos, tile_scale);
 			}
@@ -275,9 +274,9 @@ void WorldSystem::restart_game()
 	// Create the weapon entity
 	Entity weapon = createWeapon(renderer, {window_width_px / 2, window_height_px - 200});
 
-	vec2 weapon_offset = vec2(45.f, -28.f);  // Adjust this based on your design
+	vec2 weapon_offset = vec2(45.f, -28.f); // Adjust this based on your design
 
-	Weapon& player_weapon = registry.weapons.emplace(player_spy);
+	Weapon &player_weapon = registry.weapons.emplace(player_spy);
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
 
@@ -286,9 +285,10 @@ void WorldSystem::restart_game()
 	// player_salmon = createSalmon(renderer, { window_width_px/2, window_height_px - 200 });
 	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 
-	while(registry.enemies.components.size() < ENEMIES_COUNT) {
+	while (registry.enemies.components.size() < ENEMIES_COUNT)
+	{
 		// create enemy with random initial position
-        createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
+		createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
 		// createEnemy(renderer, vec2(200, 200));
 	}
 }
@@ -297,6 +297,7 @@ void WorldSystem::restart_game()
 void WorldSystem::handle_collisions()
 {
 	// Loop over all collisions detected by the physics system
+	// std::cout << "handle_collisions()" << std::endl;
 	auto &collisionsRegistry = registry.collisions;
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++)
 	{
@@ -304,38 +305,41 @@ void WorldSystem::handle_collisions()
 		Entity entity = collisionsRegistry.entities[i];
 		Entity entity_other = collisionsRegistry.components[i].other;
 
-		// for now, we are only interested in collisions that involve the salmon
-		if (registry.players.has(entity))
-		{
-			// Player& player = registry.players.get(entity);
+		// std::cout << entity << " collided with " << entity_other << std::endl;
+		// registry.list_all_components_of(entity);
 
-			// Checking Player - Deadly collisions
-			if (registry.deadlys.has(entity_other))
-			{
-				// initiate death unless already dying
-				if (!registry.deathTimers.has(entity))
-				{
-					// Scream, reset timer, and make the salmon sink
-					registry.deathTimers.emplace(entity);
-					Mix_PlayChannel(-1, salmon_dead_sound, 0);
+		// // for now, we are only interested in collisions that involve the salmon
+		// if (registry.players.has(entity))
+		// {
+		// 	// Player& player = registry.players.get(entity);
 
-					// !!! TODO A1: change the salmon's orientation and color on death
-				}
-			}
-			// Checking Player - Eatable collisions
-			else if (registry.eatables.has(entity_other))
-			{
-				if (!registry.deathTimers.has(entity))
-				{
-					// chew, count points, and set the LightUp timer
-					registry.remove_all_components_of(entity_other);
-					Mix_PlayChannel(-1, salmon_eat_sound, 0);
-					++points;
+		// 	// Checking Player - Deadly collisions
+		// 	if (registry.deadlys.has(entity_other))
+		// 	{
+		// 		// initiate death unless already dying
+		// 		if (!registry.deathTimers.has(entity))
+		// 		{
+		// 			// Scream, reset timer, and make the salmon sink
+		// 			registry.deathTimers.emplace(entity);
+		// 			Mix_PlayChannel(-1, salmon_dead_sound, 0);
 
-					// !!! TODO A1: create a new struct called LightUp in components.hpp and add an instance to the salmon entity by modifying the ECS registry
-				}
-			}
-		}
+		// 			// !!! TODO A1: change the salmon's orientation and color on death
+		// 		}
+		// 	}
+		// 	// Checking Player - Eatable collisions
+		// 	else if (registry.eatables.has(entity_other))
+		// 	{
+		// 		if (!registry.deathTimers.has(entity))
+		// 		{
+		// 			// chew, count points, and set the LightUp timer
+		// 			registry.remove_all_components_of(entity_other);
+		// 			Mix_PlayChannel(-1, salmon_eat_sound, 0);
+		// 			++points;
+
+		// 			// !!! TODO A1: create a new struct called LightUp in components.hpp and add an instance to the salmon entity by modifying the ECS registry
+		// 		}
+		// 	}
+		// }
 	}
 
 	// Remove all collisions from this simulation step
@@ -394,7 +398,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	//if (action == GLFW_PRESS || action == GLFW_RELEASE)
+	// if (action == GLFW_PRESS || action == GLFW_RELEASE)
 	//{
 	//	float sign = action == GLFW_PRESS ? 1.f : -1.f;
 	//	float speed = 60.f;
@@ -414,8 +418,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	//	{
 	//		motion.velocity.y += sign * speed;
 	//	}
-	// 
-	//}
+	//
+	// }
 
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 	{
@@ -423,12 +427,11 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 	else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
 	{
-		is_spacebar_pressed = false; 
+		is_spacebar_pressed = false;
 	}
 
-
 	float normal_speed = 60.f;
-	float burst_speed = 200.f; 
+	float burst_speed = 200.f;
 	float speed = is_spacebar_pressed ? burst_speed : normal_speed;
 
 	if (action == GLFW_PRESS)
@@ -464,17 +467,17 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	{
 		// If any movement key is released, we apply momentum and stop direct movement
 		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
-			key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D)
+				key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D)
 		{
 			// logic to add interpolation
 			if (motion.velocity.x != 0.f || motion.velocity.y != 0.f)
 			{
 				Interpolation interpolate;
 				interpolate.elapsed_time = 0.f;
-				interpolate.initial_velocity = motion.velocity; 
-				if (!registry.interpolations.has(player_spy)) {
+				interpolate.initial_velocity = motion.velocity;
+				if (!registry.interpolations.has(player_spy))
+				{
 					registry.interpolations.emplace(player_spy, interpolate);
-
 				}
 			}
 

@@ -7,42 +7,54 @@
 // Player component
 struct Player
 {
-
 };
 
 // anything that is deadly to the player
 struct Deadly
 {
-
 };
 
 // anything the player can eat
 struct Eatable
 {
-
 };
 
-struct Enemy{
-
+struct Enemy
+{
 };
 
-struct Weapon {
-    Entity weapon;  // weapon
-    vec2 offset;           // weapon offset relative to player's position
+struct Weapon
+{
+	Entity weapon; // weapon
+	vec2 offset;	 // weapon offset relative to player's position
 };
 
 // All data relevant to the shape and motion of entities
-struct Motion {
-	vec2 position = { 0, 0 };
+struct Motion
+{
+	vec2 position = {0, 0};
 	float angle = 0;
-	vec2 velocity = { 0, 0 };
-	vec2 scale = { 10, 10 };
+	vec2 velocity = {0, 0};
+	vec2 scale = {10, 10};
 };
 
-struct Interpolation {
-	float elapsed_time; 
+struct Interpolation
+{
+	float elapsed_time;
 	float total_time_to_0_ms = 1500; // 1.5 second time to observe effect
-	vec2 initial_velocity; // velocity when button is released
+	vec2 initial_velocity;					 // velocity when button is released
+};
+
+enum class BodyType
+{
+	STATIC = 0,
+	KINEMATIC = 1,
+};
+struct PhysicsBody
+{
+	BodyType body_type = BodyType::STATIC;
+	vec2 bounding_box = {1, 1};
+	vec2 offset = {0, 0}; // offset from motion.position to bounding box
 };
 
 // Stucture to store collision information
@@ -50,11 +62,12 @@ struct Collision
 {
 	// Note, the first object is stored in the ECS container.entities
 	Entity other; // the second object involved in the collision
-	Collision(Entity& other) { this->other = other; };
+	Collision(Entity &other) { this->other = other; };
 };
 
 // Data structure for toggling debug mode
-struct Debug {
+struct Debug
+{
 	bool in_debug_mode = 0;
 	bool in_freeze_mode = 0;
 };
@@ -95,8 +108,8 @@ struct TexturedVertex
 // Mesh datastructure for storing vertex and index buffers
 struct Mesh
 {
-	static bool loadFromOBJFile(std::string obj_path, std::vector<ColoredVertex>& out_vertices, std::vector<uint16_t>& out_vertex_indices, vec2& out_size);
-	vec2 original_size = {1,1};
+	static bool loadFromOBJFile(std::string obj_path, std::vector<ColoredVertex> &out_vertices, std::vector<uint16_t> &out_vertex_indices, vec2 &out_size);
+	vec2 original_size = {1, 1};
 	std::vector<ColoredVertex> vertices;
 	std::vector<uint16_t> vertex_indices;
 };
@@ -125,7 +138,8 @@ struct Mesh
  * enums there are, and as a default value to represent uninitialized fields.
  */
 
-enum class TEXTURE_ASSET_ID {
+enum class TEXTURE_ASSET_ID
+{
 	FISH = 0,
 	EEL = FISH + 1,
 	// Added FLOOR_TILE texture.
@@ -139,7 +153,8 @@ enum class TEXTURE_ASSET_ID {
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
-enum class EFFECT_ASSET_ID {
+enum class EFFECT_ASSET_ID
+{
 	COLOURED = 0,
 	EGG = COLOURED + 1,
 	SALMON = EGG + 1,
@@ -149,7 +164,8 @@ enum class EFFECT_ASSET_ID {
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
 
-enum class GEOMETRY_BUFFER_ID {
+enum class GEOMETRY_BUFFER_ID
+{
 	SALMON = 0,
 	SPRITE = SALMON + 1,
 	EGG = SPRITE + 1,
@@ -161,9 +177,9 @@ enum class GEOMETRY_BUFFER_ID {
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
-struct RenderRequest {
+struct RenderRequest
+{
 	TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
 	EFFECT_ASSET_ID used_effect = EFFECT_ASSET_ID::EFFECT_COUNT;
 	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 };
-
