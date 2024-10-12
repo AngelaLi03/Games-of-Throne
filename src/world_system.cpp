@@ -431,7 +431,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			motion.velocity.y = speed;
 		}
 
-		// Remove interpolation if spacebar and WASD are pressed simultaneously
 		if (registry.interpolations.has(player_spy))
 		{
 			registry.interpolations.remove(player_spy);
@@ -439,7 +438,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
-	// On key release event
 	if (action == GLFW_RELEASE)
 	{
 		if ((key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
@@ -463,20 +461,26 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
 {
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A1: HANDLE SALMON ROTATION HERE
-	// xpos and ypos are relative to the top-left of the window, the salmon's
-	// default facing direction is (1, 0)
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
 	Motion& spy_motion = registry.motions.get(player_spy);
 
-	vec2 vector_player_mouse = -spy_motion.position + mouse_position;
+	vec2 spy_vector = +spy_motion.position - mouse_position;
 
-	float spy_angle = atan2(vector_player_mouse.y, vector_player_mouse.x);
+	float spy_angle = atan2(spy_vector.y, spy_vector.x);
 
 	spy_motion.angle = spy_angle;
+
+	if (spy_vector.x > 0)
+	{
+		spy_motion.angle = spy_angle;
+		spy_motion.scale.x = abs(spy_motion.scale.x);
+	}
+	else 
+	{
+		spy_motion.angle = spy_angle;
+		spy_motion.scale.x = -abs(spy_motion.scale.x);
+	}
+
 
 	(vec2) mouse_position; // dummy to avoid compiler warning
 }
