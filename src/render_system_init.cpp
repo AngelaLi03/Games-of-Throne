@@ -163,48 +163,51 @@ void RenderSystem::initializeGlGeometryBuffers()
 	const std::vector<uint16_t> textured_indices = { 0, 3, 1, 1, 3, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SPRITE, textured_vertices, textured_indices);
 
-	////////////////////////
-	// Initialize Egg
-	std::vector<ColoredVertex> egg_vertices;
-	std::vector<uint16_t> egg_indices;
-	constexpr float z = -0.1f;
-	constexpr int NUM_TRIANGLES = 62;
+	// //////////////////////
+	// // Initialize Egg
+	// std::vector<ColoredVertex> egg_vertices;
+	// std::vector<uint16_t> egg_indices;
+	// constexpr float z = -0.1f;
+	// constexpr int NUM_TRIANGLES = 62;
 
-	for (int i = 0; i < NUM_TRIANGLES; i++) {
-		const float t = float(i) * M_PI * 2.f / float(NUM_TRIANGLES - 1);
-		egg_vertices.push_back({});
-		egg_vertices.back().position = { 0.5 * cos(t), 0.5 * sin(t), z };
-		egg_vertices.back().color = { 0.8, 0.8, 0.8 };
-	}
-	egg_vertices.push_back({});
-	egg_vertices.back().position = { 0, 0, 0 };
-	egg_vertices.back().color = { 1, 1, 1 };
-	for (int i = 0; i < NUM_TRIANGLES; i++) {
-		egg_indices.push_back((uint16_t)i);
-		egg_indices.push_back((uint16_t)((i + 1) % NUM_TRIANGLES));
-		egg_indices.push_back((uint16_t)NUM_TRIANGLES);
-	}
-	int geom_index = (int)GEOMETRY_BUFFER_ID::EGG;
-	meshes[geom_index].vertices = egg_vertices;
-	meshes[geom_index].vertex_indices = egg_indices;
-	bindVBOandIBO(GEOMETRY_BUFFER_ID::EGG, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
+	// for (int i = 0; i < NUM_TRIANGLES; i++) {
+	// 	const float t = float(i) * M_PI * 2.f / float(NUM_TRIANGLES - 1);
+	// 	egg_vertices.push_back({});
+	// 	egg_vertices.back().position = { 0.5 * cos(t), 0.5 * sin(t), z };
+	// 	egg_vertices.back().color = { 0.8, 0.8, 0.8 };
+	// }
+	// egg_vertices.push_back({});
+	// egg_vertices.back().position = { 0, 0, 0 };
+	// egg_vertices.back().color = { 1, 1, 1 };
+	// for (int i = 0; i < NUM_TRIANGLES; i++) {
+	// 	egg_indices.push_back((uint16_t)i);
+	// 	egg_indices.push_back((uint16_t)((i + 1) % NUM_TRIANGLES));
+	// 	egg_indices.push_back((uint16_t)NUM_TRIANGLES);
+	// }
+	// int geom_index = (int)GEOMETRY_BUFFER_ID::EGG;
+	// meshes[geom_index].vertices = egg_vertices;
+	// meshes[geom_index].vertex_indices = egg_indices;
+	// bindVBOandIBO(GEOMETRY_BUFFER_ID::EGG, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
 
-	// //////////////////////////
-	// // Initialize floor tile. Utilizing the sprite code given above as template.
-	// // The position corresponds to the center of the texture.
-	// std::vector<TexturedVertex> floor_tile_vertices(4);
-	// floor_tile_vertices[0].position = { -1.f/2, +1.f/2, 0.f };
-	// floor_tile_vertices[1].position = { +1.f/2, +1.f/2, 0.f };
-	// floor_tile_vertices[2].position = { +1.f/2, -1.f/2, 0.f };
-	// floor_tile_vertices[3].position = { -1.f/2, -1.f/2, 0.f };
-	// floor_tile_vertices[0].texcoord = { 0.f, 1.f };
-	// floor_tile_vertices[1].texcoord = { 1.f, 1.f };
-	// floor_tile_vertices[2].texcoord = { 1.f, 0.f };
-	// floor_tile_vertices[3].texcoord = { 0.f, 0.f };
+	// Initialize Health Bar
+	std::vector<ColoredVertex> health_vertices;
+	std::vector<uint16_t> health_indices;
+	// bottom left
+	health_vertices.push_back({{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}});
+	// bottom right
+    health_vertices.push_back({{100.f, 0.f, 0.f}, {0.f, 1.f, 0.f}}); 
+	//top right
+    health_vertices.push_back({{100.f, 20.f, 0.f}, {0.f, 1.f, 0.f}}); 
+	//top left
+    health_vertices.push_back({{0.f, 20.f, 0.f}, {0.f, 1.f, 0.f}}); // Top-left
 
-	// // Counterclockwise as it's the default opengl front winding direction.
-	// const std::vector<uint16_t> floor_tile_indices = { 0, 3, 1, 1, 3, 2 };
-	// bindVBOandIBO(GEOMETRY_BUFFER_ID::FLOOR_TILE, floor_tile_vertices, floor_tile_indices);
+	// Use two triangles to make a rectangle
+	health_indices = {0, 1, 2, 0, 2, 3};
+	int geom_index = (int)GEOMETRY_BUFFER_ID::HEALTH_BAR;
+	meshes[geom_index].vertices = health_vertices;
+	meshes[geom_index].vertex_indices = health_indices;
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::HEALTH_BAR, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
+
 
 	//////////////////////////////////
 	// Initialize debug line

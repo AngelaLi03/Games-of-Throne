@@ -213,6 +213,22 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
 	}
+	// for (Entity entity : registry.healthbarlink.entities){
+	// 	HealthBarLink &healthbarlink = registry.healthbarlink.get(entity);
+	// 	Entity player_entity = healthbarlink.player;
+	// 	if (registry.healthbar.has(player_entity)){
+	// 		HealthBar& player_health = registry.healthbar.get(player_entity);
+	// 		float health_percentage = player_health.current_health / player_health.max_health;
+	// 		// Always update the new health_percentage
+	// 		if (registry.motions.has(entity)){
+	// 			Motion& health_bar_motion = registry.motions.get(entity);
+	// 			// Get the original scale of health bar
+	// 			HealthBar& health_bar = registry.healthbar.get(entity);
+	// 			health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
+	// 			health_bar_motion.scale.y = health_bar.original_scale.y;
+	// 		}
+	// 	}
+	// }
 
 	return true;
 }
@@ -279,6 +295,9 @@ void WorldSystem::restart_game()
 	Weapon &player_weapon = registry.weapons.emplace(player_spy);
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
+
+	Entity health_bar = createHealthBar(renderer, vec2(50.f, window_height_px - 50.f));
+	// registry.healthbarlink.emplace(health_bar, player_spy);
 
 	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	// create a new Salmon
@@ -428,6 +447,18 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
 	{
 		is_spacebar_pressed = false;
+	}
+
+	if (key == GLFW_KEY_H && action == GLFW_PRESS)
+	{
+		if (registry.healthbar.has(player_spy))
+		{
+			HealthBar& health = registry.healthbar.get(player_spy);
+			health.current_health -= 10.f;
+			if (health.current_health < 0.f){
+				health.current_health = 0.f;
+			}
+		}
 	}
 
 	float normal_speed = 60.f;

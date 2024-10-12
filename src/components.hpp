@@ -65,6 +65,25 @@ struct Collision
 	Collision(Entity &other) { this->other = other; };
 };
 
+struct HealthBar 
+{
+	float max_health;
+	float current_health;
+	vec2 original_scale;
+	HealthBar(float max_health, vec2 scale) {
+		max_health = max_health;
+		current_health = max_health;
+		original_scale = scale;
+	}
+};
+
+struct HealthBarLink {
+	Entity player;
+	HealthBarLink(Entity player_entity) {
+		player = player_entity;
+	}
+};
+
 // Data structure for toggling debug mode
 struct Debug
 {
@@ -149,7 +168,8 @@ enum class TEXTURE_ASSET_ID
 	SPY = WALL + 1,
 	ENEMY = SPY + 1,
 	WEAPON = ENEMY + 1,
-	TEXTURE_COUNT = WEAPON + 1
+	HEALTH_BAR = WEAPON + 1,
+	TEXTURE_COUNT = HEALTH_BAR + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -171,7 +191,8 @@ enum class GEOMETRY_BUFFER_ID
 	EGG = SPRITE + 1,
 	DEBUG_LINE = EGG + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
-	GEOMETRY_COUNT = SCREEN_TRIANGLE + 1
+	HEALTH_BAR = SCREEN_TRIANGLE + 1,
+	GEOMETRY_COUNT = HEALTH_BAR + 1,
 	// // Defined FLOOR_TILE geometry.
 	// FLOOR_TILE = GEOMETRY_COUNT + 1
 };

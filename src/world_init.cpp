@@ -76,6 +76,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);
+	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {60.f, 60.f}, {0.f, 40.f}});
 	registry.renderRequests.insert(
 			entity,
@@ -110,6 +111,32 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 			{TEXTURE_ASSET_ID::WEAPON, // TEXTURE_COUNT indicates that no texture is needed
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
+Entity createHealthBar(RenderSystem* renderer, vec2 pos) 
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::HEALTH_BAR);
+	registry.meshPtrs.emplace(entity, &mesh);
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = {200.f, 20.f};
+
+	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::HEALTH_BAR, // TEXTURE_COUNT indicates that no texture is needed
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::HEALTH_BAR});
+	// Set to green
+	registry.colors.emplace(entity, vec3(0.f, 1.f, 0.f)); 
 
 	return entity;
 }
