@@ -2,28 +2,19 @@
 #include "physics_system.hpp"
 #include "world_init.hpp"
 
-// Returns the local bounding coordinates scaled by the current size of the entity
+#include <iostream>
+
+// Returns the local bounding coordinates scaled by the current size of the entity (no longer used)
 vec2 get_bounding_box(const Motion &motion)
 {
 	// abs is to avoid negative scale due to the facing direction.
 	return {abs(motion.scale.x), abs(motion.scale.y)};
 }
 
-// This is a SUPER APPROXIMATE check that puts a circle around the bounding boxes and sees
-// if the center point of either object is inside the other's bounding-box-circle. You can
-// surely implement a more accurate detection
-bool collides(const Motion &motion1, const Motion &motion2)
+bool collides(const vec2 &p1, const vec2 &b1, const vec2 &p2, const vec2 &b2)
 {
-	vec2 dp = motion1.position - motion2.position;
-	float dist_squared = dot(dp, dp);
-	const vec2 other_bonding_box = get_bounding_box(motion1) / 2.f;
-	const float other_r_squared = dot(other_bonding_box, other_bonding_box);
-	const vec2 my_bonding_box = get_bounding_box(motion2) / 2.f;
-	const float my_r_squared = dot(my_bonding_box, my_bonding_box);
-	const float r_squared = max(other_r_squared, my_r_squared);
-	if (dist_squared < r_squared)
-		return true;
-	return false;
+	// AABB collision test
+	return p1.y < p2.y + b2.y && p2.y < p1.y + b1.y && p1.x < p2.x + b2.x && p2.x < p1.x + b1.x;
 }
 
 void PhysicsSystem::step(float elapsed_ms)
@@ -40,29 +31,116 @@ void PhysicsSystem::step(float elapsed_ms)
 	}
 
 	// Check for collisions between all moving entities
-	ComponentContainer<Motion> &motion_container = registry.motions;
-	for (uint i = 0; i < motion_container.components.size(); i++)
+	ComponentContainer<PhysicsBody> &physicsBody_container = registry.physicsBodies;
+	for (uint i = 0; i < physicsBody_container.components.size(); i++)
 	{
-		Motion &motion_i = motion_container.components[i];
-		Entity entity_i = motion_container.entities[i];
-
-		// note starting j at i+1 to compare all (i,j) pairs only once (and to not compare with itself)
-		for (uint j = i + 1; j < motion_container.components.size(); j++)
+		PhysicsBody &physicsBody_i = physicsBody_container.components[i];
+		if (physicsBody_i.body_type == BodyType::STATIC)
 		{
-			Motion &motion_j = motion_container.components[j];
-			if (collides(motion_i, motion_j))
+			// ensure i is kinematic body
+			continue;
+		}
+		Entity entity_i = physicsBody_container.entities[i];
+		Motion &motion_i = motion_registry.get(entity_i);
+
+		for (uint j = 0; j < physicsBody_container.components.size(); j++)
+		{
+			if (j == i)
 			{
-				Entity entity_j = motion_container.entities[j];
+				continue;
+			}
+			PhysicsBody &physicsBody_j = physicsBody_container.components[j];
+			if (j < i && physicsBody_j.body_type == BodyType::KINEMATIC)
+			{
+				// this pair is already processed
+				continue;
+			}
+			Entity entity_j = physicsBody_container.entities[j];
+			Motion &motion_j = motion_registry.get(entity_j);
+
+			vec2 b1 = physicsBody_i.bounding_box;
+			vec2 b2 = physicsBody_j.bounding_box;
+			vec2 p1 = motion_i.position + physicsBody_i.offset;
+			vec2 p2 = motion_j.position + physicsBody_j.offset;
+
+			if (collides(p1, b1, p2, b2))
+			{
+				// std::cout << "position of i: " << p1.x << "," << p1.y << "; position of j: " << p2.x << "," << p2.y << std::endl;
+				// std::cout << "bb of i: " << b1.x << "," << b1.y << "; bb of j: " << b2.x << "," << b2.y << std::endl;
+
+				// aabb collision resolution
+				float overlap_x = min(p1.x + b1.x - p2.x, p2.x + b2.x - p1.x);
+				float overlap_y = min(p1.y + b1.y - p2.y, p2.y + b2.y - p1.y);
+				// std::cout << "overlap: " << overlap_x << "," << overlap_y << std::endl;
+				if (physicsBody_j.body_type == BodyType::STATIC)
+				{
+					if (overlap_x < overlap_y)
+					{
+						if (p1.x < p2.x)
+						{
+							motion_i.position.x -= overlap_x;
+						}
+						else
+						{
+							motion_i.position.x += overlap_x;
+						}
+					}
+					else
+					{
+						if (p1.y < p2.y)
+						{
+							motion_i.position.y -= overlap_y;
+						}
+						else
+						{
+							motion_i.position.y += overlap_y;
+						}
+					}
+				}
+				else
+				{
+					if (overlap_x < overlap_y)
+					{
+						if (p1.x < p2.x)
+						{
+							motion_i.position.x -= overlap_x / 2;
+							motion_j.position.x += overlap_x / 2;
+						}
+						else
+						{
+							motion_i.position.x += overlap_x / 2;
+							motion_j.position.x -= overlap_x / 2;
+						}
+					}
+					else
+					{
+						if (p1.y < p2.y)
+						{
+							motion_i.position.y -= overlap_y / 2;
+							motion_j.position.y += overlap_y / 2;
+						}
+						else
+						{
+							motion_i.position.y += overlap_y / 2;
+							motion_j.position.y -= overlap_y / 2;
+						}
+					}
+				}
+
 				// Create a collisions event
 				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
 				registry.collisions.emplace_with_duplicates(entity_i, entity_j);
 				registry.collisions.emplace_with_duplicates(entity_j, entity_i);
 			}
+			// Motion &motion_j = physicsBody_container.components[j];
+			// if (collides(motion_i, motion_j))
+			// {
+			// 	Entity entity_j = physicsBody_container.entities[j];
+			// 	// Create a collisions event
+			// 	// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
+			// 	registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+			// 	registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+			// }
 		}
 	}
-
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A2: HANDLE EGG collisions HERE
-	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 2
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }
