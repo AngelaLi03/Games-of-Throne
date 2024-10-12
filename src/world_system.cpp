@@ -398,28 +398,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	// if (action == GLFW_PRESS || action == GLFW_RELEASE)
-	//{
-	//	float sign = action == GLFW_PRESS ? 1.f : -1.f;
-	//	float speed = 60.f;
-	//	if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
-	//	{
-	//		motion.velocity.x += sign * speed;
-	//	}
-	//	else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
-	//	{
-	//		motion.velocity.x -= sign * speed;
-	//	}
-	//	else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
-	//	{
-	//		motion.velocity.y -= sign * speed;
-	//	}
-	//	else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
-	//	{
-	//		motion.velocity.y += sign * speed;
-	//	}
-	//
-	// }
 
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 	{
@@ -436,7 +414,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 	if (action == GLFW_PRESS)
 	{
-
 		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
 		{
 			motion.velocity.x = speed;
@@ -454,7 +431,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			motion.velocity.y = speed;
 		}
 
-		// No interpolation since player is moving
 		if (registry.interpolations.has(player_spy))
 		{
 			registry.interpolations.remove(player_spy);
@@ -462,15 +438,12 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
-	// On key release event
 	if (action == GLFW_RELEASE)
 	{
-		// If any movement key is released, we apply momentum and stop direct movement
-		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
-				key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D)
+		if ((key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
+			key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D))
 		{
-			// logic to add interpolation
-			if (motion.velocity.x != 0.f || motion.velocity.y != 0.f)
+			if (is_spacebar_pressed && (motion.velocity.x != 0.f || motion.velocity.y != 0.f))
 			{
 				Interpolation interpolate;
 				interpolate.elapsed_time = 0.f;
@@ -481,7 +454,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 				}
 			}
 
-			// Stop direct movement
 			motion.velocity = vec2(0.f, 0.f);
 		}
 	}
@@ -489,11 +461,26 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
 {
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A1: HANDLE SALMON ROTATION HERE
-	// xpos and ypos are relative to the top-left of the window, the salmon's
-	// default facing direction is (1, 0)
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	Motion& spy_motion = registry.motions.get(player_spy);
+
+	vec2 spy_vector = +spy_motion.position - mouse_position;
+
+	float spy_angle = atan2(spy_vector.y, spy_vector.x);
+
+	spy_motion.angle = spy_angle;
+
+	if (spy_vector.x > 0)
+	{
+		spy_motion.angle = spy_angle;
+		spy_motion.scale.x = abs(spy_motion.scale.x);
+	}
+	else 
+	{
+		spy_motion.angle = spy_angle;
+		spy_motion.scale.x = -abs(spy_motion.scale.x);
+	}
+
 
 	(vec2) mouse_position; // dummy to avoid compiler warning
 }
