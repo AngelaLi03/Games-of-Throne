@@ -115,28 +115,28 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
-Entity createHealthBar(RenderSystem* renderer, vec2 pos) 
+Entity createHealthBar(RenderSystem *renderer, vec2 pos)
 {
 	auto entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object
-	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::HEALTH_BAR);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::PROGRESS_BAR);
 	registry.meshPtrs.emplace(entity, &mesh);
 	// Setting initial motion values
 	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
-	motion.scale = {200.f, 20.f};
+	motion.scale = {1.f, 1.f};
 
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::HEALTH_BAR, // TEXTURE_COUNT indicates that no texture is needed
-			 EFFECT_ASSET_ID::TEXTURED,
-			 GEOMETRY_BUFFER_ID::HEALTH_BAR});
+			{TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no texture is needed
+			 EFFECT_ASSET_ID::PROGRESS_BAR,
+			 GEOMETRY_BUFFER_ID::PROGRESS_BAR});
 	// Set to green
-	registry.colors.emplace(entity, vec3(0.f, 1.f, 0.f)); 
+	registry.colors.emplace(entity, vec3(0.f, 1.f, 0.f));
 
 	return entity;
 }

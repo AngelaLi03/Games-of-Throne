@@ -4,8 +4,10 @@
 
 #include "tiny_ecs_registry.hpp"
 
+#include <iostream>
+
 void RenderSystem::drawTexturedMesh(Entity entity,
-									const mat3 &projection)
+																		const mat3 &projection)
 {
 	Motion &motion = registry.motions.get(entity);
 	// Transformation code, see Rendering and Transformation in the template
@@ -13,9 +15,8 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	// thus ORDER IS IMPORTANT
 	Transform transform;
 	transform.translate(motion.position);
+	transform.rotate(motion.angle);
 	transform.scale(motion.scale);
-	// !!! TODO A1: add rotation to the chain of transformations, mind the order
-	// of transformations
 
 	assert(registry.renderRequests.has(entity));
 	const RenderRequest &render_request = registry.renderRequests.get(entity);
@@ -47,14 +48,14 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 
 		glEnableVertexAttribArray(in_position_loc);
 		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(TexturedVertex), (void *)0);
+													sizeof(TexturedVertex), (void *)0);
 		gl_has_errors();
 
 		glEnableVertexAttribArray(in_texcoord_loc);
 		glVertexAttribPointer(
-			in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
-			(void *)sizeof(
-				vec3)); // note the stride to skip the preceeding vertex position
+				in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
+				(void *)sizeof(
+						vec3)); // note the stride to skip the preceeding vertex position
 
 		// Enabling and binding texture to slot 0
 		glActiveTexture(GL_TEXTURE0);
@@ -62,7 +63,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 
 		assert(registry.renderRequests.has(entity));
 		GLuint texture_id =
-			texture_gl_handles[(GLuint)registry.renderRequests.get(entity).used_texture];
+				texture_gl_handles[(GLuint)registry.renderRequests.get(entity).used_texture];
 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 		gl_has_errors();
@@ -75,24 +76,23 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 
 		glEnableVertexAttribArray(in_position_loc);
 		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(ColoredVertex), (void *)0);
+													sizeof(ColoredVertex), (void *)0);
 		gl_has_errors();
 
 		glEnableVertexAttribArray(in_color_loc);
 		glVertexAttribPointer(in_color_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(ColoredVertex), (void *)sizeof(vec3));
+													sizeof(ColoredVertex), (void *)sizeof(vec3));
+		gl_has_errors();
+	}
+	else if (render_request.used_effect == EFFECT_ASSET_ID::PROGRESS_BAR)
+	{
+		GLint in_position_loc = glGetAttribLocation(program, "in_position");
 		gl_has_errors();
 
-		if (render_request.used_effect == EFFECT_ASSET_ID::SALMON)
-		{
-			// Light up?
-			GLint light_up_uloc = glGetUniformLocation(program, "light_up");
-			assert(light_up_uloc >= 0);
-
-			// !!! TODO A1: set the light_up shader variable using glUniform1i,
-			// similar to the glUniform1f call below. The 1f or 1i specified the type, here a single int.
-			gl_has_errors();
-		}
+		glEnableVertexAttribArray(in_position_loc);
+		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+													sizeof(ColoredVertex), (void *)0);
+		gl_has_errors();
 	}
 	else
 	{
@@ -152,9 +152,9 @@ void RenderSystem::drawToScreen()
 	// Draw the screen texture on the quad geometry
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[(GLuint)GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE]);
 	glBindBuffer(
-		GL_ELEMENT_ARRAY_BUFFER,
-		index_buffers[(GLuint)GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE]); // Note, GL_ELEMENT_ARRAY_BUFFER associates
-																	 // indices to the bound GL_ARRAY_BUFFER
+			GL_ELEMENT_ARRAY_BUFFER,
+			index_buffers[(GLuint)GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE]); // Note, GL_ELEMENT_ARRAY_BUFFER associates
+																																	 // indices to the bound GL_ARRAY_BUFFER
 	gl_has_errors();
 	const GLuint water_program = effects[(GLuint)EFFECT_ASSET_ID::WATER];
 	// Set clock
@@ -178,9 +178,9 @@ void RenderSystem::drawToScreen()
 	gl_has_errors();
 	// Draw
 	glDrawElements(
-		GL_TRIANGLES, 3, GL_UNSIGNED_SHORT,
-		nullptr); // one triangle = 3 vertices; nullptr indicates that there is
-				  // no offset from the bound index buffer
+			GL_TRIANGLES, 3, GL_UNSIGNED_SHORT,
+			nullptr); // one triangle = 3 vertices; nullptr indicates that there is
+								// no offset from the bound index buffer
 	gl_has_errors();
 }
 
@@ -204,8 +204,8 @@ void RenderSystem::draw()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_DEPTH_TEST); // native OpenGL does not work with a depth buffer
-							  // and alpha blending, one would have to sort
-							  // sprites back to front
+														// and alpha blending, one would have to sort
+														// sprites back to front
 	gl_has_errors();
 	mat3 projection_2D = createProjectionMatrix();
 	// Draw all textured meshes that have a position and size component
@@ -219,21 +219,22 @@ void RenderSystem::draw()
 	}
 
 	// Draw health bar
-	for (Entity entity : registry.healthbar.entities)
-	{
-		if (!registry.motions.has(entity))
-			continue;
-		drawTexturedMesh(entity, projection_2D);
-	}
+	// for (Entity entity : registry.healthbar.entities)
+	// {
+	// 	if (!registry.motions.has(entity))
+	// 		continue;
+	// 	drawTexturedMesh(entity, projection_2D);
+	// }
 
-	Entity& spy = registry.players.entities[0];
-	Motion& player_motion = registry.motions.get(spy);
-	if(registry.weapons.has(spy)){
-		Weapon& player_weapon = registry.weapons.get(spy);
+	Entity &spy = registry.players.entities[0];
+	Motion &player_motion = registry.motions.get(spy);
+	if (registry.weapons.has(spy))
+	{
+		Weapon &player_weapon = registry.weapons.get(spy);
 		Entity weapon = player_weapon.weapon;
-		Motion& weapon_motion = registry.motions.get(weapon);
-        weapon_motion.position = player_motion.position + player_weapon.offset;
-        drawTexturedMesh(weapon, projection_2D);
+		Motion &weapon_motion = registry.motions.get(weapon);
+		weapon_motion.position = player_motion.position + player_weapon.offset;
+		drawTexturedMesh(weapon, projection_2D);
 		// drawTexturedMesh(spy, projection_2D); //draw again so player is on top of weapon
 	}
 
@@ -252,8 +253,8 @@ mat3 RenderSystem::createProjectionMatrix()
 	float top = 0.f;
 
 	gl_has_errors();
-	float right = (float) window_width_px;
-	float bottom = (float) window_height_px;
+	float right = (float)window_width_px;
+	float bottom = (float)window_height_px;
 
 	float sx = 2.f / (right - left);
 	float sy = 2.f / (top - bottom);

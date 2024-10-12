@@ -296,9 +296,6 @@ void WorldSystem::restart_game()
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
 
-	Entity health_bar = createHealthBar(renderer, vec2(50.f, window_height_px - 50.f));
-	// registry.healthbarlink.emplace(health_bar, player_spy);
-
 	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	// create a new Salmon
 	// player_salmon = createSalmon(renderer, { window_width_px/2, window_height_px - 200 });
@@ -310,6 +307,9 @@ void WorldSystem::restart_game()
 		createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
 		// createEnemy(renderer, vec2(200, 200));
 	}
+
+	Entity health_bar = createHealthBar(renderer, {50.f, 50.f});
+	// registry.healthbarlink.emplace(health_bar, player_spy);
 }
 
 // Compute collisions between entities
@@ -453,9 +453,10 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	{
 		if (registry.healthbar.has(player_spy))
 		{
-			HealthBar& health = registry.healthbar.get(player_spy);
+			HealthBar &health = registry.healthbar.get(player_spy);
 			health.current_health -= 10.f;
-			if (health.current_health < 0.f){
+			if (health.current_health < 0.f)
+			{
 				health.current_health = 0.f;
 			}
 		}

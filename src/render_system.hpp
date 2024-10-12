@@ -9,7 +9,8 @@
 
 // System responsible for setting up OpenGL and for rendering all the
 // visual entities in the game
-class RenderSystem {
+class RenderSystem
+{
 	/**
 	 * The following arrays store the assets the game will use. They are loaded
 	 * at initialization and are assumed to not be modified by the render loop.
@@ -22,10 +23,10 @@ class RenderSystem {
 
 	// Make sure these paths remain in sync with the associated enumerators.
 	// Associated id with .obj path
-	const std::vector < std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths =
-	{
-		  std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::SALMON, mesh_path("salmon.obj"))
-		  // specify meshes of other assets here
+	const std::vector<std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths =
+			{
+					std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::SALMON, mesh_path("salmon.obj"))
+					// specify meshes of other assets here
 	};
 
 	// Make sure these paths remain in sync with the associated enumerators.
@@ -41,11 +42,12 @@ class RenderSystem {
 	std::array<GLuint, effect_count> effects;
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = {
-		shader_path("coloured"),
-		shader_path("egg"),
-		shader_path("salmon"),
-		shader_path("textured"),
-		shader_path("water") };
+			shader_path("coloured"),
+			shader_path("egg"),
+			shader_path("salmon"),
+			shader_path("textured"),
+			shader_path("water"),
+			shader_path("progress_bar")};
 
 	std::array<GLuint, geometry_count> vertex_buffers;
 	std::array<GLuint, geometry_count> index_buffers;
@@ -53,7 +55,7 @@ class RenderSystem {
 
 public:
 	// Initialize the window
-	bool init(GLFWwindow* window);
+	bool init(GLFWwindow *window);
 
 	template <class T>
 	void bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices);
@@ -63,7 +65,7 @@ public:
 	void initializeGlEffects();
 
 	void initializeGlMeshes();
-	Mesh& getMesh(GEOMETRY_BUFFER_ID id) { return meshes[(int)id]; };
+	Mesh &getMesh(GEOMETRY_BUFFER_ID id) { return meshes[(int)id]; };
 
 	void initializeGlGeometryBuffers();
 	// Initialize the screen texture used as intermediate render target
@@ -81,11 +83,11 @@ public:
 
 private:
 	// Internal drawing functions for each entity type
-	void drawTexturedMesh(Entity entity, const mat3& projection);
+	void drawTexturedMesh(Entity entity, const mat3 &projection);
 	void drawToScreen();
 
 	// Window handle
-	GLFWwindow* window;
+	GLFWwindow *window;
 
 	// Screen texture handles
 	GLuint frame_buffer;
@@ -96,4 +98,4 @@ private:
 };
 
 bool loadEffectFromFile(
-	const std::string& vs_path, const std::string& fs_path, GLuint& out_program);
+		const std::string &vs_path, const std::string &fs_path, GLuint &out_program);
