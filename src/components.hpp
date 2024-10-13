@@ -50,6 +50,15 @@ struct Interpolation
 	vec2 initial_velocity;					 // velocity when button is released
 };
 
+struct Bezier
+{
+	glm::vec2 initial_velocity;
+	glm::vec2 target_position;
+	glm::vec2 control_point;     
+	float elapsed_time;
+	float total_time_to_0_ms = 2000;
+};
+
 enum class BodyType
 {
 	STATIC = 0,

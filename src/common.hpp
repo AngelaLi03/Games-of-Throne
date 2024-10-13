@@ -47,4 +47,8 @@ struct Transform
 	void translate(vec2 offset);
 };
 
+glm::vec2 bezierInterpolation(float t, glm::vec2 P1, glm::vec2 P2, glm::vec2 P3);
+
+glm::vec2 calculateControlPoint(glm::vec2 P1, glm::vec2 P3, glm::vec2 P, float t);
+
 bool gl_has_errors();

@@ -14,6 +14,7 @@ public:
 	ComponentContainer<DeathTimer> deathTimers;
 	ComponentContainer<Motion> motions;
 	ComponentContainer<Interpolation> interpolations;
+	ComponentContainer<Bezier> beziers;
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<PhysicsBody> physicsBodies;
 	ComponentContainer<Player> players;

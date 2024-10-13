@@ -11,6 +11,7 @@
 // Game configuration
 int ENEMIES_COUNT = 5;
 bool is_spacebar_pressed = false;
+vec2 curr_mouse_position;
 
 // create the underwater world
 WorldSystem::WorldSystem()
@@ -197,8 +198,10 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 		interpolate.elapsed_time += elapsed_ms_since_last_update;
 
-		float interpolation_factor = (float)interpolate.elapsed_time / (float)interpolate.total_time_to_0_ms;
-		interpolation_factor = std::min(interpolation_factor, 1.0f);
+		float t = (float)interpolate.elapsed_time / (float)interpolate.total_time_to_0_ms;
+		t = std::min(t, 1.0f);
+
+		float interpolation_factor = t * t * (3.0f - 2.0f * t); // basically 3t^2 - 2t^3 -> cubic 
 
 		motion.velocity.x = (1.0f - interpolation_factor) * interpolate.initial_velocity.x;
 		motion.velocity.y = (1.0f - interpolation_factor) * interpolate.initial_velocity.y;
@@ -212,6 +215,27 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
+	}
+
+	for (Entity entity : registry.beziers.entities)
+	{
+		Bezier& bezier = registry.beziers.get(entity);
+		Motion& motion = registry.motions.get(entity);
+
+		bezier.elapsed_time += elapsed_ms_since_last_update;
+
+		float t = (float)bezier.elapsed_time / (float)bezier.total_time_to_0_ms;
+		t = std::min(t, 1.0f);
+
+		glm::vec2 new_position = bezierInterpolation(t, motion.position, bezier.control_point, bezier.target_position);
+
+		motion.position = new_position;
+
+		if (t >= 1.0f)
+		{
+			registry.beziers.remove(entity);
+			motion.velocity = vec2(0.f, 0.f); 
+		}
 	}
 
 	return true;
@@ -438,6 +462,25 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
+	// bezier logic 
+	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+	{
+		if (!registry.beziers.has(player_spy))
+		{
+			Bezier bezier;
+			bezier.elapsed_time = 0.f;
+
+			Motion& motion = registry.motions.get(player_spy);
+			bezier.initial_velocity = motion.velocity;  
+			bezier.target_position = curr_mouse_position;    
+
+			bezier.control_point = calculateControlPoint(motion.position, bezier.target_position,
+				(motion.position + bezier.target_position) / 2.0f, 0.5f);
+
+			registry.beziers.emplace(player_spy, bezier);
+		}
+	}
+
 	if (action == GLFW_RELEASE)
 	{
 		if ((key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
@@ -462,6 +505,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 void WorldSystem::on_mouse_move(vec2 mouse_position)
 {
 
+	curr_mouse_position = mouse_position;
 	Motion& spy_motion = registry.motions.get(player_spy);
 
 	vec2 spy_vector = +spy_motion.position - mouse_position;
