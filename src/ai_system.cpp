@@ -3,8 +3,6 @@
 
 #include <iostream>
 
-using Clock = std::chrono::high_resolution_clock;
-
 float distance_squared(vec2 a, vec2 b)
 {
 	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
@@ -15,9 +13,6 @@ float attack_radius_squared = 110.f * 110.f;
 
 void AISystem::step(float elapsed_ms)
 {
-	if (spy_attack_sound != nullptr)
-		Mix_FreeChunk(spy_attack_sound);
-	auto t = Clock::now();
 	Entity player = registry.players.entities[0];
 	assert(player);
 	Motion &player_motion = registry.motions.get(player);
