@@ -196,7 +196,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	Entity enemy_health_bar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+	createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
 	return entity;
 }
 

@@ -216,21 +216,21 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	for (Entity health_bar_entity : registry.healthbarlink.entities)
     {
         HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
-        Entity owner_entity = healthbarlink.player;
+        Entity owner_entity = healthbarlink.owner;
 
         if (registry.motions.has(owner_entity) && registry.motions.has(health_bar_entity))
         {
             Motion &owner_motion = registry.motions.get(owner_entity);
             Motion &health_bar_motion = registry.motions.get(health_bar_entity);
 
-            if (owner_entity = player_spy)
+            if (owner_entity == player_spy)
             {
 				health_bar_motion.position = {50.f, 50.f};
             }
             else
             {
-				health_bar_motion.position = owner_motion.position + vec2(0.f, 50.f);
-            }
+				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
+            } 
 			if (registry.healthbar.has(owner_entity))
             {
                 HealthBar &owner_health = registry.healthbar.get(owner_entity);
@@ -322,8 +322,7 @@ void WorldSystem::restart_game()
 		// createEnemy(renderer, vec2(200, 200));
 	}
 
-	Entity health_bar = createHealthBar(renderer, {50.f, 50.f}, player_spy);
-	// registry.healthbarlink.emplace(health_bar, player_spy);
+	createHealthBar(renderer, {50.f, 50.f}, player_spy);
 }
 
 // Compute collisions between entities
@@ -482,7 +481,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		{
 			if (registry.healthbar.has(enemy_entity))
 			{
-				HealthBar &health = registry.healthbar.get(player_spy);
+				HealthBar &health = registry.healthbar.get(enemy_entity);
 				health.current_health -= 10.f;
 				if (health.current_health < 0.f)
 				{

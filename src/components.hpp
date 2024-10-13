@@ -80,10 +80,10 @@ struct HealthBar
 
 struct HealthBarLink
 {
-	Entity player;
-	HealthBarLink(Entity player_entity)
+	Entity owner;
+	HealthBarLink(Entity owner_entity)
 	{
-		player = player_entity;
+		this->owner = owner_entity;
 	}
 };
 
