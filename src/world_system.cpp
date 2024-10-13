@@ -37,9 +37,8 @@ WorldSystem::~WorldSystem()
 		Mix_FreeChunk(spy_dash_sound);
 	if (spy_attack_sound != nullptr)
 		Mix_FreeChunk(spy_attack_sound);
-	if(break_sound != nullptr)
+	if (break_sound != nullptr)
 		Mix_FreeChunk(break_sound);
-		
 
 	Mix_CloseAudio();
 
@@ -301,6 +300,10 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			Mix_PlayChannel(-1, spy_death_sound, 0);
 			registry.deathTimers.emplace(registry.players.entities[0]);
 		}
+		else
+		{
+			registry.motions.get(registry.players.entities[0]).velocity = {0.f, 0.f};
+		}
 	}
 
 	return true;
@@ -510,8 +513,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		if (registry.healthbar.has(player_spy))
 		{
 			HealthBar &health_bar = registry.healthbar.get(player_spy);
-			auto& spy_health = registry.healths.get(player_spy);
-			//hardcoded damage, TODO
+			auto &spy_health = registry.healths.get(player_spy);
+			// hardcoded damage, TODO
 			health_bar.current_health -= 10.f;
 			spy_health.health -= 10.f;
 			if (health_bar.current_health < 0.f)
