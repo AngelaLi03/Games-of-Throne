@@ -59,6 +59,11 @@ struct Bezier
 	float total_time_to_0_ms = 2000;
 };
 
+struct Flow {
+	float flowLevel; // This could represent the current flow level
+	float maxFlowLevel; // Maximum flow level
+};
+
 enum class BodyType
 {
 	STATIC = 0,
@@ -163,7 +168,8 @@ enum class TEXTURE_ASSET_ID
 	SPY = WALL + 1,
 	ENEMY = SPY + 1,
 	WEAPON = ENEMY + 1,
-	TEXTURE_COUNT = WEAPON + 1
+	FLOW_METER = WEAPON + 1,
+	TEXTURE_COUNT = FLOW_METER + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 

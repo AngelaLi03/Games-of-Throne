@@ -37,3 +37,5 @@ Entity createSpy(RenderSystem* renderer, vec2 pos);
 Entity createEnemy(RenderSystem* renderer, vec2 pos);
 
 Entity createWeapon(RenderSystem* renderer, vec2 pos);
+
+Entity createFlowMeter(RenderSystem* renderer, vec2 pos, float scale);

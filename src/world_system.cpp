@@ -303,7 +303,6 @@ void WorldSystem::restart_game()
 	Weapon &player_weapon = registry.weapons.emplace(player_spy);
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
-
 	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	// create a new Salmon
 	// player_salmon = createSalmon(renderer, { window_width_px/2, window_height_px - 200 });
@@ -315,6 +314,9 @@ void WorldSystem::restart_game()
 		createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
 		// createEnemy(renderer, vec2(200, 200));
 	}
+
+	flowMeterEntity = createFlowMeter(renderer, { 100.f, 100.f }, 100.0f);
+
 }
 
 // Compute collisions between entities
@@ -392,6 +394,16 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		glfwGetWindowSize(window, &w, &h);
 
 		restart_game();
+	}
+
+	if (action == GLFW_PRESS && key == GLFW_KEY_F)
+	{
+		if (registry.flows.has(flowMeterEntity)) {
+			Flow& flow = registry.flows.get(flowMeterEntity);
+			flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
+			std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
+
+		}
 	}
 
 	// Debugging

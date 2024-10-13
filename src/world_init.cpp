@@ -115,6 +115,34 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
+Entity createFlowMeter(RenderSystem* renderer, vec2 pos, float scale)
+{
+	auto entity = Entity();
+
+	// Store a reference to the mesh object (assumed you've already defined it)
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Initialize the position, scale, and motion components
+	auto& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.scale = { scale, scale };
+
+	// Initialize the flow component
+	Flow& flow = registry.flows.emplace(entity);
+	flow.flowLevel = 0.f; // Start with no flow
+	flow.maxFlowLevel = 100.f; // Max flow level can be adjusted as needed
+
+	// Create a render request for the flow meter texture
+	registry.renderRequests.insert(
+		entity,
+		{ TEXTURE_ASSET_ID::FLOW_METER, EFFECT_ASSET_ID::TEXTURED, GEOMETRY_BUFFER_ID::SPRITE });
+
+	return entity;
+
+}
+
+
 Entity createSalmon(RenderSystem *renderer, vec2 pos)
 {
 	auto entity = Entity();
