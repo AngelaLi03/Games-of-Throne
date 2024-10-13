@@ -57,6 +57,7 @@ private:
 	float current_speed;
 	Entity player_salmon;
 	Entity player_spy;
+	Entity flowMeterEntity;
 
 	// music references
 	Mix_Music* background_music;

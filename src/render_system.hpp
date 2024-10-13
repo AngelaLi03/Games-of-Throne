@@ -37,7 +37,8 @@ class RenderSystem
 			textures_path("wall.png"),
 			textures_path("spy_no_weapon.png"),
 			textures_path("enemy_small.png"),
-			textures_path("weapon.png")};
+			textures_path("weapon.png"),
+			textures_path("flow_meter.png")};
 
 	std::array<GLuint, effect_count> effects;
 	// Make sure these paths remain in sync with the associated enumerators.
@@ -47,7 +48,9 @@ class RenderSystem
 			shader_path("salmon"),
 			shader_path("textured"),
 			shader_path("water"),
-			shader_path("progress_bar")};
+			shader_path("progress_bar"),
+			shader_path("liquid_fill"),
+	};
 
 	std::array<GLuint, geometry_count> vertex_buffers;
 	std::array<GLuint, geometry_count> index_buffers;

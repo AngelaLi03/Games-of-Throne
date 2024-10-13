@@ -58,3 +58,14 @@ bool gl_has_errors()
 
 	return true;
 }
+
+glm::vec2 bezierInterpolation(float t, glm::vec2 P1, glm::vec2 P2, glm::vec2 P3)
+{
+	return (1 - t) * (1 - t) * P1 + 2 * (1 - t) * t * P2 + t * t * P3;
+}
+
+// helper to find mid-pint for bezier interp t-> 0.5 -> smoothing factor
+glm::vec2 calculateControlPoint(glm::vec2 P1, glm::vec2 P3, glm::vec2 P, float t)
+{
+	return (P - (1.0f - t) * (1.0f - t) * P1 - (t * t * P3)) / (2.0f * (1.0f - t) * t);
+}
