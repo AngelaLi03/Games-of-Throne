@@ -216,6 +216,36 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
 	}
+	for (Entity health_bar_entity : registry.healthbarlink.entities)
+	{
+		HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
+		Entity owner_entity = healthbarlink.owner;
+
+		if (registry.motions.has(owner_entity) && registry.motions.has(health_bar_entity))
+		{
+			Motion &owner_motion = registry.motions.get(owner_entity);
+			Motion &health_bar_motion = registry.motions.get(health_bar_entity);
+
+			if (owner_entity == player_spy)
+			{
+				health_bar_motion.position = {50.f, 50.f};
+			}
+			else
+			{
+				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
+			}
+			if (registry.healthbar.has(owner_entity))
+			{
+				HealthBar &owner_health = registry.healthbar.get(owner_entity);
+				float health_percentage = owner_health.current_health / owner_health.max_health;
+
+				// Get the original scale of health bar
+				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+				health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
+				health_bar_motion.scale.y = health_bar.original_scale.y;
+			}
+		}
+	}
 
 	for (Entity entity : registry.beziers.entities)
 	{
@@ -311,6 +341,9 @@ void WorldSystem::restart_game()
 	Weapon &player_weapon = registry.weapons.emplace(player_spy);
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
+
+	createHealthBar(renderer, {50.f, 50.f}, player_spy);
+	// registry.healthbarlink.emplace(health_bar, player_spy);
 
 	flowMeterEntity = createFlowMeter(renderer, {100.f, 100.f}, 100.0f);
 }
@@ -439,6 +472,35 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		is_spacebar_pressed = false;
 	}
 
+	if (key == GLFW_KEY_H && action == GLFW_PRESS)
+	{
+		if (registry.healthbar.has(player_spy))
+		{
+			HealthBar &health = registry.healthbar.get(player_spy);
+			health.current_health -= 10.f;
+			if (health.current_health < 0.f)
+			{
+				health.current_health = 0.f;
+			}
+		}
+	}
+
+	if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	{
+		for (Entity enemy_entity : registry.enemies.entities)
+		{
+			if (registry.healthbar.has(enemy_entity))
+			{
+				HealthBar &health = registry.healthbar.get(enemy_entity);
+				health.current_health -= 10.f;
+				if (health.current_health < 0.f)
+				{
+					health.current_health = 0.f;
+				}
+			}
+		}
+	}
+
 	float normal_speed = 60.f;
 	float burst_speed = 200.f;
 	float speed = is_spacebar_pressed ? burst_speed : normal_speed;
@@ -517,18 +579,16 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 
 	vec2 spy_vector = +spy_motion.position - mouse_position;
 
-	float spy_angle = atan2(spy_vector.y, spy_vector.x);
+	// float spy_angle = atan2(spy_vector.y, spy_vector.x);
 
-	spy_motion.angle = spy_angle;
+	// spy_motion.angle = spy_angle;
 
 	if (spy_vector.x > 0)
 	{
-		spy_motion.angle = spy_angle;
 		spy_motion.scale.x = abs(spy_motion.scale.x);
 	}
 	else
 	{
-		spy_motion.angle = spy_angle;
 		spy_motion.scale.x = -abs(spy_motion.scale.x);
 	}
 

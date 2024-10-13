@@ -66,8 +66,9 @@ struct Bezier
 	float total_time_to_0_ms = 2000;
 };
 
-struct Flow {
-	float flowLevel; // This could represent the current flow level
+struct Flow
+{
+	float flowLevel;		// This could represent the current flow level
 	float maxFlowLevel; // Maximum flow level
 };
 
@@ -89,6 +90,28 @@ struct Collision
 	// Note, the first object is stored in the ECS container.entities
 	Entity other; // the second object involved in the collision
 	Collision(Entity &other) { this->other = other; };
+};
+
+struct HealthBar
+{
+	float max_health;
+	float current_health;
+	vec2 original_scale;
+	HealthBar(float max_health, vec2 scale)
+	{
+		this->max_health = max_health;
+		this->current_health = max_health;
+		this->original_scale = scale;
+	}
+};
+
+struct HealthBarLink
+{
+	Entity owner;
+	HealthBarLink(Entity owner_entity)
+	{
+		this->owner = owner_entity;
+	}
 };
 
 // Data structure for toggling debug mode
@@ -187,7 +210,8 @@ enum class EFFECT_ASSET_ID
 	SALMON = EGG + 1,
 	TEXTURED = SALMON + 1,
 	WATER = TEXTURED + 1,
-	LIQUID_FILL = WATER + 1,
+	PROGRESS_BAR = WATER + 1,
+	LIQUID_FILL = PROGRESS_BAR + 1,
 	EFFECT_COUNT = LIQUID_FILL + 1
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
@@ -199,7 +223,8 @@ enum class GEOMETRY_BUFFER_ID
 	EGG = SPRITE + 1,
 	DEBUG_LINE = EGG + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
-	GEOMETRY_COUNT = SCREEN_TRIANGLE + 1
+	PROGRESS_BAR = SCREEN_TRIANGLE + 1,
+	GEOMETRY_COUNT = PROGRESS_BAR + 1,
 	// // Defined FLOOR_TILE geometry.
 	// FLOOR_TILE = GEOMETRY_COUNT + 1
 };

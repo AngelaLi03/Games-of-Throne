@@ -27,6 +27,8 @@ public:
 	ComponentContainer<vec3> colors;
 	ComponentContainer<Enemy> enemies;
 	ComponentContainer<Weapon> weapons;
+	ComponentContainer<HealthBar> healthbar;
+	ComponentContainer<HealthBarLink> healthbarlink;
 	ComponentContainer<Health> healths;
 	ComponentContainer<Flow> flows;
 
@@ -47,6 +49,8 @@ public:
 		registry_list.push_back(&debugComponents);
 		registry_list.push_back(&colors);
 		registry_list.push_back(&enemies);
+		registry_list.push_back(&healthbar);
+		registry_list.push_back(&healthbarlink);
 		registry_list.push_back(&healths);
 		registry_list.push_back(&flows);
 	}
