@@ -2,7 +2,7 @@
 #include "tiny_ecs_registry.hpp"
 #include "iostream"
 
-// Create floor tile entity and add to registry. Utilizing the existing createSalmon code as template.
+// Create floor tile entity and add to registry.
 Entity createFloorTile(RenderSystem *renderer, vec2 pos, float tile_scale)
 {
 	auto entity = Entity();
@@ -115,57 +115,28 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
-Entity createFlowMeter(RenderSystem* renderer, vec2 pos, float scale)
+Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale)
 {
 	auto entity = Entity();
 
 	// Store a reference to the mesh object (assumed you've already defined it)
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
 	// Initialize the position, scale, and motion components
-	auto& motion = registry.motions.emplace(entity);
+	auto &motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.scale = { scale, scale };
+	motion.scale = {scale, scale};
 
 	// Initialize the flow component
-	Flow& flow = registry.flows.emplace(entity);
-	flow.flowLevel = 0.f; // Start with no flow
+	Flow &flow = registry.flows.emplace(entity);
+	flow.flowLevel = 0.f;			 // Start with no flow
 	flow.maxFlowLevel = 100.f; // Max flow level can be adjusted as needed
 
 	// Create a render request for the flow meter texture
 	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::FLOW_METER, EFFECT_ASSET_ID::LIQUID_FILL, GEOMETRY_BUFFER_ID::SPRITE });
-
-	return entity;
-
-}
-
-
-Entity createSalmon(RenderSystem *renderer, vec2 pos)
-{
-	auto entity = Entity();
-
-	// Store a reference to the potentially re-used mesh object
-	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SALMON);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	// Setting initial motion values
-	Motion &motion = registry.motions.emplace(entity);
-	motion.position = pos;
-	motion.angle = 0.f;
-	motion.velocity = {0.f, 0.f};
-	motion.scale = mesh.original_size * 300.f;
-	motion.scale.y *= -1; // point front to the right
-
-	// create an empty Salmon component for our character
-	registry.players.emplace(entity);
-	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no texture is needed
-			 EFFECT_ASSET_ID::SALMON,
-			 GEOMETRY_BUFFER_ID::SALMON});
+			{TEXTURE_ASSET_ID::FLOW_METER, EFFECT_ASSET_ID::LIQUID_FILL, GEOMETRY_BUFFER_ID::SPRITE});
 
 	return entity;
 }
@@ -189,6 +160,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {60.f, 60.f}, {0.f, 40.f}});
 	registry.healths.insert(entity, {100.f});
 	registry.renderRequests.insert(
 			entity,

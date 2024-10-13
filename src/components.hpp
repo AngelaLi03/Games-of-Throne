@@ -19,8 +19,15 @@ struct Eatable
 {
 };
 
+enum class EnemyState
+{
+	IDLE = 0,
+	COMBAT = 1,
+};
 struct Enemy
 {
+	EnemyState state = EnemyState::IDLE;
+	float time_since_last_attack = 0;
 };
 
 struct Weapon
@@ -54,7 +61,7 @@ struct Bezier
 {
 	glm::vec2 initial_velocity;
 	glm::vec2 target_position;
-	glm::vec2 control_point;     
+	glm::vec2 control_point;
 	float elapsed_time;
 	float total_time_to_0_ms = 2000;
 };

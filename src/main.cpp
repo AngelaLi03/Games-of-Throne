@@ -9,6 +9,7 @@
 #include "physics_system.hpp"
 #include "render_system.hpp"
 #include "world_system.hpp"
+#include "ai_system.hpp"
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -19,10 +20,12 @@ int main()
 	WorldSystem world;
 	RenderSystem renderer;
 	PhysicsSystem physics;
+	AISystem ai;
 
 	// Initializing window
-	GLFWwindow* window = world.create_window();
-	if (!window) {
+	GLFWwindow *window = world.create_window();
+	if (!window)
+	{
 		// Time to read the error message
 		printf("Press any key to exit");
 		getchar();
@@ -35,17 +38,19 @@ int main()
 
 	// variable timestep loop
 	auto t = Clock::now();
-	while (!world.is_over()) {
+	while (!world.is_over())
+	{
 		// Processes system messages, if this wasn't present the window would become unresponsive
 		glfwPollEvents();
 
 		// Calculating elapsed times in milliseconds from the previous iteration
 		auto now = Clock::now();
 		float elapsed_ms =
-			(float)(std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count() / 1000;
+				(float)(std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count() / 1000;
 		t = now;
 
 		world.step(elapsed_ms);
+		ai.step(elapsed_ms);
 		physics.step(elapsed_ms);
 		world.handle_collisions();
 
