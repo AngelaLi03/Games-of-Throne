@@ -136,7 +136,7 @@ Entity createFlowMeter(RenderSystem* renderer, vec2 pos, float scale)
 	// Create a render request for the flow meter texture
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::FLOW_METER, EFFECT_ASSET_ID::TEXTURED, GEOMETRY_BUFFER_ID::SPRITE });
+		{ TEXTURE_ASSET_ID::FLOW_METER, EFFECT_ASSET_ID::LIQUID_FILL, GEOMETRY_BUFFER_ID::SPRITE });
 
 	return entity;
 

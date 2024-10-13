@@ -97,6 +97,43 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 			gl_has_errors();
 		}
 	}
+	else if (render_request.used_effect == EFFECT_ASSET_ID::LIQUID_FILL) {
+		GLint in_position_loc = glGetAttribLocation(program, "in_position");
+		GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
+		gl_has_errors();
+
+		glEnableVertexAttribArray(in_position_loc);
+		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)0);
+		gl_has_errors();
+
+		glEnableVertexAttribArray(in_texcoord_loc);
+		glVertexAttribPointer(in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)sizeof(vec3));
+		gl_has_errors();
+
+		// Enable and bind texture
+		glActiveTexture(GL_TEXTURE0);
+		GLuint texture_id = texture_gl_handles[(GLuint)registry.renderRequests.get(entity).used_texture];
+		glBindTexture(GL_TEXTURE_2D, texture_id);
+		gl_has_errors();
+
+		// Set flowValue uniform
+		Flow& flow = registry.flows.get(entity);  // Assuming flow component
+		GLint flowValue_uloc = glGetUniformLocation(program, "flowValue");
+		glUniform1f(flowValue_uloc, flow.flowLevel / flow.maxFlowLevel);
+		gl_has_errors();
+
+		// Set color uniform
+		GLint color_uloc = glGetUniformLocation(program, "liquidColor");
+		vec3 color = vec3(0.0, 0.7, 1.0);  // Customize the liquid color
+		glUniform3fv(color_uloc, 1, (float*)&color);
+		gl_has_errors();
+
+		GLint outlineColor_uloc = glGetUniformLocation(program, "outlineColor");
+		vec4 outlineColor = vec4(0.0, 0.0, 0.0, 1.0);  // Black outline
+		glUniform4fv(outlineColor_uloc, 1, (float*)&outlineColor);  // Pass outline color
+		gl_has_errors();
+
+	}
 	else
 	{
 		assert(false && "Type of render request not supported");
