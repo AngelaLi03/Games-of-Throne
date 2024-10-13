@@ -15,6 +15,8 @@ float attack_radius_squared = 110.f * 110.f;
 
 void AISystem::step(float elapsed_ms)
 {
+	if (spy_attack_sound != nullptr)
+		Mix_FreeChunk(spy_attack_sound);
 	auto t = Clock::now();
 	Entity player = registry.players.entities[0];
 	assert(player);
@@ -58,6 +60,7 @@ void AISystem::step(float elapsed_ms)
 					// attack player
 					std::cout << "Enemy " << i << " attacks player" << std::endl;
 					enemy.time_since_last_attack = 0.f;
+					Mix_PlayChannel(-1, spy_attack_sound, 0);
 				}
 			}
 		}

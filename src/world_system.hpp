@@ -63,6 +63,9 @@ private:
 	Mix_Music* background_music;
 	Mix_Chunk* salmon_dead_sound;
 	Mix_Chunk* salmon_eat_sound;
+	Mix_Chunk* spy_death_sound;
+	Mix_Chunk* spy_dash_sound;
+	Mix_Chunk* spy_attack_sound;
 
 	// C++ random number generator
 	std::default_random_engine rng;

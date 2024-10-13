@@ -255,24 +255,50 @@ void RenderSystem::draw()
 		drawTexturedMesh(entity, projection_2D);
 	}
 
-	// Draw health bar
-	// for (Entity entity : registry.healthbar.entities)
-	// {
-	// 	if (!registry.motions.has(entity))
-	// 		continue;
-	// 	drawTexturedMesh(entity, projection_2D);
-	// }
-
-	Entity &spy = registry.players.entities[0];
-	Motion &player_motion = registry.motions.get(spy);
-	if (registry.weapons.has(spy))
+	for (Entity enemy : registry.enemies.entities) 
 	{
-		Weapon &player_weapon = registry.weapons.get(spy);
+		auto& health = registry.healths.get(enemy);
+		auto& render_request = registry.renderRequests.get(enemy);
+		auto& motion = registry.motions.get(enemy);
+
+		if (health.health <= 0) {
+			if(!health.isDead){
+				motion.scale.y *= 0.7;
+				motion.scale.x *= -1;
+				motion.scale *= 0.85;
+				health.isDead = true;
+			}
+			// Change texture to corpse
+			render_request.used_texture = TEXTURE_ASSET_ID::ENEMY_CORPSE;
+		}
+	}
+
+	Entity& spy = registry.players.entities[0];
+	Motion& player_motion = registry.motions.get(spy);
+	if(registry.weapons.has(spy)){
+		Weapon& player_weapon = registry.weapons.get(spy);
 		Entity weapon = player_weapon.weapon;
-		Motion &weapon_motion = registry.motions.get(weapon);
-		weapon_motion.position = player_motion.position + player_weapon.offset;
-		drawTexturedMesh(weapon, projection_2D);
-		// drawTexturedMesh(spy, projection_2D); //draw again so player is on top of weapon
+		Motion& weapon_motion = registry.motions.get(weapon);
+        weapon_motion.position = player_motion.position + player_weapon.offset;
+        drawTexturedMesh(weapon, projection_2D);
+		drawTexturedMesh(spy, projection_2D); //draw again so player is on top of weapon
+	}
+	auto& health = registry.healths.get(spy);
+	auto& render_request = registry.renderRequests.get(spy);
+	auto& motion = registry.motions.get(spy);
+	if(health.health <= 0){
+		// Change texture to corpse
+		if(!health.isDead){
+			motion.scale.y *= 0.65;
+			health.isDead = true;
+			// implementation only consider case with 1 weapon
+			// assertion fails
+			// if(registry.weapons.has(spy)){
+				// Weapon& player_weapon = registry.weapons.get(spy);
+				// registry.renderRequests.remove(player_weapon.weapon);
+			// }
+		}
+		render_request.used_texture = TEXTURE_ASSET_ID::SPY_CORPSE;
 	}
 
 	// Truely render to the screen

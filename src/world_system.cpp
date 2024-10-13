@@ -31,6 +31,13 @@ WorldSystem::~WorldSystem()
 		Mix_FreeChunk(salmon_dead_sound);
 	if (salmon_eat_sound != nullptr)
 		Mix_FreeChunk(salmon_eat_sound);
+	if (spy_death_sound != nullptr)
+		Mix_FreeChunk(spy_death_sound);
+	if (spy_dash_sound != nullptr)
+		Mix_FreeChunk(spy_dash_sound);
+	if (spy_attack_sound != nullptr)
+		Mix_FreeChunk(spy_attack_sound);
+		
 
 	Mix_CloseAudio();
 
@@ -111,13 +118,19 @@ GLFWwindow *WorldSystem::create_window()
 	background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
 	salmon_dead_sound = Mix_LoadWAV(audio_path("death_sound.wav").c_str());
 	salmon_eat_sound = Mix_LoadWAV(audio_path("eat_sound.wav").c_str());
+	spy_death_sound = Mix_LoadWAV(audio_path("spy_death.wav").c_str());
+	spy_dash_sound = Mix_LoadWAV(audio_path("spy_dash.wav").c_str());
+	spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
 
-	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr)
+	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr)
 	{
 		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n make sure the data directory is present",
 						audio_path("music.wav").c_str(),
 						audio_path("death_sound.wav").c_str(),
 						audio_path("eat_sound.wav").c_str());
+						audio_path("spy_death.wav").c_str(),
+						audio_path("spy_dash.wav").c_str(),
+						audio_path("spy_attack.wav").c_str();
 		return nullptr;
 	}
 
@@ -275,6 +288,14 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
+	auto& health = registry.healths.get(registry.players.entities[0]);
+	if(health.isDead){
+		if (!registry.deathTimers.has(registry.players.entities[0])){
+			Mix_PlayChannel(-1, spy_death_sound, 0);
+			registry.deathTimers.emplace(registry.players.entities[0]);
+		}
+	}
+
 	return true;
 }
 
@@ -331,11 +352,16 @@ void WorldSystem::restart_game()
 		}
 	}
 
-	while (registry.enemies.components.size() < ENEMIES_COUNT)
-	{
-		// create enemy with random initial position
-		createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
-		// createEnemy(renderer, vec2(200, 200));
+	// 	// create enemy with random initial position
+	// while (registry.enemies.components.size() < ENEMIES_COUNT)
+	// {
+	// 	createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
+	// }
+	
+	for (int i = 0; i < ENEMIES_COUNT; i++){
+		createEnemy(renderer, vec2(window_width_px / 2 + 200 + 100 * i, window_height_px / 2 - 30));
+		createEnemy(renderer, vec2(window_width_px / 2 + 100 * i, window_height_px / 2 - 150));
+		createEnemy(renderer, vec2(window_width_px - 100 * (i + 1), window_height_px - 150));
 	}
 
 	player_spy = createSpy(renderer, {window_width_px / 2, window_height_px - 200});
@@ -384,10 +410,9 @@ void WorldSystem::handle_collisions()
 		// 			// Scream, reset timer, and make the salmon sink
 		// 			registry.deathTimers.emplace(entity);
 		// 			Mix_PlayChannel(-1, salmon_dead_sound, 0);
-
-		// 			// !!! TODO A1: change the salmon's orientation and color on death
 		// 		}
 		// 	}
+		// }
 		// 	// Checking Player - Eatable collisions
 		// 	else if (registry.eatables.has(entity_other))
 		// 	{
@@ -573,6 +598,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			{
 				registry.interpolations.emplace(player_spy, interpolate);
 			}
+			Mix_PlayChannel(-1, spy_dash_sound, 0);
 		}
 	}
 
@@ -619,5 +645,3 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 
 	(vec2) mouse_position; // dummy to avoid compiler warning
 }
-
-// toby

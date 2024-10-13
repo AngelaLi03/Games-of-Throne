@@ -40,6 +40,7 @@ struct Weapon
 struct Health
 {
 	float health = 100.f;
+	bool isDead = false;;
 };
 
 // All data relevant to the shape and motion of entities
@@ -200,7 +201,9 @@ enum class TEXTURE_ASSET_ID
 	ENEMY = SPY + 1,
 	WEAPON = ENEMY + 1,
 	FLOW_METER = WEAPON + 1,
-	TEXTURE_COUNT = FLOW_METER + 1
+	ENEMY_CORPSE = FLOW_METER + 1,
+	SPY_CORPSE = ENEMY_CORPSE + 1,
+	TEXTURE_COUNT = SPY_CORPSE + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
