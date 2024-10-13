@@ -14,6 +14,7 @@ public:
 	ComponentContainer<DeathTimer> deathTimers;
 	ComponentContainer<Motion> motions;
 	ComponentContainer<Interpolation> interpolations;
+	ComponentContainer<Bezier> beziers;
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<PhysicsBody> physicsBodies;
 	ComponentContainer<Player> players;
@@ -28,6 +29,8 @@ public:
 	ComponentContainer<Weapon> weapons;
 	ComponentContainer<HealthBar> healthbar;
 	ComponentContainer<HealthBarLink> healthbarlink;
+	ComponentContainer<Health> healths;
+	ComponentContainer<Flow> flows;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -48,6 +51,8 @@ public:
 		registry_list.push_back(&enemies);
 		registry_list.push_back(&healthbar);
 		registry_list.push_back(&healthbarlink);
+		registry_list.push_back(&healths);
+		registry_list.push_back(&flows);
 	}
 
 	void clear_all_components()

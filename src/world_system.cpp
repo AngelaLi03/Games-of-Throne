@@ -11,6 +11,7 @@
 // Game configuration
 int ENEMIES_COUNT = 5;
 bool is_spacebar_pressed = false;
+vec2 curr_mouse_position;
 
 // create the underwater world
 WorldSystem::WorldSystem()
@@ -197,8 +198,10 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 		interpolate.elapsed_time += elapsed_ms_since_last_update;
 
-		float interpolation_factor = (float)interpolate.elapsed_time / (float)interpolate.total_time_to_0_ms;
-		interpolation_factor = std::min(interpolation_factor, 1.0f);
+		float t = (float)interpolate.elapsed_time / (float)interpolate.total_time_to_0_ms;
+		t = std::min(t, 1.0f);
+
+		float interpolation_factor = t * t * (3.0f - 2.0f * t); // basically 3t^2 - 2t^3 -> cubic
 
 		motion.velocity.x = (1.0f - interpolation_factor) * interpolate.initial_velocity.x;
 		motion.velocity.y = (1.0f - interpolation_factor) * interpolate.initial_velocity.y;
@@ -214,34 +217,55 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
 	}
 	for (Entity health_bar_entity : registry.healthbarlink.entities)
-    {
-        HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
-        Entity owner_entity = healthbarlink.player;
+	{
+		HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
+		Entity owner_entity = healthbarlink.player;
 
-        if (registry.motions.has(owner_entity) && registry.motions.has(health_bar_entity))
-        {
-            Motion &owner_motion = registry.motions.get(owner_entity);
-            Motion &health_bar_motion = registry.motions.get(health_bar_entity);
+		if (registry.motions.has(owner_entity) && registry.motions.has(health_bar_entity))
+		{
+			Motion &owner_motion = registry.motions.get(owner_entity);
+			Motion &health_bar_motion = registry.motions.get(health_bar_entity);
 
-            if (owner_entity = player_spy)
-            {
+			if (owner_entity = player_spy)
+			{
 				health_bar_motion.position = {50.f, 50.f};
-            }
-            else
-            {
+			}
+			else
+			{
 				health_bar_motion.position = owner_motion.position + vec2(0.f, 50.f);
-            }
+			}
 			if (registry.healthbar.has(owner_entity))
-            {
-                HealthBar &owner_health = registry.healthbar.get(owner_entity);
-                float health_percentage = owner_health.current_health / owner_health.max_health;
+			{
+				HealthBar &owner_health = registry.healthbar.get(owner_entity);
+				float health_percentage = owner_health.current_health / owner_health.max_health;
 
-                // Get the original scale of health bar
-                HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-                health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
-                health_bar_motion.scale.y = health_bar.original_scale.y;
-            }
-        }
+				// Get the original scale of health bar
+				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+				health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
+				health_bar_motion.scale.y = health_bar.original_scale.y;
+			}
+		}
+	}
+
+	for (Entity entity : registry.beziers.entities)
+	{
+		Bezier &bezier = registry.beziers.get(entity);
+		Motion &motion = registry.motions.get(entity);
+
+		bezier.elapsed_time += elapsed_ms_since_last_update;
+
+		float t = (float)bezier.elapsed_time / (float)bezier.total_time_to_0_ms;
+		t = std::min(t, 1.0f);
+
+		glm::vec2 new_position = bezierInterpolation(t, motion.position, bezier.control_point, bezier.target_position);
+
+		motion.position = new_position;
+
+		if (t >= 1.0f)
+		{
+			registry.beziers.remove(entity);
+			motion.velocity = vec2(0.f, 0.f);
+		}
 	}
 
 	return true;
@@ -299,6 +323,14 @@ void WorldSystem::restart_game()
 			}
 		}
 	}
+
+	while (registry.enemies.components.size() < ENEMIES_COUNT)
+	{
+		// create enemy with random initial position
+		createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
+		// createEnemy(renderer, vec2(200, 200));
+	}
+
 	player_spy = createSpy(renderer, {window_width_px / 2, window_height_px - 200});
 
 	// Create the weapon entity
@@ -310,20 +342,10 @@ void WorldSystem::restart_game()
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
 
-	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
-	// create a new Salmon
-	// player_salmon = createSalmon(renderer, { window_width_px/2, window_height_px - 200 });
-	// registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
-
-	while (registry.enemies.components.size() < ENEMIES_COUNT)
-	{
-		// create enemy with random initial position
-		createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
-		// createEnemy(renderer, vec2(200, 200));
-	}
-
 	Entity health_bar = createHealthBar(renderer, {50.f, 50.f}, player_spy);
 	// registry.healthbarlink.emplace(health_bar, player_spy);
+
+	flowMeterEntity = createFlowMeter(renderer, {100.f, 100.f}, 100.0f);
 }
 
 // Compute collisions between entities
@@ -403,6 +425,16 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		restart_game();
 	}
 
+	if (action == GLFW_PRESS && key == GLFW_KEY_F)
+	{
+		if (registry.flows.has(flowMeterEntity))
+		{
+			Flow &flow = registry.flows.get(flowMeterEntity);
+			flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
+			std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
+		}
+	}
+
 	// Debugging
 	if (key == GLFW_KEY_D)
 	{
@@ -430,29 +462,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	{
 		glfwSetWindowShouldClose(window, true);
 	}
-
-	// if (action == GLFW_PRESS || action == GLFW_RELEASE)
-	//{
-	//	float sign = action == GLFW_PRESS ? 1.f : -1.f;
-	//	float speed = 60.f;
-	//	if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
-	//	{
-	//		motion.velocity.x += sign * speed;
-	//	}
-	//	else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
-	//	{
-	//		motion.velocity.x -= sign * speed;
-	//	}
-	//	else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
-	//	{
-	//		motion.velocity.y -= sign * speed;
-	//	}
-	//	else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
-	//	{
-	//		motion.velocity.y += sign * speed;
-	//	}
-	//
-	// }
 
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 	{
@@ -498,7 +507,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 	if (action == GLFW_PRESS)
 	{
-
 		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
 		{
 			motion.velocity.x = speed;
@@ -516,7 +524,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			motion.velocity.y = speed;
 		}
 
-		// No interpolation since player is moving
 		if (registry.interpolations.has(player_spy))
 		{
 			registry.interpolations.remove(player_spy);
@@ -524,15 +531,31 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
-	// On key release event
+	// bezier logic
+	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+	{
+		if (!registry.beziers.has(player_spy))
+		{
+			Bezier bezier;
+			bezier.elapsed_time = 0.f;
+
+			Motion &motion = registry.motions.get(player_spy);
+			bezier.initial_velocity = motion.velocity;
+			bezier.target_position = curr_mouse_position;
+
+			bezier.control_point = calculateControlPoint(motion.position, bezier.target_position,
+																									 (motion.position + bezier.target_position) / 2.0f, 0.5f);
+
+			registry.beziers.emplace(player_spy, bezier);
+		}
+	}
+
 	if (action == GLFW_RELEASE)
 	{
-		// If any movement key is released, we apply momentum and stop direct movement
-		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
-				key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D)
+		if ((key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
+				 key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D))
 		{
-			// logic to add interpolation
-			if (motion.velocity.x != 0.f || motion.velocity.y != 0.f)
+			if (is_spacebar_pressed && (motion.velocity.x != 0.f || motion.velocity.y != 0.f))
 			{
 				Interpolation interpolate;
 				interpolate.elapsed_time = 0.f;
@@ -543,7 +566,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 				}
 			}
 
-			// Stop direct movement
 			motion.velocity = vec2(0.f, 0.f);
 		}
 	}
@@ -551,11 +573,26 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
 {
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A1: HANDLE SALMON ROTATION HERE
-	// xpos and ypos are relative to the top-left of the window, the salmon's
-	// default facing direction is (1, 0)
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	curr_mouse_position = mouse_position;
+	Motion &spy_motion = registry.motions.get(player_spy);
+
+	vec2 spy_vector = +spy_motion.position - mouse_position;
+
+	float spy_angle = atan2(spy_vector.y, spy_vector.x);
+
+	spy_motion.angle = spy_angle;
+
+	if (spy_vector.x > 0)
+	{
+		spy_motion.angle = spy_angle;
+		spy_motion.scale.x = abs(spy_motion.scale.x);
+	}
+	else
+	{
+		spy_motion.angle = spy_angle;
+		spy_motion.scale.x = -abs(spy_motion.scale.x);
+	}
 
 	(vec2) mouse_position; // dummy to avoid compiler warning
 }

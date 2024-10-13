@@ -19,14 +19,26 @@ struct Eatable
 {
 };
 
+enum class EnemyState
+{
+	IDLE = 0,
+	COMBAT = 1,
+};
 struct Enemy
 {
+	EnemyState state = EnemyState::IDLE;
+	float time_since_last_attack = 0;
 };
 
 struct Weapon
 {
 	Entity weapon; // weapon
 	vec2 offset;	 // weapon offset relative to player's position
+};
+
+struct Health
+{
+	float health = 100.f;
 };
 
 // All data relevant to the shape and motion of entities
@@ -43,6 +55,21 @@ struct Interpolation
 	float elapsed_time;
 	float total_time_to_0_ms = 1500; // 1.5 second time to observe effect
 	vec2 initial_velocity;					 // velocity when button is released
+};
+
+struct Bezier
+{
+	glm::vec2 initial_velocity;
+	glm::vec2 target_position;
+	glm::vec2 control_point;
+	float elapsed_time;
+	float total_time_to_0_ms = 2000;
+};
+
+struct Flow
+{
+	float flowLevel;		// This could represent the current flow level
+	float maxFlowLevel; // Maximum flow level
 };
 
 enum class BodyType
@@ -171,7 +198,8 @@ enum class TEXTURE_ASSET_ID
 	SPY = WALL + 1,
 	ENEMY = SPY + 1,
 	WEAPON = ENEMY + 1,
-	TEXTURE_COUNT = WEAPON + 1
+	FLOW_METER = WEAPON + 1,
+	TEXTURE_COUNT = FLOW_METER + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -183,7 +211,8 @@ enum class EFFECT_ASSET_ID
 	TEXTURED = SALMON + 1,
 	WATER = TEXTURED + 1,
 	PROGRESS_BAR = WATER + 1,
-	EFFECT_COUNT = PROGRESS_BAR + 1
+	LIQUID_FILL = PROGRESS_BAR + 1,
+	EFFECT_COUNT = LIQUID_FILL + 1
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
 

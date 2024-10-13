@@ -2,7 +2,7 @@
 #include "tiny_ecs_registry.hpp"
 #include "iostream"
 
-// Create floor tile entity and add to registry. Utilizing the existing createSalmon code as template.
+// Create floor tile entity and add to registry.
 Entity createFloorTile(RenderSystem *renderer, vec2 pos, float tile_scale)
 {
 	auto entity = Entity();
@@ -77,6 +77,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
+	registry.healths.insert(entity, {100.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {60.f, 60.f}, {0.f, 40.f}});
 	registry.renderRequests.insert(
 			entity,
@@ -144,29 +145,28 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity)
 	return entity;
 }
 
-Entity createSalmon(RenderSystem *renderer, vec2 pos)
+Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale)
 {
 	auto entity = Entity();
 
-	// Store a reference to the potentially re-used mesh object
-	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SALMON);
+	// Store a reference to the mesh object (assumed you've already defined it)
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	// Setting initial motion values
-	Motion &motion = registry.motions.emplace(entity);
+	// Initialize the position, scale, and motion components
+	auto &motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = 0.f;
-	motion.velocity = {0.f, 0.f};
-	motion.scale = mesh.original_size * 300.f;
-	motion.scale.y *= -1; // point front to the right
+	motion.scale = {scale, scale};
 
-	// create an empty Salmon component for our character
-	registry.players.emplace(entity);
+	// Initialize the flow component
+	Flow &flow = registry.flows.emplace(entity);
+	flow.flowLevel = 0.f;			 // Start with no flow
+	flow.maxFlowLevel = 100.f; // Max flow level can be adjusted as needed
+
+	// Create a render request for the flow meter texture
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no texture is needed
-			 EFFECT_ASSET_ID::SALMON,
-			 GEOMETRY_BUFFER_ID::SALMON});
+			{TEXTURE_ASSET_ID::FLOW_METER, EFFECT_ASSET_ID::LIQUID_FILL, GEOMETRY_BUFFER_ID::SPRITE});
 
 	return entity;
 }
@@ -190,6 +190,8 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {60.f, 60.f}, {0.f, 40.f}});
+	registry.healths.insert(entity, {100.f});
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::ENEMY,
