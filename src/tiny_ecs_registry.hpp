@@ -53,6 +53,9 @@ public:
 		registry_list.push_back(&healthbarlink);
 		registry_list.push_back(&healths);
 		registry_list.push_back(&flows);
+		registry_list.push_back(&weapons);
+		registry_list.push_back(&interpolations);
+		registry_list.push_back(&beziers);
 	}
 
 	void clear_all_components()
