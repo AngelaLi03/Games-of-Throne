@@ -2,6 +2,26 @@
 #include "ai_system.hpp"
 
 #include <iostream>
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+#include <SDL_mixer.h>
+
+
+AISystem::AISystem()
+{
+	// Loading music and sounds with SDL
+	// if (SDL_Init(SDL_INIT_AUDIO) < 0)
+	// {
+	// 	fprintf(stderr, "Failed to initialize SDL Audio");
+	// 	return nullptr;
+	// }
+	// if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) == -1)
+	// {
+	// 	fprintf(stderr, "Failed to open audio device");
+	// 	return nullptr;
+	// }
+	spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
+}
 
 float distance_squared(vec2 a, vec2 b)
 {

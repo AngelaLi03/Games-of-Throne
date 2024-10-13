@@ -37,6 +37,9 @@ WorldSystem::~WorldSystem()
 		Mix_FreeChunk(spy_dash_sound);
 	if (spy_attack_sound != nullptr)
 		Mix_FreeChunk(spy_attack_sound);
+	if(break_sound != nullptr)
+		Mix_FreeChunk(break_sound);
+		
 
 	Mix_CloseAudio();
 
@@ -121,16 +124,18 @@ GLFWwindow *WorldSystem::create_window()
 	spy_death_sound = Mix_LoadWAV(audio_path("spy_death.wav").c_str());
 	spy_dash_sound = Mix_LoadWAV(audio_path("spy_dash.wav").c_str());
 	spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
+	break_sound = Mix_LoadWAV(audio_path("break.wav").c_str());
 
-	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr)
+	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
 	{
 		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n make sure the data directory is present",
 						audio_path("music.wav").c_str(),
 						audio_path("death_sound.wav").c_str(),
-						audio_path("eat_sound.wav").c_str());
-		audio_path("spy_death.wav").c_str(),
-				audio_path("spy_dash.wav").c_str(),
-				audio_path("spy_attack.wav").c_str();
+						audio_path("eat_sound.wav").c_str(),
+						audio_path("spy_death.wav").c_str(),
+						audio_path("spy_dash.wav").c_str(),
+						audio_path("spy_attack.wav").c_str(),
+						audio_path("break.wav").c_str());
 		return nullptr;
 	}
 
@@ -504,11 +509,14 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	{
 		if (registry.healthbar.has(player_spy))
 		{
-			HealthBar &health = registry.healthbar.get(player_spy);
-			health.current_health -= 10.f;
-			if (health.current_health < 0.f)
+			HealthBar &health_bar = registry.healthbar.get(player_spy);
+			auto& spy_health = registry.healths.get(player_spy);
+			//hardcoded damage, TODO
+			health_bar.current_health -= 10.f;
+			spy_health.health -= 10.f;
+			if (health_bar.current_health < 0.f)
 			{
-				health.current_health = 0.f;
+				health_bar.current_health = 0.f;
 			}
 		}
 	}
@@ -618,6 +626,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 																									 (motion.position + bezier.target_position) / 2.0f, 0.5f);
 
 			registry.beziers.emplace(player_spy, bezier);
+			Mix_PlayChannel(-1, break_sound, 0);
 		}
 	}
 }

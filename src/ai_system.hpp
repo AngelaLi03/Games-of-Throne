@@ -11,7 +11,9 @@
 
 class AISystem
 {
+
 public:
+	AISystem();
 	void step(float elapsed_ms);
 private:
 	Mix_Chunk* spy_attack_sound;

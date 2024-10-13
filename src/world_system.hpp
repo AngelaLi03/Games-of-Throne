@@ -66,6 +66,7 @@ private:
 	Mix_Chunk* spy_death_sound;
 	Mix_Chunk* spy_dash_sound;
 	Mix_Chunk* spy_attack_sound;
+	Mix_Chunk* break_sound;
 
 	// C++ random number generator
 	std::default_random_engine rng;
