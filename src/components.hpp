@@ -7,6 +7,7 @@
 // Player component
 struct Player
 {
+	bool is_dodging = false;
 };
 
 // anything that is deadly to the player

@@ -10,7 +10,7 @@
 
 // Game configuration
 int ENEMIES_COUNT = 5;
-bool is_spacebar_pressed = false;
+vec2 player_movement_direction = {0.f, 0.f};
 vec2 curr_mouse_position;
 
 // create the underwater world
@@ -212,6 +212,13 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			registry.interpolations.remove(entity);
 			// std::cout << "removed entity from newton/momentum entities" << std::endl;
 			motion.velocity = vec2(0.f, 0.f);
+			if (registry.players.has(entity))
+			{
+				Player &player = registry.players.get(entity);
+				player.is_dodging = false;
+				std::cout << "Player is not dodging anymore" << std::endl;
+				motion.velocity = player_movement_direction * 60.f;
+			}
 		}
 
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
@@ -463,14 +470,9 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-	{
-		is_spacebar_pressed = true;
-	}
-	else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
-	{
-		is_spacebar_pressed = false;
-	}
+
+	float speed = 60.f;
+
 
 	if (key == GLFW_KEY_H && action == GLFW_PRESS)
 	{
@@ -501,33 +503,76 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
-	float normal_speed = 60.f;
-	float burst_speed = 200.f;
-	float speed = is_spacebar_pressed ? burst_speed : normal_speed;
 
 	if (action == GLFW_PRESS)
 	{
 		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
 		{
-			motion.velocity.x = speed;
+			// motion.velocity.x += speed;
+			player_movement_direction.x += 1.f;
 		}
 		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
 		{
-			motion.velocity.x = -speed;
+			// motion.velocity.x -= speed;
+			player_movement_direction.x -= 1.f;
 		}
 		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
 		{
-			motion.velocity.y = -speed;
+			// motion.velocity.y -= speed;
+			player_movement_direction.y -= 1.f;
 		}
 		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
 		{
-			motion.velocity.y = speed;
+			// motion.velocity.y += speed;
+			player_movement_direction.y += 1.f;
 		}
-
-		if (registry.interpolations.has(player_spy))
+		// if (registry.interpolations.has(player_spy))
+		// {
+		// 	registry.interpolations.remove(player_spy);
+		// 	std::cout << "Momentum removed due to active movement" << std::endl;
+		// }
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
 		{
-			registry.interpolations.remove(player_spy);
-			std::cout << "Momentum removed due to active movement" << std::endl;
+			// motion.velocity.x -= speed;
+			player_movement_direction.x -= 1.f;
+		}
+		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
+		{
+			// motion.velocity.x += speed;
+			player_movement_direction.x += 1.f;
+		}
+		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
+		{
+			// motion.velocity.y += speed;
+			player_movement_direction.y += 1.f;
+		}
+		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
+		{
+			// motion.velocity.y -= speed;
+			player_movement_direction.y -= 1.f;
+		}
+	}
+
+	Player &player = registry.players.get(player_spy);
+	if (!player.is_dodging)
+	{
+		motion.velocity = player_movement_direction * speed;
+		// std::cout << "Player moving in " << player_movement_direction.x << "," << player_movement_direction.y << std::endl;
+		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS && motion.velocity != vec2(0.f, 0.f))
+		{
+			player.is_dodging = true;
+			std::cout << "Dodging" << std::endl;
+
+			Interpolation interpolate;
+			interpolate.elapsed_time = 0.f;
+			interpolate.initial_velocity = motion.velocity * 5.f;
+			if (!registry.interpolations.has(player_spy))
+			{
+				registry.interpolations.emplace(player_spy, interpolate);
+			}
 		}
 	}
 
@@ -547,26 +592,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 																									 (motion.position + bezier.target_position) / 2.0f, 0.5f);
 
 			registry.beziers.emplace(player_spy, bezier);
-		}
-	}
-
-	if (action == GLFW_RELEASE)
-	{
-		if ((key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT || key == GLFW_KEY_UP || key == GLFW_KEY_DOWN ||
-				 key == GLFW_KEY_W || key == GLFW_KEY_A || key == GLFW_KEY_S || key == GLFW_KEY_D))
-		{
-			if (is_spacebar_pressed && (motion.velocity.x != 0.f || motion.velocity.y != 0.f))
-			{
-				Interpolation interpolate;
-				interpolate.elapsed_time = 0.f;
-				interpolate.initial_velocity = motion.velocity;
-				if (!registry.interpolations.has(player_spy))
-				{
-					registry.interpolations.emplace(player_spy, interpolate);
-				}
-			}
-
-			motion.velocity = vec2(0.f, 0.f);
 		}
 	}
 }
