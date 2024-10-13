@@ -217,23 +217,23 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
 	}
 	for (Entity health_bar_entity : registry.healthbarlink.entities)
-    {
-        HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
-        Entity owner_entity = healthbarlink.owner;
+	{
+		HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
+		Entity owner_entity = healthbarlink.owner;
 
 		if (registry.motions.has(owner_entity) && registry.motions.has(health_bar_entity))
 		{
 			Motion &owner_motion = registry.motions.get(owner_entity);
 			Motion &health_bar_motion = registry.motions.get(health_bar_entity);
 
-            if (owner_entity == player_spy)
-            {
+			if (owner_entity == player_spy)
+			{
 				health_bar_motion.position = {50.f, 50.f};
-            }
-            else
-            {
+			}
+			else
+			{
 				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
-            } 
+			}
 			if (registry.healthbar.has(owner_entity))
 			{
 				HealthBar &owner_health = registry.healthbar.get(owner_entity);
@@ -579,18 +579,16 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 
 	vec2 spy_vector = +spy_motion.position - mouse_position;
 
-	float spy_angle = atan2(spy_vector.y, spy_vector.x);
+	// float spy_angle = atan2(spy_vector.y, spy_vector.x);
 
-	spy_motion.angle = spy_angle;
+	// spy_motion.angle = spy_angle;
 
 	if (spy_vector.x > 0)
 	{
-		spy_motion.angle = spy_angle;
 		spy_motion.scale.x = abs(spy_motion.scale.x);
 	}
 	else
 	{
-		spy_motion.angle = spy_angle;
 		spy_motion.scale.x = -abs(spy_motion.scale.x);
 	}
 
