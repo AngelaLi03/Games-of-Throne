@@ -115,7 +115,7 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
-Entity createHealthBar(RenderSystem *renderer, vec2 pos)
+Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity)
 {
 	auto entity = Entity();
 
@@ -127,7 +127,7 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos)
 	motion.position = pos;
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
-	motion.scale = {1.f, 1.f};
+	motion.scale = {200.f, 20.f};
 
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.renderRequests.insert(
@@ -137,6 +137,9 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos)
 			 GEOMETRY_BUFFER_ID::PROGRESS_BAR});
 	// Set to green
 	registry.colors.emplace(entity, vec3(0.f, 1.f, 0.f));
+
+	// Link the owner and health bar, for player and enemy.
+	registry.healthbarlink.emplace(entity, owner_entity);
 
 	return entity;
 }
@@ -193,6 +196,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
+	Entity enemy_health_bar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
 	return entity;
 }
 

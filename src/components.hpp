@@ -72,9 +72,9 @@ struct HealthBar
 	vec2 original_scale;
 	HealthBar(float max_health, vec2 scale)
 	{
-		max_health = max_health;
-		current_health = max_health;
-		original_scale = scale;
+		this->max_health = max_health;
+		this->current_health = max_health;
+		this->original_scale = scale;
 	}
 };
 

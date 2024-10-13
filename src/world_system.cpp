@@ -213,22 +213,36 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
 	}
-	// for (Entity entity : registry.healthbarlink.entities){
-	// 	HealthBarLink &healthbarlink = registry.healthbarlink.get(entity);
-	// 	Entity player_entity = healthbarlink.player;
-	// 	if (registry.healthbar.has(player_entity)){
-	// 		HealthBar& player_health = registry.healthbar.get(player_entity);
-	// 		float health_percentage = player_health.current_health / player_health.max_health;
-	// 		// Always update the new health_percentage
-	// 		if (registry.motions.has(entity)){
-	// 			Motion& health_bar_motion = registry.motions.get(entity);
-	// 			// Get the original scale of health bar
-	// 			HealthBar& health_bar = registry.healthbar.get(entity);
-	// 			health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
-	// 			health_bar_motion.scale.y = health_bar.original_scale.y;
-	// 		}
-	// 	}
-	// }
+	for (Entity health_bar_entity : registry.healthbarlink.entities)
+    {
+        HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
+        Entity owner_entity = healthbarlink.player;
+
+        if (registry.motions.has(owner_entity) && registry.motions.has(health_bar_entity))
+        {
+            Motion &owner_motion = registry.motions.get(owner_entity);
+            Motion &health_bar_motion = registry.motions.get(health_bar_entity);
+
+            if (owner_entity = player_spy)
+            {
+				health_bar_motion.position = {50.f, 50.f};
+            }
+            else
+            {
+				health_bar_motion.position = owner_motion.position + vec2(0.f, 50.f);
+            }
+			if (registry.healthbar.has(owner_entity))
+            {
+                HealthBar &owner_health = registry.healthbar.get(owner_entity);
+                float health_percentage = owner_health.current_health / owner_health.max_health;
+
+                // Get the original scale of health bar
+                HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+                health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
+                health_bar_motion.scale.y = health_bar.original_scale.y;
+            }
+        }
+	}
 
 	return true;
 }
@@ -308,7 +322,7 @@ void WorldSystem::restart_game()
 		// createEnemy(renderer, vec2(200, 200));
 	}
 
-	Entity health_bar = createHealthBar(renderer, {50.f, 50.f});
+	Entity health_bar = createHealthBar(renderer, {50.f, 50.f}, player_spy);
 	// registry.healthbarlink.emplace(health_bar, player_spy);
 }
 
@@ -458,6 +472,22 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			if (health.current_health < 0.f)
 			{
 				health.current_health = 0.f;
+			}
+		}
+	}
+
+	if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	{
+		for (Entity enemy_entity : registry.enemies.entities)
+		{
+			if (registry.healthbar.has(enemy_entity))
+			{
+				HealthBar &health = registry.healthbar.get(player_spy);
+				health.current_health -= 10.f;
+				if (health.current_health < 0.f)
+				{
+					health.current_health = 0.f;
+				}
 			}
 		}
 	}

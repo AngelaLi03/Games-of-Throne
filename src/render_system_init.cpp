@@ -193,10 +193,10 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// Initialize progress bar
 	std::vector<ColoredVertex> progress_vertices;
 	std::vector<uint16_t> progress_indices;
-	progress_vertices.push_back({{-0.5, -0.5, 0.f}, {0.8, 0.1, 0.1}});
-	progress_vertices.push_back({{-0.5, 0.5, 0.f}, {0.8, 0.1, 0.1}});
-	progress_vertices.push_back({{0.5, 0.5, 0.f}, {0.8, 0.1, 0.1}});
-	progress_vertices.push_back({{0.5, -0.5, 0.f}, {0.8, 0.1, 0.1}});
+	progress_vertices.push_back({{0.f, -0.5f, 0.f}, {0.f, 1.f, 0.f}});
+	progress_vertices.push_back({{0.f, 0.5f, 0.f}, {0.f, 1.f, 0.f}});
+	progress_vertices.push_back({{1.f, 0.5f, 0.f}, {0.f, 1.f, 0.f}});
+	progress_vertices.push_back({{1.f, -0.5f, 0.f}, {0.f, 1.f, 0.f}});
 
 	// Use two triangles to make a rectangle
 	progress_indices = {0, 1, 2, 0, 2, 3};

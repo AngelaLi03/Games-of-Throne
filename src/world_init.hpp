@@ -38,4 +38,4 @@ Entity createEnemy(RenderSystem* renderer, vec2 pos);
 
 Entity createWeapon(RenderSystem* renderer, vec2 pos);
 
-Entity createHealthBar(RenderSystem* renderer, vec2 pos);
+Entity createHealthBar(RenderSystem* renderer, vec2 pos, Entity owner_entity);
