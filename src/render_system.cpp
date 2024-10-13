@@ -4,8 +4,7 @@
 
 #include "tiny_ecs_registry.hpp"
 
-#include "iostream"
-
+#include <iostream>
 
 void RenderSystem::drawTexturedMesh(Entity entity,
 																		const mat3 &projection)
@@ -16,9 +15,8 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	// thus ORDER IS IMPORTANT
 	Transform transform;
 	transform.translate(motion.position);
+	transform.rotate(motion.angle);
 	transform.scale(motion.scale);
-	// !!! TODO A1: add rotation to the chain of transformations, mind the order
-	// of transformations
 
 	assert(registry.renderRequests.has(entity));
 	const RenderRequest &render_request = registry.renderRequests.get(entity);
@@ -70,7 +68,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 		gl_has_errors();
 	}
-	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::EGG)
+	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::COLOURED)
 	{
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");
 		GLint in_color_loc = glGetAttribLocation(program, "in_color");
@@ -85,29 +83,29 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 		glVertexAttribPointer(in_color_loc, 3, GL_FLOAT, GL_FALSE,
 													sizeof(ColoredVertex), (void *)sizeof(vec3));
 		gl_has_errors();
-
-		if (render_request.used_effect == EFFECT_ASSET_ID::SALMON)
-		{
-			// Light up?
-			GLint light_up_uloc = glGetUniformLocation(program, "light_up");
-			assert(light_up_uloc >= 0);
-
-			// !!! TODO A1: set the light_up shader variable using glUniform1i,
-			// similar to the glUniform1f call below. The 1f or 1i specified the type, here a single int.
-			gl_has_errors();
-		}
 	}
-	else if (render_request.used_effect == EFFECT_ASSET_ID::LIQUID_FILL) {
+	else if (render_request.used_effect == EFFECT_ASSET_ID::PROGRESS_BAR)
+	{
+		GLint in_position_loc = glGetAttribLocation(program, "in_position");
+		gl_has_errors();
+
+		glEnableVertexAttribArray(in_position_loc);
+		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+													sizeof(ColoredVertex), (void *)0);
+		gl_has_errors();
+	}
+	else if (render_request.used_effect == EFFECT_ASSET_ID::LIQUID_FILL)
+	{
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");
 		GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
 		gl_has_errors();
 
 		glEnableVertexAttribArray(in_position_loc);
-		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)0);
+		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void *)0);
 		gl_has_errors();
 
 		glEnableVertexAttribArray(in_texcoord_loc);
-		glVertexAttribPointer(in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)sizeof(vec3));
+		glVertexAttribPointer(in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void *)sizeof(vec3));
 		gl_has_errors();
 
 		// Enable and bind texture
@@ -117,22 +115,21 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 		gl_has_errors();
 
 		// Set flowValue uniform
-		Flow& flow = registry.flows.get(entity);  // Assuming flow component
+		Flow &flow = registry.flows.get(entity); // Assuming flow component
 		GLint flowValue_uloc = glGetUniformLocation(program, "flowValue");
 		glUniform1f(flowValue_uloc, flow.flowLevel / flow.maxFlowLevel);
 		gl_has_errors();
 
 		// Set color uniform
 		GLint color_uloc = glGetUniformLocation(program, "liquidColor");
-		vec3 color = vec3(0.0, 0.7, 1.0);  // Customize the liquid color
-		glUniform3fv(color_uloc, 1, (float*)&color);
+		vec3 color = vec3(0.0, 0.7, 1.0); // Customize the liquid color
+		glUniform3fv(color_uloc, 1, (float *)&color);
 		gl_has_errors();
 
 		GLint outlineColor_uloc = glGetUniformLocation(program, "outlineColor");
-		vec4 outlineColor = vec4(0.0, 0.0, 0.0, 1.0);  // Black outline
-		glUniform4fv(outlineColor_uloc, 1, (float*)&outlineColor);  // Pass outline color
+		vec4 outlineColor = vec4(0.0, 0.0, 0.0, 1.0);								// Black outline
+		glUniform4fv(outlineColor_uloc, 1, (float *)&outlineColor); // Pass outline color
 		gl_has_errors();
-
 	}
 	else
 	{
@@ -257,6 +254,14 @@ void RenderSystem::draw()
 		// albeit iterating through all Sprites in sequence. A good point to optimize
 		drawTexturedMesh(entity, projection_2D);
 	}
+
+	// Draw health bar
+	// for (Entity entity : registry.healthbar.entities)
+	// {
+	// 	if (!registry.motions.has(entity))
+	// 		continue;
+	// 	drawTexturedMesh(entity, projection_2D);
+	// }
 
 	Entity &spy = registry.players.entities[0];
 	Motion &player_motion = registry.motions.get(spy);
