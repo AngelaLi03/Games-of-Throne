@@ -37,7 +37,6 @@ WorldSystem::~WorldSystem()
 		Mix_FreeChunk(spy_dash_sound);
 	if (spy_attack_sound != nullptr)
 		Mix_FreeChunk(spy_attack_sound);
-		
 
 	Mix_CloseAudio();
 
@@ -115,7 +114,8 @@ GLFWwindow *WorldSystem::create_window()
 		return nullptr;
 	}
 
-	background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
+	// background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
+	background_music = Mix_LoadMUS(audio_path("soundtrack_1.wav").c_str());
 	salmon_dead_sound = Mix_LoadWAV(audio_path("death_sound.wav").c_str());
 	salmon_eat_sound = Mix_LoadWAV(audio_path("eat_sound.wav").c_str());
 	spy_death_sound = Mix_LoadWAV(audio_path("spy_death.wav").c_str());
@@ -128,9 +128,9 @@ GLFWwindow *WorldSystem::create_window()
 						audio_path("music.wav").c_str(),
 						audio_path("death_sound.wav").c_str(),
 						audio_path("eat_sound.wav").c_str());
-						audio_path("spy_death.wav").c_str(),
-						audio_path("spy_dash.wav").c_str(),
-						audio_path("spy_attack.wav").c_str();
+		audio_path("spy_death.wav").c_str(),
+				audio_path("spy_dash.wav").c_str(),
+				audio_path("spy_attack.wav").c_str();
 		return nullptr;
 	}
 
@@ -288,9 +288,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	auto& health = registry.healths.get(registry.players.entities[0]);
-	if(health.isDead){
-		if (!registry.deathTimers.has(registry.players.entities[0])){
+	auto &health = registry.healths.get(registry.players.entities[0]);
+	if (health.isDead)
+	{
+		if (!registry.deathTimers.has(registry.players.entities[0]))
+		{
 			Mix_PlayChannel(-1, spy_death_sound, 0);
 			registry.deathTimers.emplace(registry.players.entities[0]);
 		}
@@ -357,8 +359,9 @@ void WorldSystem::restart_game()
 	// {
 	// 	createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
 	// }
-	
-	for (int i = 0; i < ENEMIES_COUNT; i++){
+
+	for (int i = 0; i < ENEMIES_COUNT; i++)
+	{
 		createEnemy(renderer, vec2(window_width_px / 2 + 200 + 100 * i, window_height_px / 2 - 30));
 		createEnemy(renderer, vec2(window_width_px / 2 + 100 * i, window_height_px / 2 - 150));
 		createEnemy(renderer, vec2(window_width_px - 100 * (i + 1), window_height_px - 150));
@@ -495,9 +498,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		glfwSetWindowShouldClose(window, true);
 	}
 
-
 	float speed = 60.f;
-
 
 	if (key == GLFW_KEY_H && action == GLFW_PRESS)
 	{
@@ -527,7 +528,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			}
 		}
 	}
-
 
 	if (action == GLFW_PRESS)
 	{
