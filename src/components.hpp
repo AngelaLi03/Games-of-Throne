@@ -29,6 +29,11 @@ struct Weapon
 	vec2 offset;	 // weapon offset relative to player's position
 };
 
+struct Health
+{
+	float health = 100.f;
+};
+
 // All data relevant to the shape and motion of entities
 struct Motion
 {

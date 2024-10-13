@@ -76,6 +76,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);
+	registry.healths.insert(entity, {100.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {60.f, 60.f}, {0.f, 40.f}});
 	registry.renderRequests.insert(
 			entity,
@@ -160,6 +161,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
+	registry.healths.insert(entity, {100.f});
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::ENEMY,
