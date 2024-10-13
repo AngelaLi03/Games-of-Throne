@@ -7,6 +7,7 @@
 // Player component
 struct Player
 {
+	bool is_dodging = false;
 };
 
 // anything that is deadly to the player
@@ -66,8 +67,9 @@ struct Bezier
 	float total_time_to_0_ms = 2000;
 };
 
-struct Flow {
-	float flowLevel; // This could represent the current flow level
+struct Flow
+{
+	float flowLevel;		// This could represent the current flow level
 	float maxFlowLevel; // Maximum flow level
 };
 
