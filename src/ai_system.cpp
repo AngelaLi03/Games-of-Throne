@@ -6,7 +6,6 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 
-
 AISystem::AISystem()
 {
 	// Loading music and sounds with SDL
@@ -57,6 +56,7 @@ void AISystem::step(float elapsed_ms)
 			if (distance_to_player > detection_radius_squared * 2)
 			{
 				enemy.state = EnemyState::IDLE;
+				motion.velocity = {0.f, 0.f};
 				std::cout << "Enemy " << i << " enters idle" << std::endl;
 			}
 			else if (distance_to_player > attack_radius_squared)

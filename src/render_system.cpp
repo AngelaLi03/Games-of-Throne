@@ -245,24 +245,38 @@ void RenderSystem::draw()
 														// sprites back to front
 	gl_has_errors();
 	mat3 projection_2D = createProjectionMatrix();
+
+	Entity &spy = registry.players.entities[0];
+	Motion &player_motion = registry.motions.get(spy);
+	if (registry.weapons.has(spy))
+	{
+		Weapon &player_weapon = registry.weapons.get(spy);
+		Entity weapon = player_weapon.weapon;
+		Motion &weapon_motion = registry.motions.get(weapon);
+		weapon_motion.position = player_motion.position + player_weapon.offset;
+	}
+
 	// Draw all textured meshes that have a position and size component
 	for (Entity entity : registry.renderRequests.entities)
 	{
 		if (!registry.motions.has(entity))
 			continue;
+
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize
 		drawTexturedMesh(entity, projection_2D);
 	}
 
-	for (Entity enemy : registry.enemies.entities) 
+	for (Entity enemy : registry.enemies.entities)
 	{
-		auto& health = registry.healths.get(enemy);
-		auto& render_request = registry.renderRequests.get(enemy);
-		auto& motion = registry.motions.get(enemy);
+		auto &health = registry.healths.get(enemy);
+		auto &render_request = registry.renderRequests.get(enemy);
+		auto &motion = registry.motions.get(enemy);
 
-		if (health.health <= 0) {
-			if(!health.isDead){
+		if (health.health <= 0)
+		{
+			if (!health.isDead)
+			{
 				motion.scale.y *= 0.7;
 				motion.scale.x *= -1;
 				motion.scale *= 0.85;
@@ -273,29 +287,21 @@ void RenderSystem::draw()
 		}
 	}
 
-	Entity& spy = registry.players.entities[0];
-	Motion& player_motion = registry.motions.get(spy);
-	if(registry.weapons.has(spy)){
-		Weapon& player_weapon = registry.weapons.get(spy);
-		Entity weapon = player_weapon.weapon;
-		Motion& weapon_motion = registry.motions.get(weapon);
-        weapon_motion.position = player_motion.position + player_weapon.offset;
-        drawTexturedMesh(weapon, projection_2D);
-		drawTexturedMesh(spy, projection_2D); //draw again so player is on top of weapon
-	}
-	auto& health = registry.healths.get(spy);
-	auto& render_request = registry.renderRequests.get(spy);
-	auto& motion = registry.motions.get(spy);
-	if(health.health <= 0){
+	auto &health = registry.healths.get(spy);
+	auto &render_request = registry.renderRequests.get(spy);
+	auto &motion = registry.motions.get(spy);
+	if (health.health <= 0)
+	{
 		// Change texture to corpse
-		if(!health.isDead){
+		if (!health.isDead)
+		{
 			motion.scale.y *= 0.65;
 			health.isDead = true;
 			// implementation only consider case with 1 weapon
 			// assertion fails
 			// if(registry.weapons.has(spy)){
-				// Weapon& player_weapon = registry.weapons.get(spy);
-				// registry.renderRequests.remove(player_weapon.weapon);
+			// Weapon& player_weapon = registry.weapons.get(spy);
+			// registry.renderRequests.remove(player_weapon.weapon);
 			// }
 		}
 		render_request.used_texture = TEXTURE_ASSET_ID::SPY_CORPSE;

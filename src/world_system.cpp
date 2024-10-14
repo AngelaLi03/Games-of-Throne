@@ -375,10 +375,8 @@ void WorldSystem::restart_game()
 		createEnemy(renderer, vec2(window_width_px - 100 * (i + 1), window_height_px - 150));
 	}
 
-	player_spy = createSpy(renderer, {window_width_px / 2, window_height_px - 200});
-
-	// Create the weapon entity
 	Entity weapon = createWeapon(renderer, {window_width_px / 2, window_height_px - 200});
+	player_spy = createSpy(renderer, {window_width_px / 2, window_height_px - 200});
 
 	vec2 weapon_offset = vec2(45.f, -28.f); // Adjust this based on your design
 
@@ -389,7 +387,7 @@ void WorldSystem::restart_game()
 	createHealthBar(renderer, {50.f, 50.f}, player_spy);
 	// registry.healthbarlink.emplace(health_bar, player_spy);
 
-	flowMeterEntity = createFlowMeter(renderer, {100.f, 100.f}, 100.0f);
+	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 }
 
 // Compute collisions between entities

@@ -106,7 +106,6 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	motion.scale.y *= 1.7;
 
 	// create an empty Spy component for our character
-	registry.weapons.emplace(entity);
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::WEAPON, // TEXTURE_COUNT indicates that no texture is needed
