@@ -127,8 +127,8 @@ GLFWwindow *WorldSystem::create_window()
 
 	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
 	{
-		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n make sure the data directory is present",
-						audio_path("music.wav").c_str(),
+		fprintf(stderr, "Failed to load sounds: %s\n %s\n %s\n %s\n %s\n %s\n %s\n make sure the data directory is present",
+						audio_path("soundtrack_1.wav").c_str(),
 						audio_path("death_sound.wav").c_str(),
 						audio_path("eat_sound.wav").c_str(),
 						audio_path("spy_death.wav").c_str(),
@@ -399,8 +399,8 @@ void WorldSystem::handle_collisions()
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++)
 	{
 		// The entity and its collider
-		Entity entity = collisionsRegistry.entities[i];
-		Entity entity_other = collisionsRegistry.components[i].other;
+		// Entity entity = collisionsRegistry.entities[i];
+		// Entity entity_other = collisionsRegistry.components[i].other;
 
 		// std::cout << entity << " collided with " << entity_other << std::endl;
 		// registry.list_all_components_of(entity);
