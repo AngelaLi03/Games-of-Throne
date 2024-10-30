@@ -47,6 +47,12 @@ void AISystem::step(float elapsed_ms)
 			if (distance_to_player < detection_radius_squared)
 			{
 				enemy.state = EnemyState::COMBAT;
+				// if enemy is a chef
+				if (registry.chef.has(entity))
+				{
+					std::cout << "Chef enters combat" << std::endl;
+				}
+				else
 				std::cout << "Enemy " << i << " enters combat" << std::endl;
 			}
 		}
