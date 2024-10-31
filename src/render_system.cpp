@@ -322,8 +322,8 @@ mat3 RenderSystem::createProjectionMatrix()
 	float top = 0.f;
 
 	gl_has_errors();
-	float right = (float)window_width_px;
-	float bottom = (float)window_height_px;
+	float right = (float)window_width_px/0.25f;
+	float bottom = (float)window_height_px/0.25f;
 
 	float sx = 2.f / (right - left);
 	float sy = 2.f / (top - bottom);

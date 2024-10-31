@@ -58,6 +58,25 @@ Entity createWall(RenderSystem *renderer, vec2 pos, float wall_scale)
 	return entity;
 }
 
+//void createRoom(RenderSystem* renderer, WallMap& wallMap, int x_start, int y_start, int width, int height, float tile_scale) {
+//	for (int i = x_start; i < x_start + width; ++i) {
+//		for (int j = y_start; j < y_start + height; ++j) {
+//			// Calculate tile position in the game world
+//			vec2 pos = { i * tile_scale, j * tile_scale };
+//
+//			// Place walls around the edges of the room
+//			if (i == x_start || i == x_start + width - 1 || j == y_start || j == y_start + height - 1) {
+//				createWall(renderer, pos, tile_scale);
+//				wallMap.addWall(i, j);
+//			}
+//			else {
+//				// Place floor tiles inside the room
+//				createFloorTile(renderer, pos, tile_scale);
+//			}
+//		}
+//	}
+//}
+
 Entity createSpy(RenderSystem *renderer, vec2 pos)
 {
 	auto entity = Entity();
