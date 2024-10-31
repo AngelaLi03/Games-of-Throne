@@ -38,3 +38,5 @@ Entity createWeapon(RenderSystem* renderer, vec2 pos);
 Entity createHealthBar(RenderSystem* renderer, vec2 pos, Entity owner_entity);
 
 Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale);
+
+//void createRoom(RenderSystem* renderer, WallMap& wallMap, int x_start, int y_start, int width, int height, float tile_scale);
