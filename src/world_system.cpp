@@ -2,8 +2,6 @@
 #include "world_system.hpp"
 #include "world_init.hpp"
 #include "iostream"
-#include "wall_map.cpp"
-
 // stlib
 #include <cassert>
 #include <sstream>
@@ -311,45 +309,37 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	return true;
 }
 
-void createRoom(RenderSystem* renderer, WallMap& wallMap, int x_start, int y_start, int width, int height, float tile_scale) {
+void createRoom(std::vector<std::vector<int>>& levelMap, int x_start, int y_start, int width, int height) {
 	for (int i = x_start; i < x_start + width; ++i) {
 		for (int j = y_start; j < y_start + height; ++j) {
-			// Calculate tile position in the game world
-			vec2 pos = { i * tile_scale, j * tile_scale };
-
 			// Place walls around the edges of the room
 			if (i == x_start || i == x_start + width - 1 || j == y_start || j == y_start + height - 1) {
-				createWall(renderer, pos, tile_scale);
-				wallMap.addWall(i, j);
+				levelMap[i][j] = 1; // 1 for wall
 			}
 			else {
-				// Place floor tiles inside the room
-				createFloorTile(renderer, pos, tile_scale);
+				levelMap[i][j] = 2; // 2 for floor
 			}
 		}
 	}
 }
-void createCorridor(RenderSystem* renderer, WallMap& wallMap, int x_start, int y_start, int length, int width, float tile_scale,
+
+void createCorridor(std::vector<std::vector<int>>& levelMap, int x_start, int y_start, int length, int width,
 	bool add_wall_left = true, bool add_wall_right = true, bool add_wall_top = true, bool add_wall_bottom = true) {
 	for (int i = x_start; i < x_start + length; ++i) {
 		for (int j = y_start; j < y_start + width; ++j) {
-			vec2 pos = { i * tile_scale, j * tile_scale };
+			bool is_edge = (i == x_start || i == x_start + length - 1 || j == y_start || j == y_start + width - 1);
 
-			// Floor tiles in the corridor
-			if ((i > x_start && i < x_start + length - 1) && (j > y_start && j < y_start + width - 1)) {
-				createFloorTile(renderer, pos, tile_scale);
-			}
-			else {
-				// Walls based on the specified sides
+			if (is_edge) {
 				if ((i == x_start && add_wall_left) || (i == x_start + length - 1 && add_wall_right) ||
 					(j == y_start && add_wall_top) || (j == y_start + width - 1 && add_wall_bottom)) {
-					createWall(renderer, pos, tile_scale);
-					wallMap.addWall(i, j);
+					levelMap[i][j] = 1; // Wall
 				}
 				else {
-					// Floor for edges without walls
-					createFloorTile(renderer, pos, tile_scale);
+					levelMap[i][j] = 2; // Floor at the edges without walls
 				}
+			}
+			else {
+				levelMap[i][j] = 2; // Floor in the corridor's interior
 			}
 		}
 	}
@@ -384,34 +374,49 @@ void WorldSystem::restart_game()
 	int floor_number_width = screen_width * 4 / tile_scale + 1;
 	int floor_number_height = screen_height * 4 / tile_scale + 1;
 
-	// Initialize wall map
-	WallMap wallMap(floor_number_width, floor_number_height);
+	std::vector<std::vector<int>> levelMap(floor_number_width, std::vector<int>(floor_number_height, 0));
 
 	int center_x = floor_number_width / 2;
 	int center_y = floor_number_height / 2;
-	createRoom(renderer, wallMap, center_x - 7, center_y - 7, 15, 15, tile_scale);
+	// Central room (15x15 tiles)
+	createRoom(levelMap, center_x - 7, center_y - 7, 15, 15);
 
-	// Create a top room (10x10 tiles) and a corridor connecting it to the central room
-	createRoom(renderer, wallMap, center_x - 5, center_y - 20, 10, 10, tile_scale);
-	createCorridor(renderer, wallMap, center_x-2, center_y - 11, 5, 5, tile_scale, true, true, false, false); // No wall on bottom side
+	// Top room (10x10 tiles) and corridor connecting to central room
+	createRoom(levelMap, center_x - 5, center_y - 20, 10, 10);
+	createCorridor(levelMap, center_x - 2, center_y - 11, 5, 5, true, true, false, false); // No wall on bottom side
 
-	// Create a bottom room (10x10 tiles) and a corridor connecting it to the central room
-	createRoom(renderer, wallMap, center_x - 5, center_y + 10, 10, 10, tile_scale);
-	createCorridor(renderer, wallMap, center_x - 1, center_y + 7, 5, 4, tile_scale, true, true, false, false); // No wall on top side
+	// Bottom room (10x10 tiles) and corridor connecting to central room
+	createRoom(levelMap, center_x - 5, center_y + 10, 10, 10);
+	createCorridor(levelMap, center_x - 1, center_y + 7, 5, 4, true, true, false, false); // No wall on top side
 
-	// Create a left room (10x10 tiles) and a corridor connecting it to the central room
-	createRoom(renderer, wallMap, center_x - 25, center_y - 5, 10, 10, tile_scale);
-	createCorridor(renderer, wallMap, center_x - 16, center_y - 1, 10, 4, tile_scale, false, false, true, true); // No wall on right side
+	// Left room (10x10 tiles) and corridor connecting to central room
+	createRoom(levelMap, center_x - 25, center_y - 5, 10, 10);
+	createCorridor(levelMap, center_x - 16, center_y - 1, 10, 4, false, false, true, true); // No wall on right side
 
-	// Create a right room (10x10 tiles) and a corridor connecting it to the central room
-	createRoom(renderer, wallMap, center_x + 15, center_y - 5, 10, 10, tile_scale);
-	createCorridor(renderer, wallMap, center_x + 7, center_y - 1, 9, 4, tile_scale, false, false, true, true); // No wall on left side
+	// Right room (10x10 tiles) and corridor connecting to central room
+	createRoom(levelMap, center_x + 15, center_y - 5, 10, 10);
+	createCorridor(levelMap, center_x + 7, center_y - 1, 9, 4, false, false, true, true); // No wall on left side
 
-	createRoom(renderer, wallMap, center_x + 15, center_y - 20, 10, 10, tile_scale);
-	createCorridor(renderer, wallMap, center_x + 4, center_y - 15, 12, 4, tile_scale, false, false, true, true);
+	// Additional rooms with corridors
+	createRoom(levelMap, center_x + 15, center_y - 20, 10, 10);
+	createCorridor(levelMap, center_x + 4, center_y - 15, 12, 4, false, false, true, true);
 
-	createRoom(renderer, wallMap, center_x + 15, center_y + 10, 7, 8, tile_scale);
-	createCorridor(renderer, wallMap, center_x + 16, center_y + 4, 4, 7, tile_scale, true, true, false, false);
+	createRoom(levelMap, center_x + 15, center_y + 10, 7, 8);
+	createCorridor(levelMap, center_x + 16, center_y + 4, 4, 7, true, true, false, false);
+
+	for (int i = 0; i < levelMap.size(); ++i) {
+		for (int j = 0; j < levelMap[i].size(); ++j) {
+			vec2 pos = { i * tile_scale, j * tile_scale };
+
+			if (levelMap[i][j] == 1) {
+				createWall(renderer, pos, tile_scale); // Render wall
+			}
+			else if (levelMap[i][j] == 2) {
+				createFloorTile(renderer, pos, tile_scale); // Render floor
+			}
+		}
+	}
+
 
 
 	// 	// create enemy with random initial position
