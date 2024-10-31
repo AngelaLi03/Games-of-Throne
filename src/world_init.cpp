@@ -107,6 +107,38 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
+Entity createChef(RenderSystem *renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = mesh.original_size * 300.f;
+	motion.scale.x *= 1.1;
+	createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity);
+
+	// create an empty Spy component for our character
+	registry.chef.emplace(entity);
+	registry.enemies.emplace(entity);
+	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
+	registry.healths.insert(entity, {100.f});
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {150.f, 130.f}, {0.f, 40.f}});
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::CHEF, // TEXTURE_COUNT indicates that no texture is needed
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
 Entity createWeapon(RenderSystem *renderer, vec2 pos)
 {
 	auto entity = Entity();

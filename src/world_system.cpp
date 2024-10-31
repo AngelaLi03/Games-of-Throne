@@ -440,6 +440,7 @@ void WorldSystem::restart_game()
 	// registry.healthbarlink.emplace(health_bar, player_spy);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
+	Entity chef = createChef(renderer, {window_width_px - 300.f, window_height_px - 200.f});
 }
 
 // Compute collisions between entities
