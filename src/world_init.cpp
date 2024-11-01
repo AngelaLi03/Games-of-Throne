@@ -42,11 +42,13 @@ Entity createWall(RenderSystem *renderer, vec2 pos, float wall_scale)
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = {mesh.original_size.x * wall_scale, mesh.original_size.x * wall_scale};
+	motion.bb_scale = motion.scale;
+	motion.bb_offset = {0.f, 0.f};
 
 	// Print mesh size for debugging if needed
 	// std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
 
-	registry.physicsBodies.insert(entity, {BodyType::STATIC, {mesh.original_size.x * wall_scale, mesh.original_size.x * wall_scale}, {0.f, 0.f}});
+	registry.physicsBodies.insert(entity, {BodyType::STATIC});
 
 	// Set up the render request for the wall
 	registry.renderRequests.insert(
@@ -58,7 +60,7 @@ Entity createWall(RenderSystem *renderer, vec2 pos, float wall_scale)
 	return entity;
 }
 
-//void createRoom(RenderSystem* renderer, WallMap& wallMap, int x_start, int y_start, int width, int height, float tile_scale) {
+// void createRoom(RenderSystem* renderer, WallMap& wallMap, int x_start, int y_start, int width, int height, float tile_scale) {
 //	for (int i = x_start; i < x_start + width; ++i) {
 //		for (int j = y_start; j < y_start + height; ++j) {
 //			// Calculate tile position in the game world
@@ -75,7 +77,7 @@ Entity createWall(RenderSystem *renderer, vec2 pos, float wall_scale)
 //			}
 //		}
 //	}
-//}
+// }
 
 Entity createSpy(RenderSystem *renderer, vec2 pos)
 {
@@ -92,12 +94,14 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 150.f;
 	motion.scale.x *= -0.8;
+	motion.bb_scale = {60.f, 60.f};
+	motion.bb_offset = {0.f, 40.f};
 
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.healths.insert(entity, {100.f});
-	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {60.f, 60.f}, {0.f, 40.f}});
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::SPY, // TEXTURE_COUNT indicates that no texture is needed
@@ -122,6 +126,9 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 300.f;
 	motion.scale.x *= 1.1;
+	motion.bb_scale = {150.f, 130.f};
+	motion.bb_offset = {0.f, 40.f};
+
 	createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity);
 
 	// create an empty Spy component for our character
@@ -129,7 +136,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	registry.enemies.emplace(entity);
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.healths.insert(entity, {100.f});
-	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {150.f, 130.f}, {0.f, 40.f}});
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::CHEF, // TEXTURE_COUNT indicates that no texture is needed
@@ -155,6 +162,9 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	motion.scale = mesh.original_size * 100.f;
 	motion.scale.x *= -0.45;
 	motion.scale.y *= 1.7;
+	motion.bb_scale = motion.scale;
+
+	registry.physicsBodies.insert(entity, {BodyType::NONE});
 
 	// create an empty Spy component for our character
 	registry.renderRequests.insert(
@@ -237,10 +247,12 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	motion.position = position;
 	motion.scale = mesh.original_size * 100.f;
 	motion.scale.x *= -0.8;
+	motion.bb_scale = {60.f, 60.f};
+	motion.bb_offset = {0.f, 40.f};
 
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
-	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC, {60.f, 60.f}, {0.f, 40.f}});
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.healths.insert(entity, {100.f});
 	registry.renderRequests.insert(
 			entity,
@@ -309,44 +321,35 @@ Entity createEel(RenderSystem *renderer, vec2 position)
 	return entity;
 }
 
-Entity createLine(vec2 position, vec2 scale)
+Entity createBox(vec2 position, vec2 scale, vec3 color, float angle)
+{
+	float width = 5;
+	// scale = {abs(scale.x), abs(scale.y)};
+	createLine({position.x, position.y - scale.y / 2.f}, {scale.x + width, width}, color, angle);
+	createLine({position.x - scale.x / 2.f, position.y}, {width, scale.y + width}, color, angle);
+	createLine({position.x + scale.x / 2.f, position.y}, {width, scale.y + width}, color, angle);
+	createLine({position.x, position.y + scale.y / 2.f}, {scale.x + width, width}, color, angle);
+}
+
+Entity createLine(vec2 position, vec2 scale, vec3 color, float angle)
 {
 	Entity entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
 	registry.renderRequests.insert(
 			entity, {TEXTURE_ASSET_ID::TEXTURE_COUNT,
-							 EFFECT_ASSET_ID::EGG,
+							 EFFECT_ASSET_ID::DEBUG_LINE,
 							 GEOMETRY_BUFFER_ID::DEBUG_LINE});
 
 	// Create motion
 	Motion &motion = registry.motions.emplace(entity);
-	motion.angle = 0.f;
+	motion.angle = angle;
 	motion.velocity = {0, 0};
 	motion.position = position;
 	motion.scale = scale;
 
+	registry.colors.insert(entity, color);
+
 	registry.debugComponents.emplace(entity);
-	return entity;
-}
-
-Entity createEgg(vec2 pos, vec2 size)
-{
-	auto entity = Entity();
-
-	// Setting initial motion values
-	Motion &motion = registry.motions.emplace(entity);
-	motion.position = pos;
-	motion.angle = 0.f;
-	motion.velocity = {0.f, 0.f};
-	motion.scale = size;
-
-	// create an empty component for our eggs
-	registry.deadlys.emplace(entity);
-	registry.renderRequests.insert(
-			entity, {TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
-							 EFFECT_ASSET_ID::EGG,
-							 GEOMETRY_BUFFER_ID::EGG});
-
 	return entity;
 }

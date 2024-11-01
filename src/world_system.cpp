@@ -309,43 +309,53 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	return true;
 }
 
-void createRoom(std::vector<std::vector<int>>& levelMap, int x_start, int y_start, int width, int height) {
-	for (int i = x_start; i < x_start + width; ++i) {
-		for (int j = y_start; j < y_start + height; ++j) {
+void createRoom(std::vector<std::vector<int>> &levelMap, int x_start, int y_start, int width, int height)
+{
+	for (int i = x_start; i < x_start + width; ++i)
+	{
+		for (int j = y_start; j < y_start + height; ++j)
+		{
 			// Place walls around the edges of the room
-			if (i == x_start || i == x_start + width - 1 || j == y_start || j == y_start + height - 1) {
+			if (i == x_start || i == x_start + width - 1 || j == y_start || j == y_start + height - 1)
+			{
 				levelMap[i][j] = 1; // 1 for wall
 			}
-			else {
+			else
+			{
 				levelMap[i][j] = 2; // 2 for floor
 			}
 		}
 	}
 }
 
-void createCorridor(std::vector<std::vector<int>>& levelMap, int x_start, int y_start, int length, int width,
-	bool add_wall_left = true, bool add_wall_right = true, bool add_wall_top = true, bool add_wall_bottom = true) {
-	for (int i = x_start; i < x_start + length; ++i) {
-		for (int j = y_start; j < y_start + width; ++j) {
+void createCorridor(std::vector<std::vector<int>> &levelMap, int x_start, int y_start, int length, int width,
+										bool add_wall_left = true, bool add_wall_right = true, bool add_wall_top = true, bool add_wall_bottom = true)
+{
+	for (int i = x_start; i < x_start + length; ++i)
+	{
+		for (int j = y_start; j < y_start + width; ++j)
+		{
 			bool is_edge = (i == x_start || i == x_start + length - 1 || j == y_start || j == y_start + width - 1);
 
-			if (is_edge) {
+			if (is_edge)
+			{
 				if ((i == x_start && add_wall_left) || (i == x_start + length - 1 && add_wall_right) ||
-					(j == y_start && add_wall_top) || (j == y_start + width - 1 && add_wall_bottom)) {
+						(j == y_start && add_wall_top) || (j == y_start + width - 1 && add_wall_bottom))
+				{
 					levelMap[i][j] = 1; // Wall
 				}
-				else {
+				else
+				{
 					levelMap[i][j] = 2; // Floor at the edges without walls
 				}
 			}
-			else {
+			else
+			{
 				levelMap[i][j] = 2; // Floor in the corridor's interior
 			}
 		}
 	}
 }
-
-
 
 // Reset the world state to its initial state
 void WorldSystem::restart_game()
@@ -404,20 +414,22 @@ void WorldSystem::restart_game()
 	createRoom(levelMap, center_x + 15, center_y + 10, 7, 8);
 	createCorridor(levelMap, center_x + 16, center_y + 4, 4, 7, true, true, false, false);
 
-	for (int i = 0; i < levelMap.size(); ++i) {
-		for (int j = 0; j < levelMap[i].size(); ++j) {
-			vec2 pos = { i * tile_scale, j * tile_scale };
+	for (int i = 0; i < levelMap.size(); ++i)
+	{
+		for (int j = 0; j < levelMap[i].size(); ++j)
+		{
+			vec2 pos = {i * tile_scale, j * tile_scale};
 
-			if (levelMap[i][j] == 1) {
+			if (levelMap[i][j] == 1)
+			{
 				createWall(renderer, pos, tile_scale); // Render wall
 			}
-			else if (levelMap[i][j] == 2) {
+			else if (levelMap[i][j] == 2)
+			{
 				createFloorTile(renderer, pos, tile_scale); // Render floor
 			}
 		}
 	}
-
-
 
 	// 	// create enemy with random initial position
 	// while (registry.enemies.components.size() < ENEMIES_COUNT)
@@ -451,6 +463,22 @@ void WorldSystem::restart_game()
 // Compute collisions between entities
 void WorldSystem::handle_collisions()
 {
+	// draw collision bounding boxes (debug lines)
+	if (debugging.in_debug_mode)
+	{
+		for (uint i = 0; i < registry.physicsBodies.components.size(); i++)
+		{
+			Entity entity = registry.physicsBodies.entities[i];
+			Motion &motion = registry.motions.get(entity);
+			vec3 color = {1.f, 0.f, 0.f};
+			if (registry.collisions.has(entity))
+			{
+				color = {0.f, 1.f, 0.f};
+			}
+			createBox(motion.position + motion.bb_offset, get_bounding_box(motion), color);
+		}
+	}
+
 	// Loop over all collisions detected by the physics system
 	// std::cout << "handle_collisions()" << std::endl;
 	auto &collisionsRegistry = registry.collisions;
@@ -535,12 +563,9 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	// Debugging
-	if (key == GLFW_KEY_D)
+	if (key == GLFW_KEY_D && (mod & GLFW_MOD_SHIFT) && action == GLFW_PRESS)
 	{
-		if (action == GLFW_RELEASE)
-			debugging.in_debug_mode = false;
-		else
-			debugging.in_debug_mode = true;
+		debugging.in_debug_mode = !debugging.in_debug_mode;
 	}
 
 	// Control the current speed with `<` `>`
@@ -713,4 +738,3 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 
 	(vec2) mouse_position; // dummy to avoid compiler warning
 }
-

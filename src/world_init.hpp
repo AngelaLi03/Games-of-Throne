@@ -17,11 +17,10 @@ Entity createFish(RenderSystem *renderer, vec2 position);
 // the enemy
 Entity createEel(RenderSystem *renderer, vec2 position);
 
-// a red line for debugging purposes
-Entity createLine(vec2 position, vec2 size);
+Entity createBox(vec2 position, vec2 scale, vec3 color, float angle = 0.f);
 
-// a egg
-Entity createEgg(vec2 pos, vec2 size);
+// a red line for debugging purposes
+Entity createLine(vec2 position, vec2 size, vec3 color, float angle = 0.f);
 
 // the floor tile
 Entity createFloorTile(RenderSystem *renderer, vec2 pos, float tile_size);
@@ -33,9 +32,9 @@ Entity createSpy(RenderSystem *renderer, vec2 pos);
 
 Entity createEnemy(RenderSystem *renderer, vec2 pos);
 
-Entity createWeapon(RenderSystem* renderer, vec2 pos);
+Entity createWeapon(RenderSystem *renderer, vec2 pos);
 
-Entity createHealthBar(RenderSystem* renderer, vec2 pos, Entity owner_entity);
+Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity);
 
 Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale);
 

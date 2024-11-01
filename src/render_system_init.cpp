@@ -211,14 +211,14 @@ void RenderSystem::initializeGlGeometryBuffers()
 	std::vector<uint16_t> line_indices;
 
 	constexpr float depth = 0.5f;
-	constexpr vec3 red = {0.8, 0.1, 0.1};
+	constexpr vec3 white = {1.f, 1.f, 1.f};
 
 	// Corner points
 	line_vertices = {
-			{{-0.5, -0.5, depth}, red},
-			{{-0.5, 0.5, depth}, red},
-			{{0.5, 0.5, depth}, red},
-			{{0.5, -0.5, depth}, red},
+			{{-0.5, -0.5, depth}, white},
+			{{-0.5, 0.5, depth}, white},
+			{{0.5, 0.5, depth}, white},
+			{{0.5, -0.5, depth}, white},
 	};
 
 	// Two triangles

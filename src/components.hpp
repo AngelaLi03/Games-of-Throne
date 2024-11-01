@@ -40,7 +40,8 @@ struct Weapon
 struct Health
 {
 	float health = 100.f;
-	bool isDead = false;;
+	bool isDead = false;
+	;
 };
 
 // All data relevant to the shape and motion of entities
@@ -50,6 +51,8 @@ struct Motion
 	float angle = 0;
 	vec2 velocity = {0, 0};
 	vec2 scale = {10, 10};
+	vec2 bb_scale = {10, 10}; // scale used for bounding box
+	vec2 bb_offset = {0, 0};	// offset from motion.position to center of bounding box
 };
 
 struct Interpolation
@@ -77,13 +80,12 @@ struct Flow
 enum class BodyType
 {
 	STATIC = 0,
-	KINEMATIC = 1,
+	KINEMATIC = STATIC + 1,
+	NONE = KINEMATIC + 1
 };
 struct PhysicsBody
 {
 	BodyType body_type = BodyType::STATIC;
-	vec2 bounding_box = {1, 1};
-	vec2 offset = {0, 0}; // offset from motion.position to bounding box
 };
 
 // Stucture to store collision information
@@ -167,7 +169,6 @@ struct Mesh
 
 struct Chef
 {
-	
 };
 /**
  * The following enumerators represent global identifiers refering to graphic
@@ -215,8 +216,8 @@ const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 enum class EFFECT_ASSET_ID
 {
 	COLOURED = 0,
-	EGG = COLOURED + 1,
-	SALMON = EGG + 1,
+	DEBUG_LINE = COLOURED + 1,
+	SALMON = DEBUG_LINE + 1,
 	TEXTURED = SALMON + 1,
 	WATER = TEXTURED + 1,
 	PROGRESS_BAR = WATER + 1,
