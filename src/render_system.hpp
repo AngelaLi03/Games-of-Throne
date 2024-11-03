@@ -7,6 +7,8 @@
 #include "components.hpp"
 #include "tiny_ecs.hpp"
 
+glm::mat3 get_transform(const Motion &motion);
+
 // System responsible for setting up OpenGL and for rendering all the
 // visual entities in the game
 class RenderSystem
@@ -59,6 +61,7 @@ class RenderSystem
 	std::array<GLuint, geometry_count> vertex_buffers;
 	std::array<GLuint, geometry_count> index_buffers;
 	std::array<Mesh, geometry_count> meshes;
+	std::array<TexturedMesh, geometry_count> textured_meshes;
 
 public:
 	// Initialize the window
@@ -73,6 +76,7 @@ public:
 
 	void initializeGlMeshes();
 	Mesh &getMesh(GEOMETRY_BUFFER_ID id) { return meshes[(int)id]; };
+	TexturedMesh &getTexturedMesh(GEOMETRY_BUFFER_ID id) { return textured_meshes[(int)id]; };
 
 	void initializeGlGeometryBuffers();
 	// Initialize the screen texture used as intermediate render target

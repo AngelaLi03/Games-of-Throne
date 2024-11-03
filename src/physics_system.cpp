@@ -10,6 +10,11 @@ vec2 get_bounding_box(const Motion &motion)
 	return {abs(motion.bb_scale.x), abs(motion.bb_scale.y)};
 }
 
+vec2 xy(const vec3 &v)
+{
+	return {v.x, v.y};
+}
+
 bool collides(const Motion &motion1, const Motion &motion2)
 {
 	// axis-aligned bounding box (AABB) collision detection
@@ -18,6 +23,97 @@ bool collides(const Motion &motion1, const Motion &motion2)
 	vec2 pos1 = motion1.position + motion1.bb_offset - bb1 / 2.f;
 	vec2 pos2 = motion2.position + motion1.bb_offset - bb2 / 2.f;
 	return pos1.x + bb1.x >= pos2.x && pos2.x + bb2.x >= pos1.x && pos1.y + bb1.y >= pos2.y && pos2.y + bb2.y >= pos1.y;
+}
+
+bool is_point_in_box(const vec2 &p, const vec2 &box_pos, const vec2 &box_bb)
+{
+	return p.x >= box_pos.x && p.x <= box_pos.x + box_bb.x && p.y >= box_pos.y && p.y <= box_pos.y + box_bb.y;
+}
+
+// computes the cross product of two vectors
+float cross(const vec2 &a, const vec2 &b)
+{
+	return a.x * b.y - a.y * b.x;
+}
+
+bool line_intersects(const vec2 &a1, const vec2 &a2, const vec2 &b1, const vec2 &b2)
+{
+	// checks if the line segment (a1, a2) intersects with (b1, b2)
+	// inspired by https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+	vec2 p = a1;
+	vec2 r = a2 - a1;
+	vec2 q = b1;
+	vec2 s = b2 - b1;
+	float rxs = cross(r, s);
+	float qpxr = cross(q - p, r);
+	if (rxs == 0)
+	{
+		if (qpxr == 0)
+		{
+			// colinear
+			float t0 = glm::dot(q - p, r) / glm::dot(r, r);
+			float t1 = t0 + glm::dot(s, r) / glm::dot(r, r);
+			// intersects if [t0, t1] intersects [0, 1]
+			return !(min(t0, t1) > 1 || max(t0, t1) < 0);
+		}
+		// parallel
+		return false;
+	}
+	float t = cross(q - p, s) / rxs;
+	float u = cross(q - p, r) / rxs;
+	return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+}
+
+bool mesh_collides(Entity mesh_entity, const Motion &mesh_motion, const Motion &box_motion)
+{
+	// ONLY WEAPON MESH is supported
+	if (!registry.texturedMeshPtrs.has(mesh_entity))
+	{
+		std::cout << "mesh_collides: mesh_entity not a textured mesh" << std::endl;
+		return false;
+	}
+	TexturedMesh *mesh = registry.texturedMeshPtrs.get(mesh_entity);
+	auto &vertices = mesh->vertices;
+	auto &indices = mesh->vertex_indices;
+	// use original bounding box (without bb_scale) for actual mesh collision use
+	vec2 mesh_bb = {abs(mesh_motion.scale.x), abs(mesh_motion.scale.y)};
+	vec2 mesh_center = mesh_motion.position;
+	vec2 box_bb = get_bounding_box(box_motion);
+	vec2 box_pos = box_motion.position + box_motion.bb_offset - box_bb / 2.f;
+	glm::mat3 transform = get_transform(mesh_motion);
+	for (uint i = 0; i < indices.size(); i += 3)
+	{
+		vec2 v1 = vertices[indices[i]].position;
+		vec2 v2 = vertices[indices[i + 1]].position;
+		vec2 v3 = vertices[indices[i + 2]].position;
+		vec2 p1 = xy(transform * vec3(v1, 1));
+		vec2 p2 = xy(transform * vec3(v2, 1));
+		vec2 p3 = xy(transform * vec3(v3, 1));
+		// collides if any of the three points of the triangle is inside the box
+		if (is_point_in_box(p1, box_pos, box_bb) || is_point_in_box(p2, box_pos, box_bb) || is_point_in_box(p3, box_pos, box_bb))
+		{
+			// std::cout << "mesh_collides point_in_box" << std::endl;
+			return true;
+		}
+		// collides if any of the three edges of the triangle intersects with the box
+		if (line_intersects(p1, p2, box_pos, box_pos + vec2{box_bb.x, 0}) ||
+				line_intersects(p1, p2, box_pos, box_pos + vec2{0, box_bb.y}) ||
+				line_intersects(p1, p2, box_pos + box_bb, box_pos + box_bb - vec2{box_bb.x, 0}) ||
+				line_intersects(p1, p2, box_pos + box_bb, box_pos + box_bb - vec2{0, box_bb.y}) ||
+				line_intersects(p2, p3, box_pos, box_pos + vec2{box_bb.x, 0}) ||
+				line_intersects(p2, p3, box_pos, box_pos + vec2{0, box_bb.y}) ||
+				line_intersects(p2, p3, box_pos + box_bb, box_pos + box_bb - vec2{box_bb.x, 0}) ||
+				line_intersects(p2, p3, box_pos + box_bb, box_pos + box_bb - vec2{0, box_bb.y}) ||
+				line_intersects(p3, p1, box_pos, box_pos + vec2{box_bb.x, 0}) ||
+				line_intersects(p3, p1, box_pos, box_pos + vec2{0, box_bb.y}) ||
+				line_intersects(p3, p1, box_pos + box_bb, box_pos + box_bb - vec2{box_bb.x, 0}) ||
+				line_intersects(p3, p1, box_pos + box_bb, box_pos + box_bb - vec2{0, box_bb.y}))
+		{
+			// std::cout << "mesh_collides line_intersects" << std::endl;
+			return true;
+		}
+	}
+	return false;
 }
 
 void PhysicsSystem::step(float elapsed_ms)
@@ -34,6 +130,9 @@ void PhysicsSystem::step(float elapsed_ms)
 	}
 
 	// Check for collisions between all moving entities
+	Entity player = registry.players.entities[0];
+	Weapon &player_weapon = registry.weapons.get(player);
+	Entity weapon = player_weapon.weapon;
 	ComponentContainer<PhysicsBody> &physicsBody_container = registry.physicsBodies;
 	for (uint i = 0; i < physicsBody_container.components.size(); i++)
 	{
@@ -67,6 +166,22 @@ void PhysicsSystem::step(float elapsed_ms)
 
 			if (collides(motion_i, motion_j))
 			{
+				if (entity_i == weapon || entity_j == weapon)
+				{
+					if (entity_i == player || entity_j == player)
+					{
+						// ignore weapon collision with player
+						continue;
+					}
+					if (entity_i == weapon && !mesh_collides(entity_i, motion_i, motion_j))
+					{
+						continue;
+					}
+					if (entity_j == weapon && !mesh_collides(entity_j, motion_j, motion_i))
+					{
+						continue;
+					}
+				}
 				// std::cout << "position of i: " << p1.x << "," << p1.y << "; position of j: " << p2.x << "," << p2.y << std::endl;
 				// std::cout << "bb of i: " << b1.x << "," << b1.y << "; bb of j: " << b2.x << "," << b2.y << std::endl;
 

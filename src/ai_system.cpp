@@ -53,7 +53,7 @@ void AISystem::step(float elapsed_ms)
 					std::cout << "Chef enters combat" << std::endl;
 				}
 				else
-				std::cout << "Enemy " << i << " enters combat" << std::endl;
+					std::cout << "Enemy " << i << " enters combat" << std::endl;
 			}
 		}
 		else if (enemy.state == EnemyState::COMBAT)

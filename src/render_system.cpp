@@ -6,6 +6,20 @@
 
 #include <iostream>
 
+glm::mat3 get_transform(const Motion &motion)
+{
+	Transform transform;
+	transform.translate(motion.position);
+
+	transform.translate(-motion.pivot_offset * motion.scale);
+	transform.rotate(motion.angle);
+	transform.translate(motion.pivot_offset * motion.scale);
+
+	transform.scale(motion.scale);
+
+	return transform.mat;
+}
+
 void RenderSystem::drawTexturedMesh(Entity entity,
 																		const mat3 &projection)
 {
@@ -13,10 +27,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	// Transformation code, see Rendering and Transformation in the template
 	// specification for more info Incrementally updates transformation matrix,
 	// thus ORDER IS IMPORTANT
-	Transform transform;
-	transform.translate(motion.position);
-	transform.rotate(motion.angle);
-	transform.scale(motion.scale);
+	glm::mat3 transform_mat = get_transform(motion);
 
 	assert(registry.renderRequests.has(entity));
 	const RenderRequest &render_request = registry.renderRequests.get(entity);
@@ -154,7 +165,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	glGetIntegerv(GL_CURRENT_PROGRAM, &currProgram);
 	// Setting uniform values to the currently bound program
 	GLuint transform_loc = glGetUniformLocation(currProgram, "transform");
-	glUniformMatrix3fv(transform_loc, 1, GL_FALSE, (float *)&transform.mat);
+	glUniformMatrix3fv(transform_loc, 1, GL_FALSE, (float *)&transform_mat);
 	GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
 	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, (float *)&projection);
 	gl_has_errors();
@@ -246,6 +257,7 @@ void RenderSystem::draw()
 	gl_has_errors();
 	mat3 projection_2D = createProjectionMatrix();
 
+	// Set weapon position to correct offset from player
 	Entity &spy = registry.players.entities[0];
 	Motion &player_motion = registry.motions.get(spy);
 	if (registry.weapons.has(spy))
@@ -253,7 +265,12 @@ void RenderSystem::draw()
 		Weapon &player_weapon = registry.weapons.get(spy);
 		Entity weapon = player_weapon.weapon;
 		Motion &weapon_motion = registry.motions.get(weapon);
-		weapon_motion.position = player_motion.position + player_weapon.offset;
+		vec2 weapon_offset = player_weapon.offset;
+		if (player_motion.scale.x > 0)
+		{
+			weapon_offset.x *= -1;
+		}
+		weapon_motion.position = player_motion.position + weapon_offset;
 	}
 
 	// Draw all textured meshes that have a position and size component

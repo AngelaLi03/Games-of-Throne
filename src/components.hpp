@@ -5,9 +5,17 @@
 #include "../ext/stb_image/stb_image.h"
 
 // Player component
+enum class PlayerState
+{
+	IDLE = 0,
+	DODGING = IDLE + 1,
+	CHARGING_FLOW = DODGING + 1,
+	LIGHT_ATTACK = CHARGING_FLOW + 1,
+	HEAVY_ATTACK = LIGHT_ATTACK + 1,
+};
 struct Player
 {
-	bool is_dodging = false;
+	PlayerState state = PlayerState::IDLE;
 };
 
 // anything that is deadly to the player
@@ -41,7 +49,6 @@ struct Health
 {
 	float health = 100.f;
 	bool isDead = false;
-	;
 };
 
 // All data relevant to the shape and motion of entities
@@ -51,8 +58,21 @@ struct Motion
 	float angle = 0;
 	vec2 velocity = {0, 0};
 	vec2 scale = {10, 10};
-	vec2 bb_scale = {10, 10}; // scale used for bounding box
-	vec2 bb_offset = {0, 0};	// offset from motion.position to center of bounding box
+	vec2 bb_scale = {10, 10};		// scale used for bounding box
+	vec2 bb_offset = {0, 0};		// offset from motion.position to center of bounding box
+	vec2 pivot_offset = {0, 0}; // before scaling
+};
+
+enum class AnimationName
+{
+	LIGHT_ATTACK = 0,
+	HEAVY_ATTACK = LIGHT_ATTACK + 1,
+};
+struct Animation
+{
+	AnimationName name = AnimationName::LIGHT_ATTACK;
+	float total_time = 1000.f;
+	float elapsed_time = 0.f;
 };
 
 struct Interpolation
@@ -121,7 +141,7 @@ struct HealthBarLink
 // Data structure for toggling debug mode
 struct Debug
 {
-	bool in_debug_mode = 0;
+	bool in_debug_mode = 1;
 	bool in_freeze_mode = 0;
 };
 extern Debug debugging;
@@ -164,6 +184,12 @@ struct Mesh
 	static bool loadFromOBJFile(std::string obj_path, std::vector<ColoredVertex> &out_vertices, std::vector<uint16_t> &out_vertex_indices, vec2 &out_size);
 	vec2 original_size = {1, 1};
 	std::vector<ColoredVertex> vertices;
+	std::vector<uint16_t> vertex_indices;
+};
+
+struct TexturedMesh
+{
+	std::vector<TexturedVertex> vertices;
 	std::vector<uint16_t> vertex_indices;
 };
 
@@ -230,8 +256,8 @@ enum class GEOMETRY_BUFFER_ID
 {
 	SALMON = 0,
 	SPRITE = SALMON + 1,
-	EGG = SPRITE + 1,
-	DEBUG_LINE = EGG + 1,
+	WEAPON = SPRITE + 1,
+	DEBUG_LINE = WEAPON + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
 	PROGRESS_BAR = SCREEN_TRIANGLE + 1,
 	GEOMETRY_COUNT = PROGRESS_BAR + 1,

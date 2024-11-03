@@ -21,10 +21,10 @@ public:
 	WorldSystem();
 
 	// Creates a window
-	GLFWwindow* create_window();
+	GLFWwindow *create_window();
 
 	// starts the game
-	void init(RenderSystem* renderer);
+	void init(RenderSystem *renderer);
 
 	// Releases all associated resources
 	~WorldSystem();
@@ -36,37 +36,40 @@ public:
 	void handle_collisions();
 
 	// Should the game be over ?
-	bool is_over()const;
+	bool is_over() const;
 
 private:
+	void handle_animations(float elapsed_ms);
+
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
 	void on_mouse_move(vec2 pos);
+	void on_mouse_button(int button, int action, int mods);
 
 	// restart level
 	void restart_game();
 
 	// OpenGL window handle
-	GLFWwindow* window;
+	GLFWwindow *window;
 
 	// Number of fish eaten by the salmon, displayed in the window title
 	unsigned int points;
 
 	// Game state
-	RenderSystem* renderer;
+	RenderSystem *renderer;
 	float current_speed;
 	Entity player_salmon;
 	Entity player_spy;
 	Entity flowMeterEntity;
 
 	// music references
-	Mix_Music* background_music;
-	Mix_Chunk* salmon_dead_sound;
-	Mix_Chunk* salmon_eat_sound;
-	Mix_Chunk* spy_death_sound;
-	Mix_Chunk* spy_dash_sound;
-	Mix_Chunk* spy_attack_sound;
-	Mix_Chunk* break_sound;
+	Mix_Music *background_music;
+	Mix_Chunk *salmon_dead_sound;
+	Mix_Chunk *salmon_eat_sound;
+	Mix_Chunk *spy_death_sound;
+	Mix_Chunk *spy_dash_sound;
+	Mix_Chunk *spy_attack_sound;
+	Mix_Chunk *break_sound;
 
 	// C++ random number generator
 	std::default_random_engine rng;

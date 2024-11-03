@@ -13,12 +13,14 @@ public:
 	// Manually created list of all components this game has
 	ComponentContainer<DeathTimer> deathTimers;
 	ComponentContainer<Motion> motions;
+	ComponentContainer<Animation> animations;
 	ComponentContainer<Interpolation> interpolations;
 	ComponentContainer<Bezier> beziers;
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<PhysicsBody> physicsBodies;
 	ComponentContainer<Player> players;
 	ComponentContainer<Mesh *> meshPtrs;
+	ComponentContainer<TexturedMesh *> texturedMeshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
 	ComponentContainer<Eatable> eatables;
@@ -39,10 +41,12 @@ public:
 	{
 		registry_list.push_back(&deathTimers);
 		registry_list.push_back(&motions);
+		registry_list.push_back(&animations);
 		registry_list.push_back(&collisions);
 		registry_list.push_back(&physicsBodies);
 		registry_list.push_back(&players);
 		registry_list.push_back(&meshPtrs);
+		registry_list.push_back(&texturedMeshPtrs);
 		registry_list.push_back(&renderRequests);
 		registry_list.push_back(&screenStates);
 		registry_list.push_back(&eatables);

@@ -10,8 +10,10 @@
 
 // Game configuration
 int ENEMIES_COUNT = 5;
+float FLOW_CHARGE_PER_SECOND = 33.f;
 vec2 player_movement_direction = {0.f, 0.f};
 vec2 curr_mouse_position;
+bool is_right_mouse_button_down = false;
 
 // create the underwater world
 WorldSystem::WorldSystem()
@@ -100,8 +102,11 @@ GLFWwindow *WorldSystem::create_window()
 	{ ((WorldSystem *)glfwGetWindowUserPointer(wnd))->on_key(_0, _1, _2, _3); };
 	auto cursor_pos_redirect = [](GLFWwindow *wnd, double _0, double _1)
 	{ ((WorldSystem *)glfwGetWindowUserPointer(wnd))->on_mouse_move({_0, _1}); };
+	auto mouse_button_redirect = [](GLFWwindow *wnd, int _0, int _1, int _2)
+	{ ((WorldSystem *)glfwGetWindowUserPointer(wnd))->on_mouse_button(_0, _1, _2); };
 	glfwSetKeyCallback(window, key_redirect);
 	glfwSetCursorPosCallback(window, cursor_pos_redirect);
+	glfwSetMouseButtonCallback(window, mouse_button_redirect);
 
 	//////////////////////////////////////
 	// Loading music and sounds with SDL
@@ -180,7 +185,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	// Processing the salmon state
 	assert(registry.screenStates.components.size() <= 1);
 	ScreenState &screen = registry.screenStates.components[0];
 
@@ -232,7 +236,10 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			if (registry.players.has(entity))
 			{
 				Player &player = registry.players.get(entity);
-				player.is_dodging = false;
+				if (player.state == PlayerState::DODGING)
+				{
+					player.state = PlayerState::IDLE;
+				}
 				std::cout << "Player is not dodging anymore" << std::endl;
 				motion.velocity = player_movement_direction * 60.f;
 			}
@@ -303,6 +310,23 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		else
 		{
 			registry.motions.get(registry.players.entities[0]).velocity = {0.f, 0.f};
+		}
+	}
+
+	handle_animations(elapsed_ms_since_last_update);
+
+	if (is_right_mouse_button_down && registry.flows.has(flowMeterEntity))
+	{
+		Player &player = registry.players.get(player_spy);
+		if (player.state == PlayerState::IDLE)
+		{
+			std::cout << "Player is charging flow" << std::endl;
+			player.state = PlayerState::CHARGING_FLOW;
+		}
+		if (player.state == PlayerState::CHARGING_FLOW)
+		{
+			Flow &flow = registry.flows.get(flowMeterEntity);
+			flow.flowLevel = std::min(flow.flowLevel + FLOW_CHARGE_PER_SECOND * elapsed_ms_since_last_update / 1000.f, flow.maxFlowLevel); // Increase flow up to max
 		}
 	}
 
@@ -447,7 +471,7 @@ void WorldSystem::restart_game()
 	Entity weapon = createWeapon(renderer, {window_width_px / 2, window_height_px - 200});
 	player_spy = createSpy(renderer, {window_width_px / 2, window_height_px - 200});
 
-	vec2 weapon_offset = vec2(45.f, -28.f); // Adjust this based on your design
+	vec2 weapon_offset = vec2(45.f, -50.f);
 
 	Weapon &player_weapon = registry.weapons.emplace(player_spy);
 	player_weapon.weapon = weapon;
@@ -458,6 +482,65 @@ void WorldSystem::restart_game()
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 	Entity chef = createChef(renderer, {window_width_px - 300.f, window_height_px - 200.f});
+}
+
+void process_animation(AnimationName name, float t, Entity entity)
+{
+	if (name == AnimationName::LIGHT_ATTACK)
+	{
+		Weapon &player_weapon = registry.weapons.get(entity);
+		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
+		weapon_motion.angle = 0.5f * sin(t * M_PI) + M_PI / 6;
+		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
+
+		if (t >= 1.0f)
+		{
+			weapon_motion.angle = M_PI / 6;
+			Player &player = registry.players.get(entity);
+			player.state = PlayerState::IDLE;
+		}
+	}
+	else if (name == AnimationName::HEAVY_ATTACK)
+	{
+		Weapon &player_weapon = registry.weapons.get(entity);
+		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
+		float angle = t * 4 * M_PI + M_PI / 6;
+		while (angle > 2 * M_PI)
+		{
+			angle -= 2 * M_PI;
+		}
+		weapon_motion.angle = angle;
+		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
+
+		if (t >= 1.0f)
+		{
+			weapon_motion.angle = M_PI / 6;
+			Player &player = registry.players.get(entity);
+			player.state = PlayerState::IDLE;
+		}
+	}
+}
+
+void WorldSystem::handle_animations(float elapsed_ms)
+{
+	for (int i = registry.animations.size() - 1; i >= 0; i--)
+	{
+		Animation &animation = registry.animations.components[i];
+		Entity entity = registry.animations.entities[i];
+		animation.elapsed_time += elapsed_ms;
+		float t = animation.elapsed_time / animation.total_time;
+		if (t >= 1.0f)
+		{
+			t = 1.0f;
+		}
+		// std::cout << "i = " << i << " t = " << t << std::endl;
+		process_animation(animation.name, t, entity);
+
+		if (animation.elapsed_time >= animation.total_time)
+		{
+			registry.animations.remove(entity);
+		}
+	}
 }
 
 // Compute collisions between entities
@@ -476,7 +559,39 @@ void WorldSystem::handle_collisions()
 				color = {0.f, 1.f, 0.f};
 			}
 			createBox(motion.position + motion.bb_offset, get_bounding_box(motion), color);
+			if (motion.pivot_offset.x != 0 || motion.pivot_offset.y != 0)
+			{
+				createBox(motion.position - motion.pivot_offset * motion.scale, {5.f, 5.f}, {0.f, 0.f, 1.f});
+			}
 		}
+
+		// Draw weapon mesh (for debugging)
+		Weapon &player_weapon = registry.weapons.get(player_spy);
+		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
+		// createBox(weapon_motion.position + weapon_motion.bb_offset, get_bounding_box(weapon_motion), {1.f, 1.f, 0.f});
+		TexturedMesh &weapon_mesh = renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
+		glm::mat3 transform = get_transform(weapon_motion);
+		for (uint i = 0; i < weapon_mesh.vertex_indices.size(); i += 3)
+		{
+			vec2 p1 = xy(transform * weapon_mesh.vertices[weapon_mesh.vertex_indices[i]].position);
+			vec2 p2 = xy(transform * weapon_mesh.vertices[weapon_mesh.vertex_indices[i + 1]].position);
+			vec2 p3 = xy(transform * weapon_mesh.vertices[weapon_mesh.vertex_indices[i + 2]].position);
+			// std::cout << "p1 = " << p1.x << "," << p1.y << std::endl;
+			// std::cout << "p2 = " << p2.x << "," << p2.y << std::endl;
+			// std::cout << "p3 = " << p3.x << "," << p3.y << std::endl;
+			// std::cout << weapon_motion.scale.x << "," << weapon_motion.scale.y << std::endl;
+
+			// draw line from p1 to p2, where createLine is function createLine(vec2 position, vec2 scale, vec3 color, float angle)
+
+			createLine((p1 + p2) / 2.f, {glm::length(p2 - p1), 3.f}, {1.f, 1.f, 0.f}, atan2(p2.y - p1.y, p2.x - p1.x));
+			createLine((p2 + p3) / 2.f, {glm::length(p3 - p2), 3.f}, {1.f, 1.f, 0.f}, atan2(p3.y - p2.y, p3.x - p2.x));
+			createLine((p3 + p1) / 2.f, {glm::length(p1 - p3), 3.f}, {1.f, 1.f, 0.f}, atan2(p1.y - p3.y, p1.x - p3.x));
+		}
+		// for (uint i = 0; i < weapon_mesh.vertices.size(); i++)
+		// {
+		// 	vec2 p = xy(transform * weapon_mesh.vertices[i].position);
+		// 	createBox(weapon_motion.position + p, {5.f, 5.f}, {1.f, 1.f, 0.f});
+		// }
 	}
 
 	// Loop over all collisions detected by the physics system
@@ -537,12 +652,6 @@ bool WorldSystem::is_over() const
 // On key callback
 void WorldSystem::on_key(int key, int, int action, int mod)
 {
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A1: HANDLE SALMON MOVEMENT HERE
-	// key is of 'type' GLFW_KEY_
-	// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R)
 	{
@@ -674,13 +783,17 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	Player &player = registry.players.get(player_spy);
-	if (!player.is_dodging)
+	if (player.state == PlayerState::LIGHT_ATTACK || player.state == PlayerState::HEAVY_ATTACK || player.state == PlayerState::CHARGING_FLOW)
+	{
+		motion.velocity = vec2(0.f, 0.f);
+	}
+	else if (player.state != PlayerState::DODGING)
 	{
 		motion.velocity = player_movement_direction * speed;
 		// std::cout << "Player moving in " << player_movement_direction.x << "," << player_movement_direction.y << std::endl;
 		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS && motion.velocity != vec2(0.f, 0.f))
 		{
-			player.is_dodging = true;
+			player.state = PlayerState::DODGING;
 			std::cout << "Dodging" << std::endl;
 
 			Interpolation interpolate;
@@ -737,4 +850,65 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 	}
 
 	(vec2) mouse_position; // dummy to avoid compiler warning
+}
+
+void WorldSystem::on_mouse_button(int button, int action, int mods)
+{
+	std::cout << "Mouse button " << button << " " << action << " " << mods << std::endl;
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		Player &player = registry.players.get(player_spy);
+		if (player.state == PlayerState::IDLE)
+		{
+			std::cout << "Player light attack" << std::endl;
+			player.state = PlayerState::LIGHT_ATTACK;
+			if (registry.animations.has(player_spy))
+			{
+				registry.animations.remove(player_spy);
+			}
+			Animation animation;
+			animation.name = AnimationName::LIGHT_ATTACK;
+			animation.elapsed_time = 0.f;
+			animation.total_time = 500.f;
+			registry.animations.emplace(player_spy, animation);
+		}
+	}
+	if (button == GLFW_MOUSE_BUTTON_RIGHT)
+	{
+		if (action == GLFW_PRESS)
+		{
+			is_right_mouse_button_down = true;
+		}
+		else if (action == GLFW_RELEASE)
+		{
+			is_right_mouse_button_down = false;
+			Player &player = registry.players.get(player_spy);
+			if (player.state == PlayerState::CHARGING_FLOW)
+			{
+				player.state = PlayerState::IDLE;
+			}
+			if (registry.flows.has(flowMeterEntity))
+			{
+				Flow &flow = registry.flows.get(flowMeterEntity);
+				if (flow.flowLevel == flow.maxFlowLevel)
+				{
+					if (player.state == PlayerState::IDLE || player.state == PlayerState::CHARGING_FLOW)
+					{
+						std::cout << "Player heavy attack" << std::endl;
+						player.state = PlayerState::HEAVY_ATTACK;
+						flow.flowLevel = 0;
+						if (registry.animations.has(player_spy))
+						{
+							registry.animations.remove(player_spy);
+						}
+						Animation animation;
+						animation.name = AnimationName::HEAVY_ATTACK;
+						animation.elapsed_time = 0.f;
+						animation.total_time = 1000.f;
+						registry.animations.emplace(player_spy, animation);
+					}
+				}
+			}
+		}
+	}
 }

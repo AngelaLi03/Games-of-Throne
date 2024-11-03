@@ -151,27 +151,32 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	auto entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object
-	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::WEAPON);
 	registry.meshPtrs.emplace(entity, &mesh);
+	TexturedMesh &weapon_mesh = renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
+	registry.texturedMeshPtrs.emplace(entity, &weapon_mesh);
 
 	// Setting initial motion values
 	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
+	// motion.angle = M_PI / 6; // 30 degrees
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 100.f;
-	motion.scale.x *= -0.45;
+	motion.scale.x *= 0.45;
 	motion.scale.y *= 1.7;
-	motion.bb_scale = motion.scale;
+	motion.bb_scale = {max(motion.scale.x, motion.scale.y) * 2.f, max(motion.scale.x, motion.scale.y) * 2.f};
+	motion.bb_offset = {0.f, 50.f};
+	motion.pivot_offset = {0.f, -0.35f};
 
 	registry.physicsBodies.insert(entity, {BodyType::NONE});
 
 	// create an empty Spy component for our character
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::WEAPON, // TEXTURE_COUNT indicates that no texture is needed
+			{TEXTURE_ASSET_ID::WEAPON,
 			 EFFECT_ASSET_ID::TEXTURED,
-			 GEOMETRY_BUFFER_ID::SPRITE});
+			 GEOMETRY_BUFFER_ID::WEAPON});
 
 	return entity;
 }

@@ -151,10 +151,10 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// Initialize sprite
 	// The position corresponds to the center of the texture.
 	std::vector<TexturedVertex> textured_vertices(4);
-	textured_vertices[0].position = {-1.f / 2, +1.f / 2, 0.f};
-	textured_vertices[1].position = {+1.f / 2, +1.f / 2, 0.f};
-	textured_vertices[2].position = {+1.f / 2, -1.f / 2, 0.f};
-	textured_vertices[3].position = {-1.f / 2, -1.f / 2, 0.f};
+	textured_vertices[0].position = {-1.f / 2, +1.f / 2, 0.f}; // top left
+	textured_vertices[1].position = {+1.f / 2, +1.f / 2, 0.f}; // top right
+	textured_vertices[2].position = {+1.f / 2, -1.f / 2, 0.f}; // bottom right
+	textured_vertices[3].position = {-1.f / 2, -1.f / 2, 0.f}; // bottom left
 	textured_vertices[0].texcoord = {0.f, 1.f};
 	textured_vertices[1].texcoord = {1.f, 1.f};
 	textured_vertices[2].texcoord = {1.f, 0.f};
@@ -165,30 +165,33 @@ void RenderSystem::initializeGlGeometryBuffers()
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SPRITE, textured_vertices, textured_indices);
 
 	// //////////////////////
-	// // Initialize Egg
-	// std::vector<ColoredVertex> egg_vertices;
-	// std::vector<uint16_t> egg_indices;
-	// constexpr float z = -0.1f;
-	// constexpr int NUM_TRIANGLES = 62;
+	// Initialize Weapon
+	std::vector<TexturedVertex> weapon_vertices = {
+			// lower
+			{{-0.2f, 0.5f, 1.f}, {0.3f, 1.f}},
+			{{0.2f, 0.5f, 1.f}, {0.7f, 1.f}},
+			{{0.2f, 0.2f, 1.f}, {0.7f, 0.7f}},
+			{{-0.2f, 0.2f, 1.f}, {0.3f, 0.7f}},
+			// upper
+			{{-0.35f, 0.15f, 1.f}, {0.15f, 0.65f}},
+			{{0.35f, 0.15f, 1.f}, {0.85f, 0.65f}},
+			{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},
+			{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}},
+			// tip
+			{{0.f, -0.5f, 1.f}, {0.5f, 0.f}},				 // 8
+			{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}}, // 9
+			{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},	 // 10
+			// middle
+			{{-0.5f, 0.2f, 1.f}, {0.f, 0.7f}},	 // 11
+			{{0.5f, 0.2f, 1.f}, {1.f, 0.7f}},		 // 12
+			{{0.5f, 0.15f, 1.f}, {1.f, 0.65f}},	 // 13
+			{{-0.5f, 0.15f, 1.f}, {0.f, 0.65f}}, // 14
+	};
+	std::vector<uint16_t> weapon_indices = {0, 3, 1, 1, 3, 2, 4, 7, 5, 5, 7, 6, 8, 10, 9, 11, 14, 12, 12, 14, 13};
 
-	// for (int i = 0; i < NUM_TRIANGLES; i++) {
-	// 	const float t = float(i) * M_PI * 2.f / float(NUM_TRIANGLES - 1);
-	// 	egg_vertices.push_back({});
-	// 	egg_vertices.back().position = { 0.5 * cos(t), 0.5 * sin(t), z };
-	// 	egg_vertices.back().color = { 0.8, 0.8, 0.8 };
-	// }
-	// egg_vertices.push_back({});
-	// egg_vertices.back().position = { 0, 0, 0 };
-	// egg_vertices.back().color = { 1, 1, 1 };
-	// for (int i = 0; i < NUM_TRIANGLES; i++) {
-	// 	egg_indices.push_back((uint16_t)i);
-	// 	egg_indices.push_back((uint16_t)((i + 1) % NUM_TRIANGLES));
-	// 	egg_indices.push_back((uint16_t)NUM_TRIANGLES);
-	// }
-	// int geom_index = (int)GEOMETRY_BUFFER_ID::EGG;
-	// meshes[geom_index].vertices = egg_vertices;
-	// meshes[geom_index].vertex_indices = egg_indices;
-	// bindVBOandIBO(GEOMETRY_BUFFER_ID::EGG, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::WEAPON].vertices = weapon_vertices;
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::WEAPON].vertex_indices = weapon_indices;
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::WEAPON, weapon_vertices, weapon_indices);
 
 	// Initialize progress bar
 	std::vector<ColoredVertex> progress_vertices;
