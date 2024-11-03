@@ -80,9 +80,40 @@ void AISystem::step(float elapsed_ms)
 				{
 					// attack player
 					std::cout << "Enemy " << i << " attacks player" << std::endl;
+					// change to attack animation sprite
+					enemy.state = EnemyState::ATTACK;
+					auto &animation = registry.spriteAnimations.get(entity);
+        			auto &render_request = registry.renderRequests.get(entity);
+
+					animation.current_frame = 1; 
+					render_request.used_texture = animation.frames[animation.current_frame];
+
+					// get motion of the enemy
+					auto &enemy_motion = registry.motions.get(entity);
+					enemy_motion.scale.x *= 1.1;
+
 					enemy.time_since_last_attack = 0.f;
-					Mix_PlayChannel(-1, spy_attack_sound, 0);
+					// Mix_PlayChannel(-1, spy_attack_sound, 0);
 				}
+			}
+		}
+		// reset state to combat after attack
+		else if (enemy.state == EnemyState::ATTACK)
+		{
+			auto &animation = registry.spriteAnimations.get(entity);
+			auto &render_request = registry.renderRequests.get(entity);
+			enemy.attack_countdown -= elapsed_ms;
+
+			if (enemy.attack_countdown <= 0)
+			{
+				enemy.state = EnemyState::COMBAT;
+				printf("Enemy %d finish attack\n", i);
+				enemy.attack_countdown = 500;
+				// change to combat animation sprite
+				render_request.used_texture = animation.frames[0];
+				// get motion of the enemy
+				auto &enemy_motion = registry.motions.get(entity);
+				enemy_motion.scale.x /= 1.1;
 			}
 		}
 	}

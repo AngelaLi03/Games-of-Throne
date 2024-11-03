@@ -255,17 +255,26 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	motion.bb_scale = {60.f, 60.f};
 	motion.bb_offset = {0.f, 40.f};
 
+    // Initialize the animation component with frames
+    auto &animation = registry.spriteAnimations.emplace(entity);
+    animation.frames = std::vector<TEXTURE_ASSET_ID>{
+        TEXTURE_ASSET_ID::ENEMY,
+        TEXTURE_ASSET_ID::ENEMY_ATTACK,
+    };
+animation.frame_duration = 1000.f; // Set duration for each frame (adjust as needed)
+
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.healths.insert(entity, {100.f});
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::ENEMY,
+			{animation.frames[animation.current_frame],
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+
+createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
 	return entity;
 }
 

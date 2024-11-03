@@ -302,6 +302,18 @@ void RenderSystem::draw()
 			// Change texture to corpse
 			render_request.used_texture = TEXTURE_ASSET_ID::ENEMY_CORPSE;
 		}
+		// if in attack state and not usign attack sprite, change sprite, does not include chef
+		// auto& enemy_state = registry.enemies.get(enemy);
+		// if(enemy_state.state == EnemyState::ATTACK && !registry.chef.has(enemy) && ! (render_request.used_texture == TEXTURE_ASSET_ID::ENEMY_ATTACK)){
+		// 	render_request.used_texture = TEXTURE_ASSET_ID::ENEMY_ATTACK;
+		// 	// get motion of the enemy
+		// 	auto& enemy_motion = registry.motions.get(enemy);
+		// 	enemy_motion.scale.x *= 1.2;
+		// }	
+		// if(enemy_state.state == EnemyState::COMBAT && !registry.chef.has(enemy) && ! (render_request.used_texture == TEXTURE_ASSET_ID::ENEMY)){
+		// 	render_request.used_texture = TEXTURE_ASSET_ID::ENEMY;
+		// 	auto& enemy_motion = registry.motions.get(enemy);
+		// }
 	}
 
 	auto &health = registry.healths.get(spy);

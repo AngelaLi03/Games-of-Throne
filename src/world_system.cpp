@@ -330,6 +330,31 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
+	// update animations
+	 for (Entity entity : registry.spriteAnimations.entities) {
+		// if in attack mode, change sprite to attack sprite
+		if (registry.enemies.has(entity) && registry.enemies.get(entity).state == EnemyState::ATTACK) {
+			auto &animation = registry.spriteAnimations.get(entity);
+			auto &render_request = registry.renderRequests.get(entity);
+
+			// Increment elapsed time
+			animation.elapsed_time += elapsed_ms_since_last_update;
+
+			// Check if enough time has passed to switch to the next frame
+			if (animation.elapsed_time >= animation.frame_duration) {
+				// Reset elapsed time for the next frame
+				animation.elapsed_time = 0.0f;
+
+				// Move to the next frame
+				animation.current_frame = (animation.current_frame + 1) % animation.frames.size();
+
+				// Update the texture to the current frame
+				render_request.used_texture = animation.frames[animation.current_frame];
+			}
+    	}
+	 }
+
+
 	return true;
 }
 

@@ -32,11 +32,13 @@ enum class EnemyState
 {
 	IDLE = 0,
 	COMBAT = 1,
+	ATTACK = 2,
 };
 struct Enemy
 {
 	EnemyState state = EnemyState::IDLE;
 	float time_since_last_attack = 0;
+	float attack_countdown = 500;
 };
 
 struct Weapon
@@ -233,7 +235,8 @@ enum class TEXTURE_ASSET_ID
 	WEAPON = ENEMY + 1,
 	FLOW_METER = WEAPON + 1,
 	ENEMY_CORPSE = FLOW_METER + 1,
-	SPY_CORPSE = ENEMY_CORPSE + 1,
+	ENEMY_ATTACK = ENEMY_CORPSE + 1,
+	SPY_CORPSE = ENEMY_ATTACK + 1,
 	CHEF = SPY_CORPSE + 1,
 	TEXTURE_COUNT = CHEF + 1
 };
@@ -265,6 +268,13 @@ enum class GEOMETRY_BUFFER_ID
 	// FLOOR_TILE = GEOMETRY_COUNT + 1
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
+
+struct SpriteAnimation {
+    std::vector<TEXTURE_ASSET_ID> frames; // Texture IDs for each animation frame
+    int current_frame = 0;                 // Index of the current frame
+    float frame_duration = 0.1f;           // Duration for each frame (seconds)
+    float elapsed_time = 0.0f;             // Time since the last frame switch
+};
 
 struct RenderRequest
 {
