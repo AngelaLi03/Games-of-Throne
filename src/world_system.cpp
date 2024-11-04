@@ -772,15 +772,24 @@ void process_animation(AnimationName name, float t, Entity entity)
 	{
 		Weapon &player_weapon = registry.weapons.get(entity);
 		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
-		weapon_motion.angle = 0.5f * sin(t * M_PI) + M_PI / 6;
-		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
+		float angle = 0.5f * sin(t * M_PI) + M_PI / 6;
 
 		if (t >= 1.0f)
 		{
-			weapon_motion.angle = M_PI / 6;
+			angle = M_PI / 6;
 			Player &player = registry.players.get(entity);
 			player.state = PlayerState::IDLE;
 		}
+
+		if (player_weapon.offset.x < 0)
+		{
+			weapon_motion.angle = -angle;
+		}
+		else
+		{
+			weapon_motion.angle = angle;
+		}
+		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 	}
 	else if (name == AnimationName::HEAVY_ATTACK)
 	{
@@ -791,15 +800,23 @@ void process_animation(AnimationName name, float t, Entity entity)
 		{
 			angle -= 2 * M_PI;
 		}
-		weapon_motion.angle = angle;
-		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 
 		if (t >= 1.0f)
 		{
-			weapon_motion.angle = M_PI / 6;
+			angle = M_PI / 6;
 			Player &player = registry.players.get(entity);
 			player.state = PlayerState::IDLE;
 		}
+
+		if (player_weapon.offset.x < 0)
+		{
+			weapon_motion.angle = -angle;
+		}
+		else
+		{
+			weapon_motion.angle = angle;
+		}
+		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 	}
 }
 

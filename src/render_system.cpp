@@ -294,10 +294,16 @@ void RenderSystem::draw()
 		Weapon &player_weapon = registry.weapons.get(spy);
 		Entity weapon = player_weapon.weapon;
 		Motion &weapon_motion = registry.motions.get(weapon);
-		vec2 weapon_offset = player_weapon.offset;
-		if (player_motion.scale.x > 0)
+		vec2 &weapon_offset = player_weapon.offset;
+		if (player_motion.scale.x < 0 && weapon_offset.x < 0)
 		{
-			weapon_offset.x *= -1;
+			weapon_offset.x = abs(weapon_offset.x);
+			weapon_motion.angle = -weapon_motion.angle;
+		}
+		else if (player_motion.scale.x > 0 && weapon_offset.x > 0)
+		{
+			weapon_offset.x = -abs(weapon_offset.x);
+			weapon_motion.angle = -weapon_motion.angle;
 		}
 		weapon_motion.position = player_motion.position + weapon_offset;
 	}

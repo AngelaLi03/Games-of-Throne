@@ -163,8 +163,8 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	// Setting initial motion values
 	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	// motion.angle = M_PI / 6; // 30 degrees
-	motion.angle = 0.f;
+	motion.angle = M_PI / 6; // 30 degrees
+	// motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 100.f;
 	motion.scale.x *= 0.45;
