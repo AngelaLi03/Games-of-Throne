@@ -16,6 +16,7 @@ enum class PlayerState
 struct Player
 {
 	PlayerState state = PlayerState::IDLE;
+	float attack_damage = 20.0f;
 };
 
 // anything that is deadly to the player
@@ -39,6 +40,7 @@ struct Enemy
 	EnemyState state = EnemyState::IDLE;
 	float time_since_last_attack = 0;
 	float attack_countdown = 500;
+	float attack_damage = 10.0f;
 };
 
 struct Weapon
@@ -49,7 +51,7 @@ struct Weapon
 
 struct Health
 {
-	float health = 100.f;
+	float health;
 	bool isDead = false;
 };
 
@@ -120,8 +122,8 @@ struct Collision
 
 struct HealthBar
 {
-	float max_health;
 	float current_health;
+	float max_health;
 	vec2 original_scale;
 	HealthBar(float max_health, vec2 scale)
 	{

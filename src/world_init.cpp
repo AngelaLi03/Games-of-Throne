@@ -274,7 +274,7 @@ animation.frame_duration = 1000.f; // Set duration for each frame (adjust as nee
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
 
-createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+Entity health_bar_entity = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
 	return entity;
 }
 

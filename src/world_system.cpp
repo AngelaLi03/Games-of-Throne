@@ -293,13 +293,17 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			{
 				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
 			}
-			if (registry.healthbar.has(owner_entity))
+			if (registry.healthbar.has(health_bar_entity))
 			{
-				HealthBar &owner_health = registry.healthbar.get(owner_entity);
-				float health_percentage = owner_health.current_health / owner_health.max_health;
-
-				// Get the original scale of health bar
 				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+				float health_percentage = health_bar.current_health / health_bar.max_health;
+
+				// HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+
+				// std::cout << "Updating health bar for owner " << owner_entity
+                        //   << ": health_percentage = " << health_percentage
+                        //   << ", original_scale.x = " << health_bar.original_scale.x << std::endl;
+
 				health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
 				health_bar_motion.scale.y = health_bar.original_scale.y;
 			}
@@ -710,10 +714,47 @@ void WorldSystem::handle_collisions()
 
 	// Loop over all collisions detected by the physics system
 	// std::cout << "handle_collisions()" << std::endl;
+	Entity player = registry.players.entities[0];
+    Weapon &player_weapon_comp = registry.weapons.get(player);
+    Entity player_weapon = player_weapon_comp.weapon;
+    Player &player_comp = registry.players.get(player);
 	auto &collisionsRegistry = registry.collisions;
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++)
 	{
-		// The entity and its collider
+		Entity entity = collisionsRegistry.entities[i];
+        Entity entity_other = collisionsRegistry.components[i].other;
+
+        if ((entity == player_weapon || entity_other == player_weapon) && 
+            (registry.enemies.has(entity) || registry.enemies.has(entity_other)))
+        {
+            Entity enemy_entity = registry.enemies.has(entity) ? entity : entity_other;
+
+            if (player_comp.state == PlayerState::LIGHT_ATTACK || player_comp.state == PlayerState::HEAVY_ATTACK)
+            {
+                float damage = (player_comp.state == PlayerState::LIGHT_ATTACK) ? 20.f : 40.f; // Define damage values
+
+                if (registry.healths.has(enemy_entity))
+                {
+                    Health &enemy_health = registry.healths.get(enemy_entity);
+                    enemy_health.health -= damage;
+                    if (enemy_health.health < 0.f)
+                        enemy_health.health = 0.f;
+					
+					for (Entity health_bar_entity : registry.healthbarlink.entities)
+					{
+						HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
+						if(healthbarlink.owner == enemy_entity)
+						{
+							if (registry.healthbar.has(health_bar_entity))
+							{
+								HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+								health_bar.current_health = enemy_health.health;
+							}
+						}
+					}
+                }
+            }
+        }// The entity and its collider
 		// Entity entity = collisionsRegistry.entities[i];
 		// Entity entity_other = collisionsRegistry.components[i].other;
 
@@ -820,37 +861,37 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 	float speed = 60.f;
 
-	if (key == GLFW_KEY_H && action == GLFW_PRESS)
-	{
-		if (registry.healthbar.has(player_spy))
-		{
-			HealthBar &health_bar = registry.healthbar.get(player_spy);
-			auto &spy_health = registry.healths.get(player_spy);
-			// hardcoded damage, TODO
-			health_bar.current_health -= 10.f;
-			spy_health.health -= 10.f;
-			if (health_bar.current_health < 0.f)
-			{
-				health_bar.current_health = 0.f;
-			}
-		}
-	}
+	// if (key == GLFW_KEY_H && action == GLFW_PRESS)
+	// {
+	// 	if (registry.healthbar.has(player_spy))
+	// 	{
+	// 		HealthBar &health_bar = registry.healthbar.get(player_spy);
+	// 		auto &spy_health = registry.healths.get(player_spy);
+	// 		// hardcoded damage, TODO
+	// 		health_bar.current_health -= 10.f;
+	// 		spy_health.health -= 10.f;
+	// 		if (health_bar.current_health < 0.f)
+	// 		{
+	// 			health_bar.current_health = 0.f;
+	// 		}
+	// 	}
+	// }
 
-	if (key == GLFW_KEY_G && action == GLFW_PRESS)
-	{
-		for (Entity enemy_entity : registry.enemies.entities)
-		{
-			if (registry.healthbar.has(enemy_entity))
-			{
-				HealthBar &health = registry.healthbar.get(enemy_entity);
-				health.current_health -= 10.f;
-				if (health.current_health < 0.f)
-				{
-					health.current_health = 0.f;
-				}
-			}
-		}
-	}
+	// if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	// {
+	// 	for (Entity enemy_entity : registry.enemies.entities)
+	// 	{
+	// 		if (registry.healthbar.has(enemy_entity))
+	// 		{
+	// 			HealthBar &health = registry.healthbar.get(enemy_entity);
+	// 			health.current_health -= 10.f;
+	// 			if (health.current_health < 0.f)
+	// 			{
+	// 				health.current_health = 0.f;
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	if (action == GLFW_PRESS)
 	{

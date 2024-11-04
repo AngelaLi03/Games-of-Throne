@@ -191,6 +191,22 @@ void AISystem::step(float elapsed_ms)
 					enemy.time_since_last_attack = 0.f;
 					// Mix_PlayChannel(-1, spy_attack_sound, 0);
 					
+					float damage = 10.f; // Define the damage value
+                    if (registry.healthbar.has(player))
+                    {
+                        HealthBar &health_bar = registry.healthbar.get(player);
+                        health_bar.current_health -= damage;
+                        if (health_bar.current_health < 0.f)
+                            health_bar.current_health = 0.f;
+                    }
+                    if (registry.healths.has(player))
+                    {
+                        Health &player_health = registry.healths.get(player);
+                        player_health.health -= damage;
+                        if (player_health.health < 0.f)
+                            player_health.health = 0.f;
+                    }
+					
 				}
 			}
 			// if chef, set trigger to false
