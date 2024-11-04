@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 // https://www.youtube.com/watch?app=desktop&v=BA6aR_5C_BM - fps source
 extern bool show_fps;
+extern bool show_help_text;
 extern float fps;
 
 glm::mat3 get_transform(const Motion &motion)
@@ -360,6 +361,23 @@ void RenderSystem::draw()
 			renderText(fpsText.str(), 5.f, window_height_px - 30.f, 1.0f, vec3(1.0, 0.0, 0.0));
 		}
 	}
+
+	if (show_help_text)
+	{
+		float x = 10.0f; // Starting x position
+		float y = window_height_px - 100.0f; // Starting y position (from top)
+		float lineSpacing = 25.0f; 
+		float scale = 0.8f; 
+		vec3 textColor = vec3(0.2f, 1.0f, 0.1f); 
+
+
+		for (const std::string& line : gameInstructions)
+		{
+			renderText(line, x, y, scale, textColor);
+			y -= lineSpacing; 
+		}
+	}
+
 
 	// Truely render to the screen
 	drawToScreen();

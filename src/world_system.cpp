@@ -14,6 +14,7 @@ float FLOW_CHARGE_PER_SECOND = 33.f;
 vec2 player_movement_direction = {0.f, 0.f};
 vec2 curr_mouse_position;
 bool show_fps = false;
+bool show_help_text = true;
 bool is_right_mouse_button_down = false;
 
 // create the underwater world
@@ -776,15 +777,15 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	// For debugging flow meter:
-	// if (action == GLFW_PRESS && key == GLFW_KEY_F)
-	// {
-	// 	if (registry.flows.has(flowMeterEntity))
-	// 	{
-	// 		Flow &flow = registry.flows.get(flowMeterEntity);
-	// 		flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
-	// 		std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
-	// 	}
-	// }
+	 if (action == GLFW_PRESS && key == GLFW_KEY_F)
+	 {
+	 	if (registry.flows.has(flowMeterEntity))
+	 	{
+	 		Flow &flow = registry.flows.get(flowMeterEntity);
+	 		flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
+	 		std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
+	 	}
+	 }
 
 	// Debugging
 	if (key == GLFW_KEY_D && (mod & GLFW_MOD_SHIFT) && action == GLFW_PRESS)
@@ -812,10 +813,16 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	// FPS toggle
-	if (key == GLFW_KEY_F && action == GLFW_PRESS)
+	if (key == GLFW_KEY_P && action == GLFW_PRESS)
 	{
 		show_fps = !show_fps;
 		std::cout << "Show FPS: " << (show_fps ? "ON" : "OFF") << std::endl;
+	}
+
+	if (key == GLFW_KEY_O && action == GLFW_PRESS)
+	{
+		show_help_text = !show_help_text;
+		std::cout << "Show Help Text: " << (show_help_text ? "ON" : "OFF") << std::endl;
 	}
 
 	float speed = 60.f;

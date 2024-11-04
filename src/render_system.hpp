@@ -129,6 +129,23 @@ private:
 	GLuint textProgram;
 	Entity screen_state_entity;
 	std::map<char, Character> characters;
+	std::vector<std::string> gameInstructions = {
+	"Controls:",
+	"W / Up Arrow: Move Up",
+	"A / Left Arrow: Move Left",
+	"S / Down Arrow: Move Down",
+	"D / Right Arrow: Move Right",
+	"X: Stealth Travel (Point mouse and press X)",
+	"H: Decrease Player Health",
+	"F: Increase Flow",
+	"Space Bar: Dash (when already moving)",
+	"Escape: Exit Game",
+	"Press 'H' ten times to die",
+	"Press 'P' to see FPS",
+	"Press 'O' to toggle instructions",
+
+
+	};
 };
 
 bool loadEffectFromFile(
