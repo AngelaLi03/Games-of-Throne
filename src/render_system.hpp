@@ -106,12 +106,15 @@ public:
 	void renderText(const std::string &text, float x, float y, float scale, vec3 color);
 	// void initializeTextRendering();
 	mat3 createProjectionMatrix();
+	mat3 createCameraViewMatrix();
 	void initTextRendering(); // Add this method declaration
 	void loadFont(const std::string &fontPath);
 
+	vec2 camera_position = {0.f, 0.f};
+
 private:
 	// Internal drawing functions for each entity type
-	void drawTexturedMesh(Entity entity, const mat3 &projection);
+	void drawTexturedMesh(Entity entity, const mat3 &view, const mat3 &projection);
 	void drawToScreen();
 
 	// Window handle

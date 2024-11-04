@@ -195,6 +195,7 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity)
 	motion.velocity = {0.f, 0.f};
 	motion.scale = {200.f, 20.f};
 
+
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.renderRequests.insert(
 			entity,

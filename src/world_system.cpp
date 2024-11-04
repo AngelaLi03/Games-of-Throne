@@ -201,18 +201,18 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// Removing out of screen entities
 	auto &motions_registry = registry.motions;
 
-	// Remove entities that leave the screen on the left side
+	// TODO: Remove entities that leave the screen, using new check accounting for camera view
 	// Iterate backwards to be able to remove without unterfering with the next object to visit
 	// (the containers exchange the last element with the current)
-	for (int i = (int)motions_registry.components.size() - 1; i >= 0; --i)
-	{
-		Motion &motion = motions_registry.components[i];
-		if (motion.position.x + abs(motion.scale.x) < 0.f)
-		{
-			if (!registry.players.has(motions_registry.entities[i])) // don't remove the player
-				registry.remove_all_components_of(motions_registry.entities[i]);
-		}
-	}
+	// for (int i = (int)motions_registry.components.size() - 1; i >= 0; --i)
+	// {
+	// 	Motion &motion = motions_registry.components[i];
+	// 	if (motion.position.x + abs(motion.scale.x) < 0.f)
+	// 	{
+	// 		if (!registry.players.has(motions_registry.entities[i])) // don't remove the player
+	// 			registry.remove_all_components_of(motions_registry.entities[i]);
+	// 	}
+	// }
 
 	assert(registry.screenStates.components.size() <= 1);
 	ScreenState &screen = registry.screenStates.components[0];
@@ -288,7 +288,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 			if (owner_entity == player_spy)
 			{
-				health_bar_motion.position = {50.f, 50.f};
+				health_bar_motion.position = renderer->camera_position + vec2(50.f, 50.f);
 			}
 			else
 			{
@@ -445,7 +445,34 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
+	// move camera if necessary
+	update_camera_view();
+
 	return true;
+}
+
+void WorldSystem::update_camera_view()
+{
+	float THRESHOLD = 0.3f; // will move camera if player is within 30% of the screen edge
+	Motion &player_motion = registry.motions.get(player_spy);
+	vec2 &camera_position = renderer->camera_position;
+	vec2 on_screen_pos = player_motion.position - camera_position;
+	if (on_screen_pos.x > window_width_px * (1 - THRESHOLD))
+	{
+		camera_position.x += on_screen_pos.x - window_width_px * (1 - THRESHOLD);
+	}
+	else if (on_screen_pos.x < window_width_px * THRESHOLD)
+	{
+		camera_position.x -= window_width_px * THRESHOLD - on_screen_pos.x;
+	}
+	if (on_screen_pos.y > window_height_px * (1 - THRESHOLD))
+	{
+		camera_position.y += on_screen_pos.y - window_height_px * (1 - THRESHOLD);
+	}
+	else if (on_screen_pos.y < window_height_px * THRESHOLD)
+	{
+		camera_position.y -= window_height_px * THRESHOLD - on_screen_pos.y;
+	}
 }
 
 void createRoom(std::vector<std::vector<int>> &levelMap, int x_start, int y_start, int width, int height)
@@ -946,7 +973,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 			Motion &motion = registry.motions.get(player_spy);
 			bezier.initial_velocity = motion.velocity;
-			bezier.target_position = curr_mouse_position;
+			bezier.target_position = curr_mouse_position + renderer->camera_position;
 
 			bezier.control_point = calculateControlPoint(motion.position, bezier.target_position,
 																									 (motion.position + bezier.target_position) / 2.0f, 0.5f);
@@ -962,7 +989,7 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 	curr_mouse_position = mouse_position;
 	Motion &spy_motion = registry.motions.get(player_spy);
 
-	vec2 spy_vector = +spy_motion.position - mouse_position;
+	vec2 spy_vector = spy_motion.position - renderer->camera_position - mouse_position;
 
 	// float spy_angle = atan2(spy_vector.y, spy_vector.x);
 

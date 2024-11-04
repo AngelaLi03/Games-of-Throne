@@ -201,6 +201,11 @@ struct Chef
 	bool trigger = false;
 	float sound_trigger_timer = 0;
 };
+
+struct MoveUI
+{
+	
+};
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
