@@ -52,6 +52,7 @@ struct Weapon
 struct Health
 {
 	float health;
+	float max_health = 100.f;
 	bool isDead = false;
 };
 

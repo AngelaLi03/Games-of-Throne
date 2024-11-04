@@ -190,14 +190,14 @@ void AISystem::step(float elapsed_ms)
 
 					enemy.time_since_last_attack = 0.f;
 					// Mix_PlayChannel(-1, spy_attack_sound, 0);
-					
+
 					float damage = 10.f; // Define the damage value
                     if (registry.healthbar.has(player))
                     {
                         HealthBar &health_bar = registry.healthbar.get(player);
                         health_bar.current_health -= damage;
                         if (health_bar.current_health < 0.f)
-                            health_bar.current_health = 0.f;
+                            health_bar.current_health = 0.f;							
                     }
                     if (registry.healths.has(player))
                     {
@@ -205,6 +205,19 @@ void AISystem::step(float elapsed_ms)
                         player_health.health -= damage;
                         if (player_health.health < 0.f)
                             player_health.health = 0.f;
+						for (Entity health_bar_entity : registry.healthbarlink.entities)
+						{
+							HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
+							if (healthbarlink.owner == player)
+							{
+								if (registry.healthbar.has(health_bar_entity))
+								{
+									HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+									health_bar.current_health = player_health.health;
+								}
+								break;
+							}
+						}
                     }
 					
 				}

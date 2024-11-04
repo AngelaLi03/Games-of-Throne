@@ -293,10 +293,36 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			{
 				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
 			}
-			if (registry.healthbar.has(health_bar_entity))
+
+			float health_percentage = 0.f;
+			if (registry.healths.has(owner_entity))
+            {
+                Health &owner_health = registry.healths.get(owner_entity);
+				health_percentage = owner_health.health / owner_health.max_health;
+            }
+               
+			else if (registry.healthbar.has(health_bar_entity))
 			{
 				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-				float health_percentage = health_bar.current_health / health_bar.max_health;
+				health_percentage = health_bar.current_health / health_bar.max_health;
+			}
+			if (registry.healthbar.has(health_bar_entity))
+            {
+                HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+                health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
+                health_bar_motion.scale.y = health_bar.original_scale.y;
+            }
+				// float health_percentage = 0.f;
+				// if (registry.healths.has(owner_entity))
+                // {
+                //     Health &owner_health = registry.healths.get(owner_entity);
+                //     health_percentage = owner_health.health / owner_health.max_health;
+                // }
+                // else
+                // {
+                //     // Fallback to health bar's current health
+                //     health_percentage = health_bar.current_health / health_bar.max_health;
+                // }
 
 				// HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
 
@@ -304,9 +330,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
                         //   << ": health_percentage = " << health_percentage
                         //   << ", original_scale.x = " << health_bar.original_scale.x << std::endl;
 
-				health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
-				health_bar_motion.scale.y = health_bar.original_scale.y;
-			}
+				// health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
+				// health_bar_motion.scale.y = health_bar.original_scale.y;
 		}
 	}
 
