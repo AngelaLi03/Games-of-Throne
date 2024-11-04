@@ -99,7 +99,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);
-	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
+	// registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.healths.insert(entity, {100.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
@@ -107,6 +107,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 			{TEXTURE_ASSET_ID::SPY, // TEXTURE_COUNT indicates that no texture is needed
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
+	Entity health_bar_entity = createHealthBar(renderer, {50.f, 50.f}, entity);
 
 	return entity;
 }
@@ -273,7 +274,8 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+
+Entity health_bar_entity = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
 	return entity;
 }
 

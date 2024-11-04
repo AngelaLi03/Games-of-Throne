@@ -17,6 +17,7 @@ enum class PlayerState
 struct Player
 {
 	PlayerState state = PlayerState::IDLE;
+	float attack_damage = 20.0f;
 };
 
 // anything that is deadly to the player
@@ -40,6 +41,7 @@ struct Enemy
 	EnemyState state = EnemyState::IDLE;
 	float time_since_last_attack = 0;
 	float attack_countdown = 500;
+	float attack_damage = 10.0f;
 
 	std::vector<Node> path; // The path to the player
     int current_path_index = 0;       // Index of the next node to follow
@@ -53,7 +55,8 @@ struct Weapon
 
 struct Health
 {
-	float health = 100.f;
+	float health;
+	float max_health = 100.f;
 	bool isDead = false;
 };
 
@@ -124,8 +127,8 @@ struct Collision
 
 struct HealthBar
 {
-	float max_health;
 	float current_health;
+	float max_health;
 	vec2 original_scale;
 	HealthBar(float max_health, vec2 scale)
 	{
