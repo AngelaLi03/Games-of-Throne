@@ -38,6 +38,10 @@ public:
 	// Should the game be over ?
 	bool is_over() const;
 
+	std::vector<std::vector<int>> levelMap;
+
+	bool isSGesture();
+
 private:
 	void update_camera_view();
 	void handle_animations(float elapsed_ms);
