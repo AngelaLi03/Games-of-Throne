@@ -119,21 +119,23 @@ float distance_squared(vec2 a, vec2 b)
 	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
 }
 
-float detection_radius_squared = 240.f * 240.f;
+float detection_radius_squared = 280.f * 280.f;
 float attack_radius_squared = 110.f * 110.f;
 
-void AISystem::step(float elapsed_ms)
+void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 {
 	Entity player = registry.players.entities[0];
 	assert(player);
 	Motion &player_motion = registry.motions.get(player);
+	vec2 player_position = player_motion.position + player_motion.bb_offset;
 	ComponentContainer<Enemy> &enemies = registry.enemies;
 	for (uint i = 0; i < enemies.components.size(); i++)
 	{
 		Enemy &enemy = enemies.components[i];
 		Entity entity = enemies.entities[i];
 		Motion &motion = registry.motions.get(entity);
-		float distance_to_player = distance_squared(player_motion.position, motion.position);
+		vec2 enemy_position = motion.position + motion.bb_offset;
+		float distance_to_player = distance_squared(player_position, enemy_position);
 		if (enemy.state == EnemyState::IDLE)
 		{
 			if (distance_to_player < detection_radius_squared)
@@ -164,9 +166,33 @@ void AISystem::step(float elapsed_ms)
 			else if (distance_to_player > attack_radius_squared)
 			{
 				// move towards player
-				vec2 direction = player_motion.position - motion.position;
+				vec2 direction = player_position - enemy_position;
 				direction = normalize(direction);
 				motion.velocity = direction * 50.f;
+
+				// int tile_x = std::round(enemy_position.x / TILE_SCALE);
+				// int tile_y = std::round(enemy_position.y / TILE_SCALE);
+				// std::cout << "At tile " << tile_x << ", " << tile_y << "; " << levelMap[tile_x][tile_y - 1] << "; " << levelMap[tile_x][tile_y] << "; " << levelMap[tile_x][tile_y + 1] << "; " << levelMap[tile_x][tile_y + 2] << std::endl;
+
+				// // find path to player
+				// enemy.path = findPathBFS(motion.position.x, motion.position.y, player_motion.position.x, player_motion.position.y, levelMap);
+				// if (enemy.path.size() > 0)
+				// {
+				// 	printf("path found\n");
+				// 	// move towards player
+				// 	vec2 direction = {enemy.path[enemy.current_path_index].x, enemy.path[enemy.current_path_index].y};
+				// 	direction = normalize(direction);
+				// 	motion.velocity = direction * 50.f;
+				// 	// if enemy is at the current path node, move to the next node
+				// 	if (distance_squared(motion.position, glm::vec2(enemy.path[enemy.current_path_index].x, enemy.path[enemy.current_path_index].y)) < 10.f)
+				// 	{
+				// 		enemy.current_path_index++;
+				// 		if (enemy.current_path_index >= enemy.path.size())
+				// 		{
+				// 			enemy.current_path_index = 0;
+				// 		}
+				// 	}
+				// }
 			}
 			else
 			{
@@ -179,9 +205,9 @@ void AISystem::step(float elapsed_ms)
 					// change to attack animation sprite
 					enemy.state = EnemyState::ATTACK;
 					auto &animation = registry.spriteAnimations.get(entity);
-        			auto &render_request = registry.renderRequests.get(entity);
+					auto &render_request = registry.renderRequests.get(entity);
 
-					animation.current_frame = 1; 
+					animation.current_frame = 1;
 					render_request.used_texture = animation.frames[animation.current_frame];
 
 					// get motion of the enemy
@@ -190,7 +216,6 @@ void AISystem::step(float elapsed_ms)
 
 					enemy.time_since_last_attack = 0.f;
 					// Mix_PlayChannel(-1, spy_attack_sound, 0);
-					
 				}
 			}
 			// if chef, set trigger to false
@@ -239,6 +264,5 @@ void AISystem::step(float elapsed_ms)
 				enemy_motion.scale.x /= 1.1;
 			}
 		}
-
 	}
 }

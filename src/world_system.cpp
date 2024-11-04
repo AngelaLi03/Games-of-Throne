@@ -549,11 +549,9 @@ void WorldSystem::restart_game()
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 
-	float tile_scale = 60.f;
-
 	// Expanded grid dimensions to cover a larger map
-	int floor_number_width = screen_width * 4 / tile_scale + 1;
-	int floor_number_height = screen_height * 4 / tile_scale + 1;
+	int floor_number_width = screen_width * 4 / TILE_SCALE + 1;
+	int floor_number_height = screen_height * 4 / TILE_SCALE + 1;
 
 	std::vector<std::vector<int>> levelMap(floor_number_width, std::vector<int>(floor_number_height, 0));
 
@@ -589,15 +587,15 @@ void WorldSystem::restart_game()
 	{
 		for (int j = 0; j < levelMap[i].size(); ++j)
 		{
-			vec2 pos = {i * tile_scale, j * tile_scale};
+			vec2 pos = {i * TILE_SCALE, j * TILE_SCALE};
 
 			if (levelMap[i][j] == 1)
 			{
-				createWall(renderer, pos, tile_scale); // Render wall
+				createWall(renderer, pos); // Render wall
 			}
 			else if (levelMap[i][j] == 2)
 			{
-				createFloorTile(renderer, pos, tile_scale); // Render floor
+				createFloorTile(renderer, pos); // Render floor
 			}
 		}
 	}

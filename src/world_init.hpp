@@ -23,10 +23,10 @@ void createBox(vec2 position, vec2 scale, vec3 color, float angle = 0.f);
 Entity createLine(vec2 position, vec2 size, vec3 color, float angle = 0.f);
 
 // the floor tile
-Entity createFloorTile(RenderSystem *renderer, vec2 pos, float tile_size);
+Entity createFloorTile(RenderSystem *renderer, vec2 pos);
 
 // a Wall
-Entity createWall(RenderSystem *renderer, vec2 pos, float wall_scale);
+Entity createWall(RenderSystem *renderer, vec2 pos);
 
 Entity createSpy(RenderSystem *renderer, vec2 pos);
 
