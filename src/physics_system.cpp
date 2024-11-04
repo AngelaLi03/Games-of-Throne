@@ -134,6 +134,7 @@ void PhysicsSystem::step(float elapsed_ms)
 	Weapon &player_weapon = registry.weapons.get(player);
 	Entity weapon = player_weapon.weapon;
 	ComponentContainer<PhysicsBody> &physicsBody_container = registry.physicsBodies;
+	std::set<Entity> entities_to_remove;
 	for (uint i = 0; i < physicsBody_container.components.size(); i++)
 	{
 		PhysicsBody &physicsBody_i = physicsBody_container.components[i];
@@ -151,7 +152,7 @@ void PhysicsSystem::step(float elapsed_ms)
 				continue;
 			}
 			PhysicsBody &physicsBody_j = physicsBody_container.components[j];
-			if (j < i && physicsBody_j.body_type == BodyType::KINEMATIC)
+			if (j < i && physicsBody_j.body_type != BodyType::STATIC)
 			{
 				// this pair is already processed
 				continue;
@@ -182,6 +183,41 @@ void PhysicsSystem::step(float elapsed_ms)
 						continue;
 					}
 				}
+
+				if (physicsBody_i.body_type == BodyType::PROJECTILE && physicsBody_j.body_type == BodyType::PROJECTILE)
+				{
+					// projectiles do not collide with each other
+					continue;
+				}
+				if (physicsBody_i.body_type == BodyType::PROJECTILE || physicsBody_j.body_type == BodyType::PROJECTILE)
+				{
+					bool is_i_projectile = physicsBody_i.body_type == BodyType::PROJECTILE;
+					Entity projectile_entity = is_i_projectile ? entity_i : entity_j;
+					Entity other_entity = is_i_projectile ? entity_j : entity_i;
+					PhysicsBody &other_body = is_i_projectile ? physicsBody_j : physicsBody_i;
+
+					// std::cout << "projectile_entity: " << projectile_entity << " other_entity: " << other_entity << std::endl;
+					// registry.list_all_components_of(projectile_entity);
+					// registry.list_all_components_of(other_entity);
+					// std::cout << "END" << std::endl;
+
+					// projectiles can only damage players but not other entities
+					if (other_entity == player)
+					{
+						Health &player_health = registry.healths.get(player);
+						Damage &projectile_damage = registry.damages.get(projectile_entity);
+						player_health.health -= projectile_damage.damage;
+
+						entities_to_remove.insert(projectile_entity);
+					}
+					else if (other_body.body_type == BodyType::STATIC)
+					{
+						// projectiles are destroyed when they hit walls
+						entities_to_remove.insert(projectile_entity);
+					}
+					continue;
+				}
+
 				// std::cout << "position of i: " << p1.x << "," << p1.y << "; position of j: " << p2.x << "," << p2.y << std::endl;
 				// std::cout << "bb of i: " << b1.x << "," << b1.y << "; bb of j: " << b2.x << "," << b2.y << std::endl;
 
@@ -256,5 +292,11 @@ void PhysicsSystem::step(float elapsed_ms)
 				}
 			}
 		}
+	}
+
+	for (Entity entity : entities_to_remove)
+	{
+		std::cout << "removing entity " << entity << std::endl;
+		registry.remove_all_components_of(entity);
 	}
 }
