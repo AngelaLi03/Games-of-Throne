@@ -297,7 +297,15 @@ void RenderSystem::draw()
 
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize
-		drawTexturedMesh(entity, camera_view, projection_2D);
+		if (registry.cameraUI.has(entity))
+		{
+			mat3 identity_view = mat3(1.0f); // Identity matrix
+			drawTexturedMesh(entity, identity_view, projection_2D);
+		}
+		else {
+			drawTexturedMesh(entity, camera_view, projection_2D);
+
+		}
 	}
 
 	for (Entity enemy : registry.enemies.entities)

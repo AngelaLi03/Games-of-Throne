@@ -288,7 +288,12 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 			if (owner_entity == player_spy)
 			{
-				health_bar_motion.position = renderer->camera_position + vec2(50.f, 50.f);
+				if (!registry.cameraUI.has(health_bar_entity)) {
+					registry.cameraUI.emplace(health_bar_entity);
+
+				}
+
+				health_bar_motion.position = vec2(50.f, 50.f);
 			}
 			else
 			{
