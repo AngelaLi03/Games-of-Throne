@@ -13,7 +13,6 @@
 
 #include "render_system.hpp"
 
-
 // Container for all our entities and game logic. Individual rendering / update is
 // deferred to the relative update() methods
 class WorldSystem
@@ -39,7 +38,12 @@ public:
 	// Should the game be over ?
 	bool is_over() const;
 
+	std::vector<std::vector<int>> levelMap;
+
+	bool isSGesture();
+
 private:
+	void update_camera_view();
 	void handle_animations(float elapsed_ms);
 
 	// Input callback functions

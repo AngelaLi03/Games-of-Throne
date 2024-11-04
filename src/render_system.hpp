@@ -106,12 +106,15 @@ public:
 	void renderText(const std::string &text, float x, float y, float scale, vec3 color);
 	// void initializeTextRendering();
 	mat3 createProjectionMatrix();
+	mat3 createCameraViewMatrix();
 	void initTextRendering(); // Add this method declaration
 	void loadFont(const std::string &fontPath);
 
+	vec2 camera_position = {0.f, 0.f};
+
 private:
 	// Internal drawing functions for each entity type
-	void drawTexturedMesh(Entity entity, const mat3 &projection);
+	void drawTexturedMesh(Entity entity, const mat3 &view, const mat3 &projection);
 	void drawToScreen();
 
 	// Window handle
@@ -129,6 +132,23 @@ private:
 	GLuint textProgram;
 	Entity screen_state_entity;
 	std::map<char, Character> characters;
+	std::vector<std::string> gameInstructions = {
+	"Controls:",
+	"W / Up Arrow: Move Up",
+	"A / Left Arrow: Move Left",
+	"S / Down Arrow: Move Down",
+	"D / Right Arrow: Move Right",
+	"X: Stealth Travel (Point mouse and press X)",
+	"H: Decrease Player Health",
+	"F: Increase Flow",
+	"Space Bar: Dash (when already moving)",
+	"Escape: Exit Game",
+	"Press 'H' ten times to die",
+	"Press 'P' to see FPS",
+	"Press 'O' to toggle instructions",
+
+
+	};
 };
 
 bool loadEffectFromFile(

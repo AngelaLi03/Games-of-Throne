@@ -35,6 +35,8 @@ public:
 	ComponentContainer<Flow> flows;
 	ComponentContainer<Chef> chef;
 	ComponentContainer<SpriteAnimation> spriteAnimations;
+	ComponentContainer<MoveUI> cameraUI;
+
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -64,6 +66,8 @@ public:
 		registry_list.push_back(&beziers);
 		registry_list.push_back(&chef);
 		registry_list.push_back(&spriteAnimations);
+		registry_list.push_back(&cameraUI);
+
 	}
 
 	void clear_all_components()

@@ -1,4 +1,5 @@
 #pragma once
+#include "node.hpp"
 #include "common.hpp"
 #include <vector>
 #include <unordered_map>
@@ -41,6 +42,9 @@ struct Enemy
 	float time_since_last_attack = 0;
 	float attack_countdown = 500;
 	float attack_damage = 10.0f;
+
+	std::vector<Node> path; // The path to the player
+    int current_path_index = 0;       // Index of the next node to follow
 };
 
 struct Weapon
@@ -203,6 +207,11 @@ struct Chef
 	// when chef just entered combat, play a sound and set back to false
 	bool trigger = false;
 	float sound_trigger_timer = 0;
+};
+
+struct MoveUI
+{
+	
 };
 /**
  * The following enumerators represent global identifiers refering to graphic

@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 // https://www.youtube.com/watch?app=desktop&v=BA6aR_5C_BM - fps source
 extern bool show_fps;
+extern bool show_help_text;
 extern float fps;
 
 glm::mat3 get_transform(const Motion &motion)
@@ -27,8 +28,7 @@ glm::mat3 get_transform(const Motion &motion)
 	return transform.mat;
 }
 
-void RenderSystem::drawTexturedMesh(Entity entity,
-																		const mat3 &projection)
+void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 &projection)
 {
 	Motion &motion = registry.motions.get(entity);
 	// Transformation code, see Rendering and Transformation in the template
@@ -188,6 +188,8 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	glUniformMatrix3fv(transform_loc, 1, GL_FALSE, (float *)&transform_mat);
 	GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
 	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, (float *)&projection);
+	GLuint view_loc = glGetUniformLocation(currProgram, "view");
+	glUniformMatrix3fv(view_loc, 1, GL_FALSE, (float *)&view);
 	gl_has_errors();
 	// Drawing of num_indices/3 triangles specified in the index buffer
 	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
@@ -282,6 +284,7 @@ void RenderSystem::draw()
 	gl_has_errors();
 
 	mat3 projection_2D = createProjectionMatrix();
+	mat3 camera_view = createCameraViewMatrix();
 
 	// Set weapon position to correct offset from player
 	Entity &spy = registry.players.entities[0];
@@ -307,7 +310,15 @@ void RenderSystem::draw()
 
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize
-		drawTexturedMesh(entity, projection_2D);
+		if (registry.cameraUI.has(entity))
+		{
+			mat3 identity_view = mat3(1.0f); // Identity matrix
+			drawTexturedMesh(entity, identity_view, projection_2D);
+		}
+		else {
+			drawTexturedMesh(entity, camera_view, projection_2D);
+
+		}
 	}
 
 	for (Entity enemy : registry.enemies.entities)
@@ -374,6 +385,23 @@ void RenderSystem::draw()
 		}
 	}
 
+	if (show_help_text)
+	{
+		float x = 10.0f; // Starting x position
+		float y = window_height_px - 100.0f; // Starting y position (from top)
+		float lineSpacing = 25.0f; 
+		float scale = 0.8f; 
+		vec3 textColor = vec3(0.2f, 1.0f, 0.1f); 
+
+
+		for (const std::string& line : gameInstructions)
+		{
+			renderText(line, x, y, scale, textColor);
+			y -= lineSpacing; 
+		}
+	}
+
+
 	// Truely render to the screen
 	drawToScreen();
 
@@ -397,6 +425,13 @@ mat3 RenderSystem::createProjectionMatrix()
 	float tx = -(right + left) / (right - left);
 	float ty = -(top + bottom) / (top - bottom);
 	return {{sx, 0.f, 0.f}, {0.f, sy, 0.f}, {tx, ty, 1.f}};
+}
+
+mat3 RenderSystem::createCameraViewMatrix()
+{
+	Transform transform;
+	transform.translate(camera_position * -1.f);
+	return transform.mat;
 }
 
 // boilerplate code generated with the help of gpt

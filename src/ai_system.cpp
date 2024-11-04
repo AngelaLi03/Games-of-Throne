@@ -24,94 +24,64 @@ AISystem::AISystem()
 	// spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
 }
 
-// Calculate Manhattan distance heuristic
-// float calculateHCost(int x1, int y1, int x2, int y2)
-// {
-// 	return std::abs(x1 - x2) + std::abs(y1 - y2);
-// }
-
 // // Check if a position is within the grid bounds and walkable
-// bool isWalkable(int x, int y, const std::vector<std::vector<int>> &grid)
-// {
-// 	return (x >= 0 && y >= 0 && x < grid.size() && y < grid[0].size() && grid[x][y] == 0);
+// bool AISystem::isWalkable(int x, int y, const std::vector<std::vector<int>>& grid) {
+//     return (x >= 0 && y >= 0 && x < grid.size() && y < grid[0].size() && grid[x][y] == 0);
 // }
 
-// std::vector<AISystem::Node> findPathAStar(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>> &grid)
-// {
+// // Breadth-First Search to find the shortest path in an unweighted grid
+// std::vector<Node> AISystem::findPathBFS(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>>& grid) {
+//     std::queue<Node> openSet;  // Queue for BFS
+//     std::unordered_map<int, Node> allNodes;  // To keep track of all visited nodes
 
-// 	std::priority_queue<AISystem::Node, std::vector<AISystem::Node>, std::greater<AISystem::Node>> openSet;
-// 	std::unordered_map<int, AISystem::Node> allNodes; // To keep track of all created nodes
+//     // Helper lambda for generating a unique key based on coordinates
+//     auto nodeKey = [&](int x, int y) { return y * grid[0].size() + x; };
 
-// 	// Lambda for calculating unique node keys based on position
-// 	auto nodeKey = [](int x, int y, int width)
-// 	{ return y * width + x; };
+//     // Initialize the start node
+//     Node startNode = {startX, startY, 0, 0, 0, nullptr};
+//     openSet.push(startNode);
+//     allNodes[nodeKey(startX, startY)] = startNode;
 
-// 	// Initialize the start node
-// 	AISystem::Node startNode = {startX, startY, 0, calculateHCost(startX, startY, targetX, targetY), 0, nullptr};
-// 	openSet.push(startNode);
-// 	allNodes[nodeKey(startX, startY, grid[0].size())] = startNode;
+//     // Possible movement directions (up, right, down, left)
+//     std::vector<std::pair<int, int>> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
 
-// 	// Define possible directions (up, down, left, right)
-// 	std::vector<std::pair<int, int>> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+//     while (!openSet.empty()) {
+//         Node current = openSet.front();
+//         openSet.pop();
 
-// 	while (!openSet.empty())
-// 	{
-// 		AISystem::Node current = openSet.top();
-// 		openSet.pop();
+//         // Check if we reached the target
+//         if (current.x == targetX && current.y == targetY) {
+//             // Reconstruct path by tracing back from the target node
+//             std::vector<Node> path;
+//             Node* pathNode = &current;
+//             while (pathNode) {
+//                 path.push_back(*pathNode);
+//                 pathNode = pathNode->parent;
+//             }
+//             std::reverse(path.begin(), path.end());  // Path is constructed backward
+//             return path;
+//         }
 
-// 		// Check if we reached the target
-// 		if (current.x == targetX && current.y == targetY)
-// 		{
-// 			std::vector<AISystem::Node> path;
-// 			AISystem::Node *pathNode = &current;
-// 			while (pathNode)
-// 			{
-// 				path.push_back(*pathNode);
-// 				pathNode = pathNode->parent;
-// 			}
-// 			std::reverse(path.begin(), path.end());
-// 			return path;
-// 		}
+//         // Explore neighbors
+//         for (const auto& dir : directions) {
+//             int newX = current.x + dir.first;
+//             int newY = current.y + dir.second;
 
-// 		// Explore neighbors
-// 		for (const auto &dir : directions)
-// 		{
-// 			int newX = current.x + dir.first;
-// 			int newY = current.y + dir.second;
+//             if (isWalkable(newX, newY, grid)) {
+//                 int key = nodeKey(newX, newY);
 
-// 			if (isWalkable(newX, newY, grid))
-// 			{
-// 				float newGCost = current.gCost + 1;
-// 				float newHCost = calculateHCost(newX, newY, targetX, targetY);
-// 				float newFCost = newGCost + newHCost;
+//                 // Only add the neighbor if it hasn’t been visited before
+//                 if (allNodes.find(key) == allNodes.end()) {
+//                     Node neighbor = {newX, newY, 0, 0, 0, &allNodes[nodeKey(current.x, current.y)]};
+//                     openSet.push(neighbor);
+//                     allNodes[key] = neighbor;
+//                 }
+//             }
+//         }
+//     }
 
-// 				// Check if this path to neighbor is better or if it hasn't been visited yet
-// 				int key = nodeKey(newX, newY, grid[0].size());
-// 				if (allNodes.find(key) == allNodes.end() || newGCost < allNodes[key].gCost)
-// 				{
-// 					AISystem::Node neighbor = {newX, newY, newGCost, newHCost, newFCost, &allNodes[nodeKey(current.x, current.y, grid[0].size())]};
-// 					openSet.push(neighbor);
-// 					allNodes[key] = neighbor;
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	// Return empty path if no path is found
-// 	return {};
-// }
-
-// // Use findPathAStar to update enemy positions based on player location
-// void updateEnemyPathfinding(int enemyX, int enemyY, int playerX, int playerY, const std::vector<std::vector<int>> &grid)
-// {
-// 	auto path = findPathAStar(enemyX, enemyY, playerX, playerY, grid);
-
-// 	if (!path.empty())
-// 	{
-// 		// Example of using the path: move enemy to the next position in the path
-// 		AISystem::Node nextPosition = path[1]; // path[0] would be the current position
-// 		// Here, you would set the enemy’s position or direction towards nextPosition.x, nextPosition.y
-// 	}
+//     // Return an empty path if no path is found
+//     return {};
 // }
 
 float distance_squared(vec2 a, vec2 b)
@@ -119,21 +89,23 @@ float distance_squared(vec2 a, vec2 b)
 	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
 }
 
-float detection_radius_squared = 240.f * 240.f;
+float detection_radius_squared = 280.f * 280.f;
 float attack_radius_squared = 110.f * 110.f;
 
-void AISystem::step(float elapsed_ms)
+void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 {
 	Entity player = registry.players.entities[0];
 	assert(player);
 	Motion &player_motion = registry.motions.get(player);
+	vec2 player_position = player_motion.position + player_motion.bb_offset;
 	ComponentContainer<Enemy> &enemies = registry.enemies;
 	for (uint i = 0; i < enemies.components.size(); i++)
 	{
 		Enemy &enemy = enemies.components[i];
 		Entity entity = enemies.entities[i];
 		Motion &motion = registry.motions.get(entity);
-		float distance_to_player = distance_squared(player_motion.position, motion.position);
+		vec2 enemy_position = motion.position + motion.bb_offset;
+		float distance_to_player = distance_squared(player_position, enemy_position);
 		if (enemy.state == EnemyState::IDLE)
 		{
 			if (distance_to_player < detection_radius_squared)
@@ -164,9 +136,33 @@ void AISystem::step(float elapsed_ms)
 			else if (distance_to_player > attack_radius_squared)
 			{
 				// move towards player
-				vec2 direction = player_motion.position - motion.position;
+				vec2 direction = player_position - enemy_position;
 				direction = normalize(direction);
 				motion.velocity = direction * 50.f;
+
+				// int tile_x = std::round(enemy_position.x / TILE_SCALE);
+				// int tile_y = std::round(enemy_position.y / TILE_SCALE);
+				// std::cout << "At tile " << tile_x << ", " << tile_y << "; " << levelMap[tile_x][tile_y - 1] << "; " << levelMap[tile_x][tile_y] << "; " << levelMap[tile_x][tile_y + 1] << "; " << levelMap[tile_x][tile_y + 2] << std::endl;
+
+				// // find path to player
+				// enemy.path = findPathBFS(motion.position.x, motion.position.y, player_motion.position.x, player_motion.position.y, levelMap);
+				// if (enemy.path.size() > 0)
+				// {
+				// 	printf("path found\n");
+				// 	// move towards player
+				// 	vec2 direction = {enemy.path[enemy.current_path_index].x, enemy.path[enemy.current_path_index].y};
+				// 	direction = normalize(direction);
+				// 	motion.velocity = direction * 50.f;
+				// 	// if enemy is at the current path node, move to the next node
+				// 	if (distance_squared(motion.position, glm::vec2(enemy.path[enemy.current_path_index].x, enemy.path[enemy.current_path_index].y)) < 10.f)
+				// 	{
+				// 		enemy.current_path_index++;
+				// 		if (enemy.current_path_index >= enemy.path.size())
+				// 		{
+				// 			enemy.current_path_index = 0;
+				// 		}
+				// 	}
+				// }
 			}
 			else
 			{
@@ -179,9 +175,9 @@ void AISystem::step(float elapsed_ms)
 					// change to attack animation sprite
 					enemy.state = EnemyState::ATTACK;
 					auto &animation = registry.spriteAnimations.get(entity);
-        			auto &render_request = registry.renderRequests.get(entity);
+					auto &render_request = registry.renderRequests.get(entity);
 
-					animation.current_frame = 1; 
+					animation.current_frame = 1;
 					render_request.used_texture = animation.frames[animation.current_frame];
 
 					// get motion of the enemy
@@ -268,6 +264,5 @@ void AISystem::step(float elapsed_ms)
 				enemy_motion.scale.x /= 1.1;
 			}
 		}
-
 	}
 }

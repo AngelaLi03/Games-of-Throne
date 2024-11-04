@@ -3,7 +3,7 @@
 #include "iostream"
 
 // Create floor tile entity and add to registry.
-Entity createFloorTile(RenderSystem *renderer, vec2 pos, float tile_scale)
+Entity createFloorTile(RenderSystem *renderer, vec2 pos)
 {
 	auto entity = Entity();
 
@@ -16,7 +16,7 @@ Entity createFloorTile(RenderSystem *renderer, vec2 pos, float tile_scale)
 	motion.position = pos;
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
-	motion.scale = {mesh.original_size.x * tile_scale, mesh.original_size.x * tile_scale};
+	motion.scale = {mesh.original_size.x * TILE_SCALE, mesh.original_size.x * TILE_SCALE};
 	// std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
 	// create an empty floor tile component for our character
 	registry.renderRequests.insert(
@@ -28,7 +28,7 @@ Entity createFloorTile(RenderSystem *renderer, vec2 pos, float tile_scale)
 	return entity;
 }
 
-Entity createWall(RenderSystem *renderer, vec2 pos, float wall_scale)
+Entity createWall(RenderSystem *renderer, vec2 pos)
 {
 	auto entity = Entity();
 
@@ -41,7 +41,7 @@ Entity createWall(RenderSystem *renderer, vec2 pos, float wall_scale)
 	motion.position = pos; // Use the same position or adjust for wall placement
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
-	motion.scale = {mesh.original_size.x * wall_scale, mesh.original_size.x * wall_scale};
+	motion.scale = {mesh.original_size.x * TILE_SCALE, mesh.original_size.x * TILE_SCALE};
 	motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
 
@@ -256,13 +256,13 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	motion.bb_scale = {60.f, 60.f};
 	motion.bb_offset = {0.f, 40.f};
 
-    // Initialize the animation component with frames
-    auto &animation = registry.spriteAnimations.emplace(entity);
-    animation.frames = std::vector<TEXTURE_ASSET_ID>{
-        TEXTURE_ASSET_ID::ENEMY,
-        TEXTURE_ASSET_ID::ENEMY_ATTACK,
-    };
-animation.frame_duration = 1000.f; // Set duration for each frame (adjust as needed)
+	// Initialize the animation component with frames
+	auto &animation = registry.spriteAnimations.emplace(entity);
+	animation.frames = std::vector<TEXTURE_ASSET_ID>{
+			TEXTURE_ASSET_ID::ENEMY,
+			TEXTURE_ASSET_ID::ENEMY_ATTACK,
+	};
+	animation.frame_duration = 1000.f; // Set duration for each frame (adjust as needed)
 
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
