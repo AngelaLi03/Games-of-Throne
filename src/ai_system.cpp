@@ -264,5 +264,10 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 				enemy_motion.scale.x /= 1.1;
 			}
 		}
+		else if (enemy.state == EnemyState::DEAD)
+		{
+			motion.velocity = {0.f, 0.f};
+            continue;
+		}
 	}
 }
