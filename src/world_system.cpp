@@ -41,6 +41,12 @@ WorldSystem::~WorldSystem()
 		Mix_FreeChunk(spy_attack_sound);
 	if (break_sound != nullptr)
 		Mix_FreeChunk(break_sound);
+	if (chef_trigger_sound != nullptr)
+		Mix_FreeChunk(chef_trigger_sound);
+	if (minion_attack_sound != nullptr)
+		Mix_FreeChunk(minion_attack_sound);
+	if (heavy_attack_sound != nullptr)
+		Mix_FreeChunk(heavy_attack_sound);
 
 	Mix_CloseAudio();
 
@@ -129,6 +135,9 @@ GLFWwindow *WorldSystem::create_window()
 	spy_dash_sound = Mix_LoadWAV(audio_path("spy_dash.wav").c_str());
 	spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
 	break_sound = Mix_LoadWAV(audio_path("break.wav").c_str());
+	chef_trigger_sound = Mix_LoadWAV(audio_path("chef_trigger.wav").c_str());
+	minion_attack_sound = Mix_LoadWAV(audio_path("minion_attack.wav").c_str());
+	heavy_attack_sound = Mix_LoadWAV(audio_path("heavy_attack.wav").c_str());
 
 	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
 	{
@@ -150,6 +159,8 @@ void WorldSystem::init(RenderSystem *renderer_arg)
 {
 	this->renderer = renderer_arg;
 	// Playing background music indefinitely
+	// lower volume
+	Mix_VolumeMusic(30);
 	Mix_PlayMusic(background_music, -1);
 	fprintf(stderr, "Loaded music\n");
 
@@ -354,6 +365,60 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
     	}
 	 }
 
+
+	// update animations
+	 for (Entity entity : registry.spriteAnimations.entities) {
+		// if in attack mode, change sprite to attack sprite
+		if (registry.enemies.has(entity) && registry.enemies.get(entity).state == EnemyState::ATTACK) {
+			auto &animation = registry.spriteAnimations.get(entity);
+			auto &render_request = registry.renderRequests.get(entity);
+
+			// Increment elapsed time
+			animation.elapsed_time += elapsed_ms_since_last_update;
+
+			// Check if enough time has passed to switch to the next frame
+			if (animation.elapsed_time >= animation.frame_duration) {
+				// Reset elapsed time for the next frame
+				animation.elapsed_time = 0.0f;
+
+				// Move to the next frame
+				animation.current_frame = (animation.current_frame + 1) % animation.frames.size();
+
+				// Update the texture to the current frame
+				render_request.used_texture = animation.frames[animation.current_frame];
+			}
+    	}
+	 }
+	
+	// play attack sound for each enemy that is attacking
+	for (Entity entity : registry.enemies.entities)
+	{
+		auto &enemy = registry.enemies.get(entity);
+		if (enemy.state == EnemyState::ATTACK)
+		{
+			// lower this audio
+			Mix_Volume(-1, 5);
+			Mix_PlayChannel(-1, minion_attack_sound, 0);
+		}
+	}
+
+	// play chef_trigger audio if chef just entered combat mode
+	for (Entity entity : registry.chef.entities)
+	{
+		auto &enemy = registry.enemies.get(entity);
+		if (registry.chef.get(entity).trigger == true)
+		{
+			// volume up
+			Mix_Volume(-1, 80);
+			Mix_PlayChannel(-1, chef_trigger_sound, 0);
+			if (registry.chef.get(entity).sound_trigger_timer >= elapsed_ms_since_last_update)
+			{
+				registry.chef.get(entity).sound_trigger_timer -= elapsed_ms_since_last_update;
+			} else {
+				registry.chef.get(entity).sound_trigger_timer = 0;
+			}	
+		}
+	}
 
 	return true;
 }
@@ -897,6 +962,10 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 			animation.total_time = 500.f;
 			registry.animations.emplace(player_spy, animation);
 		}
+		// trigger player attack sound
+		// volume up
+		Mix_Volume(1, 100);
+		Mix_PlayChannel(1, spy_attack_sound, 0); // TODO: player sound halted (volume decreased) by other playing sound
 	}
 	if (button == GLFW_MOUSE_BUTTON_RIGHT)
 	{
@@ -920,6 +989,8 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 					if (player.state == PlayerState::IDLE || player.state == PlayerState::CHARGING_FLOW)
 					{
 						std::cout << "Player heavy attack" << std::endl;
+						Mix_Volume(2, 120);
+						Mix_PlayChannel(2, heavy_attack_sound, 0);
 						player.state = PlayerState::HEAVY_ATTACK;
 						flow.flowLevel = 0;
 						if (registry.animations.has(player_spy))

@@ -62,6 +62,8 @@ public:
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&interpolations);
 		registry_list.push_back(&beziers);
+		registry_list.push_back(&chef);
+		registry_list.push_back(&spriteAnimations);
 	}
 
 	void clear_all_components()

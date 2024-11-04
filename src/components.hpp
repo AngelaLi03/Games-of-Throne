@@ -197,6 +197,9 @@ struct TexturedMesh
 
 struct Chef
 {
+	// when chef just entered combat, play a sound and set back to false
+	bool trigger = false;
+	float sound_trigger_timer = 0;
 };
 /**
  * The following enumerators represent global identifiers refering to graphic

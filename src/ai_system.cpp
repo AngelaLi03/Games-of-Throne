@@ -5,6 +5,8 @@
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_mixer.h>
+#include <queue>
+#include <unordered_map>
 
 AISystem::AISystem()
 {
@@ -19,8 +21,98 @@ AISystem::AISystem()
 	// 	fprintf(stderr, "Failed to open audio device");
 	// 	return nullptr;
 	// }
-	spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
+	// spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
 }
+
+// Calculate Manhattan distance heuristic
+// float calculateHCost(int x1, int y1, int x2, int y2)
+// {
+// 	return std::abs(x1 - x2) + std::abs(y1 - y2);
+// }
+
+// // Check if a position is within the grid bounds and walkable
+// bool isWalkable(int x, int y, const std::vector<std::vector<int>> &grid)
+// {
+// 	return (x >= 0 && y >= 0 && x < grid.size() && y < grid[0].size() && grid[x][y] == 0);
+// }
+
+// std::vector<AISystem::Node> findPathAStar(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>> &grid)
+// {
+
+// 	std::priority_queue<AISystem::Node, std::vector<AISystem::Node>, std::greater<AISystem::Node>> openSet;
+// 	std::unordered_map<int, AISystem::Node> allNodes; // To keep track of all created nodes
+
+// 	// Lambda for calculating unique node keys based on position
+// 	auto nodeKey = [](int x, int y, int width)
+// 	{ return y * width + x; };
+
+// 	// Initialize the start node
+// 	AISystem::Node startNode = {startX, startY, 0, calculateHCost(startX, startY, targetX, targetY), 0, nullptr};
+// 	openSet.push(startNode);
+// 	allNodes[nodeKey(startX, startY, grid[0].size())] = startNode;
+
+// 	// Define possible directions (up, down, left, right)
+// 	std::vector<std::pair<int, int>> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+
+// 	while (!openSet.empty())
+// 	{
+// 		AISystem::Node current = openSet.top();
+// 		openSet.pop();
+
+// 		// Check if we reached the target
+// 		if (current.x == targetX && current.y == targetY)
+// 		{
+// 			std::vector<AISystem::Node> path;
+// 			AISystem::Node *pathNode = &current;
+// 			while (pathNode)
+// 			{
+// 				path.push_back(*pathNode);
+// 				pathNode = pathNode->parent;
+// 			}
+// 			std::reverse(path.begin(), path.end());
+// 			return path;
+// 		}
+
+// 		// Explore neighbors
+// 		for (const auto &dir : directions)
+// 		{
+// 			int newX = current.x + dir.first;
+// 			int newY = current.y + dir.second;
+
+// 			if (isWalkable(newX, newY, grid))
+// 			{
+// 				float newGCost = current.gCost + 1;
+// 				float newHCost = calculateHCost(newX, newY, targetX, targetY);
+// 				float newFCost = newGCost + newHCost;
+
+// 				// Check if this path to neighbor is better or if it hasn't been visited yet
+// 				int key = nodeKey(newX, newY, grid[0].size());
+// 				if (allNodes.find(key) == allNodes.end() || newGCost < allNodes[key].gCost)
+// 				{
+// 					AISystem::Node neighbor = {newX, newY, newGCost, newHCost, newFCost, &allNodes[nodeKey(current.x, current.y, grid[0].size())]};
+// 					openSet.push(neighbor);
+// 					allNodes[key] = neighbor;
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// Return empty path if no path is found
+// 	return {};
+// }
+
+// // Use findPathAStar to update enemy positions based on player location
+// void updateEnemyPathfinding(int enemyX, int enemyY, int playerX, int playerY, const std::vector<std::vector<int>> &grid)
+// {
+// 	auto path = findPathAStar(enemyX, enemyY, playerX, playerY, grid);
+
+// 	if (!path.empty())
+// 	{
+// 		// Example of using the path: move enemy to the next position in the path
+// 		AISystem::Node nextPosition = path[1]; // path[0] would be the current position
+// 		// Here, you would set the enemy’s position or direction towards nextPosition.x, nextPosition.y
+// 	}
+// }
 
 float distance_squared(vec2 a, vec2 b)
 {
@@ -51,6 +143,10 @@ void AISystem::step(float elapsed_ms)
 				if (registry.chef.has(entity))
 				{
 					std::cout << "Chef enters combat" << std::endl;
+					// get chef
+					auto &chef = registry.chef.get(entity);
+					chef.trigger = true;
+					chef.sound_trigger_timer = 1200;
 				}
 				else
 					std::cout << "Enemy " << i << " enters combat" << std::endl;
@@ -94,7 +190,15 @@ void AISystem::step(float elapsed_ms)
 
 					enemy.time_since_last_attack = 0.f;
 					// Mix_PlayChannel(-1, spy_attack_sound, 0);
+					
 				}
+			}
+			// if chef, set trigger to false
+			if (registry.chef.has(entity))
+			{
+				auto &chef = registry.chef.get(entity);
+				if (chef.sound_trigger_timer == 0)
+					chef.trigger = false;
 			}
 		}
 		// reset state to combat after attack
@@ -116,5 +220,25 @@ void AISystem::step(float elapsed_ms)
 				enemy_motion.scale.x /= 1.1;
 			}
 		}
+		// reset state to combat after attack
+		else if (enemy.state == EnemyState::ATTACK)
+		{
+			auto &animation = registry.spriteAnimations.get(entity);
+			auto &render_request = registry.renderRequests.get(entity);
+			enemy.attack_countdown -= elapsed_ms;
+
+			if (enemy.attack_countdown <= 0)
+			{
+				enemy.state = EnemyState::COMBAT;
+				printf("Enemy %d finish attack\n", i);
+				enemy.attack_countdown = 500;
+				// change to combat animation sprite
+				render_request.used_texture = animation.frames[0];
+				// get motion of the enemy
+				auto &enemy_motion = registry.motions.get(entity);
+				enemy_motion.scale.x /= 1.1;
+			}
+		}
+
 	}
 }
