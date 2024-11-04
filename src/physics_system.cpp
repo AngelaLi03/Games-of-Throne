@@ -21,7 +21,7 @@ bool collides(const Motion &motion1, const Motion &motion2)
 	vec2 bb1 = get_bounding_box(motion1);
 	vec2 bb2 = get_bounding_box(motion2);
 	vec2 pos1 = motion1.position + motion1.bb_offset - bb1 / 2.f;
-	vec2 pos2 = motion2.position + motion1.bb_offset - bb2 / 2.f;
+	vec2 pos2 = motion2.position + motion2.bb_offset - bb2 / 2.f;
 	return pos1.x + bb1.x >= pos2.x && pos2.x + bb2.x >= pos1.x && pos1.y + bb1.y >= pos2.y && pos2.y + bb2.y >= pos1.y;
 }
 
@@ -162,7 +162,7 @@ void PhysicsSystem::step(float elapsed_ms)
 			vec2 b1 = get_bounding_box(motion_i);
 			vec2 b2 = get_bounding_box(motion_j);
 			vec2 p1 = motion_i.position + motion_i.bb_offset - b1 / 2.f;
-			vec2 p2 = motion_j.position + motion_i.bb_offset - b2 / 2.f;
+			vec2 p2 = motion_j.position + motion_j.bb_offset - b2 / 2.f;
 
 			if (collides(motion_i, motion_j))
 			{
@@ -255,15 +255,6 @@ void PhysicsSystem::step(float elapsed_ms)
 					}
 				}
 			}
-			// Motion &motion_j = physicsBody_container.components[j];
-			// if (collides(motion_i, motion_j))
-			// {
-			// 	Entity entity_j = physicsBody_container.entities[j];
-			// 	// Create a collisions event
-			// 	// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
-			// 	registry.collisions.emplace_with_duplicates(entity_i, entity_j);
-			// 	registry.collisions.emplace_with_duplicates(entity_j, entity_i);
-			// }
 		}
 	}
 }

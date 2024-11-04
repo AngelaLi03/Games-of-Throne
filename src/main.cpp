@@ -50,7 +50,7 @@ int main()
 		t = now;
 
 		world.step(elapsed_ms);
-		ai.step(elapsed_ms);
+		ai.step(elapsed_ms, world.levelMap);
 		physics.step(elapsed_ms);
 		world.handle_collisions();
 

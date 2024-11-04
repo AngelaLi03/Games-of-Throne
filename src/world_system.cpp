@@ -14,8 +14,14 @@ float FLOW_CHARGE_PER_SECOND = 33.f;
 vec2 player_movement_direction = {0.f, 0.f};
 vec2 curr_mouse_position;
 bool show_fps = false;
-bool show_help_text = true;
+bool show_help_text = false;
 bool is_right_mouse_button_down = false;
+
+std::vector<vec2> mousePath; // Stores points along the mouse path
+bool isTrackingMouse = false;
+// Threshold constants for gesture detection
+const float S_THRESHOLD = 20.0f;
+const float MIN_S_LENGTH = 100.0f;
 
 // create the underwater world
 WorldSystem::WorldSystem()
@@ -288,9 +294,9 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 			if (owner_entity == player_spy)
 			{
-				if (!registry.cameraUI.has(health_bar_entity)) {
+				if (!registry.cameraUI.has(health_bar_entity))
+				{
 					registry.cameraUI.emplace(health_bar_entity);
-
 				}
 
 				health_bar_motion.position = vec2(50.f, 50.f);
@@ -555,7 +561,7 @@ void WorldSystem::restart_game()
 	int floor_number_width = screen_width * 4 / tile_scale + 1;
 	int floor_number_height = screen_height * 4 / tile_scale + 1;
 
-	std::vector<std::vector<int>> levelMap(floor_number_width, std::vector<int>(floor_number_height, 0));
+	levelMap = std::vector<std::vector<int>>(floor_number_width, std::vector<int>(floor_number_height, 0));
 
 	int center_x = floor_number_width / 2;
 	int center_y = floor_number_height / 2;
@@ -608,15 +614,17 @@ void WorldSystem::restart_game()
 	// 	createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
 	// }
 
-	for (int i = 0; i < ENEMIES_COUNT; i++)
-	{
-		createEnemy(renderer, vec2(window_width_px / 2 + 200 + 100 * i, window_height_px / 2 - 30));
-		createEnemy(renderer, vec2(window_width_px / 2 + 100 * i, window_height_px / 2 - 150));
-		createEnemy(renderer, vec2(window_width_px - 100 * (i + 1), window_height_px - 150));
-	}
+	// for (int i = 0; i < ENEMIES_COUNT; i++)
+	// {
+	// 	createEnemy(renderer, vec2(window_width_px * 2 + 400 + 100 * i, window_height_px * 2 - 30));
+	// 	createEnemy(renderer, vec2(window_width_px * 2 + 300 * i, window_height_px * 2 - 150));
+	// 	// createEnemy(renderer, vec2(window_width_px + 100 * (i + 1), window_height_px - 150));
+	// }
 
-	Entity weapon = createWeapon(renderer, {window_width_px / 2, window_height_px - 200});
-	player_spy = createSpy(renderer, {window_width_px / 2, window_height_px - 200});
+	createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
+
+	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2});
+	player_spy = createSpy(renderer, {window_width_px * 2 + 200, window_height_px * 2});
 
 	vec2 weapon_offset = vec2(45.f, -50.f);
 
@@ -628,7 +636,7 @@ void WorldSystem::restart_game()
 	// registry.healthbarlink.emplace(health_bar, player_spy);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
-	Entity chef = createChef(renderer, {window_width_px - 300.f, window_height_px - 200.f});
+	Entity chef = createChef(renderer, {window_width_px * 2 + 500.f, window_height_px * 2 + 100.f});
 }
 
 void process_animation(AnimationName name, float t, Entity entity)
@@ -809,15 +817,15 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	// For debugging flow meter:
-	 if (action == GLFW_PRESS && key == GLFW_KEY_F)
-	 {
-	 	if (registry.flows.has(flowMeterEntity))
-	 	{
-	 		Flow &flow = registry.flows.get(flowMeterEntity);
-	 		flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
-	 		std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
-	 	}
-	 }
+	if (action == GLFW_PRESS && key == GLFW_KEY_F)
+	{
+		if (registry.flows.has(flowMeterEntity))
+		{
+			Flow &flow = registry.flows.get(flowMeterEntity);
+			flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
+			std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
+		}
+	}
 
 	// Debugging
 	if (key == GLFW_KEY_D && (mod & GLFW_MOD_SHIFT) && action == GLFW_PRESS)
@@ -1009,7 +1017,43 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 		spy_motion.scale.x = -abs(spy_motion.scale.x);
 	}
 
-	(vec2) mouse_position; // dummy to avoid compiler warning
+	if (isTrackingMouse)
+	{
+		// Store the current mouse position in the path
+		mousePath.push_back({mouse_position.x, mouse_position.y});
+	}
+	// (vec2) mouse_position; // dummy to avoid compiler warning
+}
+
+bool WorldSystem::isSGesture()
+{
+	if (mousePath.size() < 5)
+		return false; // Not enough points for an "S" shape
+
+	bool leftToRight = false, rightToLeft = false;
+	float length = 0.0f;
+
+	for (size_t i = 1; i < mousePath.size(); ++i)
+	{
+		float dx = mousePath[i].x - mousePath[i - 1].x;
+		float dy = mousePath[i].y - mousePath[i - 1].y;
+		length += std::sqrt(dx * dx + dy * dy);
+
+		if (dx > S_THRESHOLD)
+		{
+			leftToRight = true;
+		}
+		else if (dx < -S_THRESHOLD && leftToRight)
+		{
+			rightToLeft = true;
+		}
+
+		if (leftToRight && rightToLeft && length > MIN_S_LENGTH)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void WorldSystem::on_mouse_button(int button, int action, int mods)
@@ -1017,6 +1061,8 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 	std::cout << "Mouse button " << button << " " << action << " " << mods << std::endl;
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{
+		isTrackingMouse = true; // tracking mouse gesture if any
+		mousePath.clear();
 		Player &player = registry.players.get(player_spy);
 		if (player.state == PlayerState::IDLE)
 		{
@@ -1036,6 +1082,19 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 		// volume up
 		Mix_Volume(1, 100);
 		Mix_PlayChannel(1, spy_attack_sound, 0); // TODO: player sound halted (volume decreased) by other playing sound
+	}
+	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+	{
+		isTrackingMouse = false;
+		if (WorldSystem::isSGesture())
+		{
+			// make spy grow in size
+			Motion &spy_motion = registry.motions.get(player_spy);
+			spy_motion.scale = spy_motion.scale * 1.5f;
+			spy_motion.bb_scale *= 1.5f;
+			printf("S gesture detected\n");
+		}
+		mousePath.clear();
 	}
 	if (button == GLFW_MOUSE_BUTTON_RIGHT)
 	{
