@@ -3,8 +3,15 @@
 #include <SDL.h>
 
 #include "tiny_ecs_registry.hpp"
-
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include <sstream>
 #include <iostream>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+// https://www.youtube.com/watch?app=desktop&v=BA6aR_5C_BM - fps source
+extern bool show_fps;
+extern float fps;
 
 glm::mat3 get_transform(const Motion &motion)
 {
@@ -191,10 +198,11 @@ void RenderSystem::drawToScreen()
 	glClearColor(1.f, 0, 0, 1.0);
 	glClearDepth(1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBindVertexArray(vao); // ensure valid vao
 	gl_has_errors();
 	// Enabling alpha channel for textures
 	glDisable(GL_BLEND);
-	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_DEPTH_TEST);
 
 	// Draw the screen texture on the quad geometry
@@ -204,6 +212,7 @@ void RenderSystem::drawToScreen()
 			index_buffers[(GLuint)GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE]); // Note, GL_ELEMENT_ARRAY_BUFFER associates
 																																	 // indices to the bound GL_ARRAY_BUFFER
 	gl_has_errors();
+
 	const GLuint water_program = effects[(GLuint)EFFECT_ASSET_ID::WATER];
 	// Set clock
 	GLuint time_uloc = glGetUniformLocation(water_program, "time");
@@ -212,6 +221,7 @@ void RenderSystem::drawToScreen()
 	ScreenState &screen = registry.screenStates.get(screen_state_entity);
 	glUniform1f(dead_timer_uloc, screen.darken_screen_factor);
 	gl_has_errors();
+
 	// Set the vertex position and vertex texture coordinates (both stored in the
 	// same VBO)
 	GLint in_position_loc = glGetAttribLocation(water_program, "in_position");
@@ -224,6 +234,7 @@ void RenderSystem::drawToScreen()
 
 	glBindTexture(GL_TEXTURE_2D, off_screen_render_buffer_color);
 	gl_has_errors();
+
 	// Draw
 	glDrawElements(
 			GL_TRIANGLES, 3, GL_UNSIGNED_SHORT,
@@ -254,7 +265,9 @@ void RenderSystem::draw()
 	glDisable(GL_DEPTH_TEST); // native OpenGL does not work with a depth buffer
 														// and alpha blending, one would have to sort
 														// sprites back to front
+	glBindVertexArray(vao);		// ensure valid vao
 	gl_has_errors();
+
 	mat3 projection_2D = createProjectionMatrix();
 
 	// Set weapon position to correct offset from player
@@ -309,7 +322,7 @@ void RenderSystem::draw()
 		// 	// get motion of the enemy
 		// 	auto& enemy_motion = registry.motions.get(enemy);
 		// 	enemy_motion.scale.x *= 1.2;
-		// }	
+		// }
 		// if(enemy_state.state == EnemyState::COMBAT && !registry.chef.has(enemy) && ! (render_request.used_texture == TEXTURE_ASSET_ID::ENEMY)){
 		// 	render_request.used_texture = TEXTURE_ASSET_ID::ENEMY;
 		// 	auto& enemy_motion = registry.motions.get(enemy);
@@ -336,6 +349,18 @@ void RenderSystem::draw()
 		render_request.used_texture = TEXTURE_ASSET_ID::SPY_CORPSE;
 	}
 
+	// Render FPS in top-right corner
+	if (show_fps)
+	{
+		int fpsInt = static_cast<int>(fps);
+		if (fpsInt != 0)
+		{
+			std::stringstream fpsText;
+			fpsText << "FPS: " << fpsInt;
+			renderText(fpsText.str(), 5.f, window_height_px - 30.f, 1.0f, vec3(1.0, 0.0, 0.0));
+		}
+	}
+
 	// Truely render to the screen
 	drawToScreen();
 
@@ -359,4 +384,238 @@ mat3 RenderSystem::createProjectionMatrix()
 	float tx = -(right + left) / (right - left);
 	float ty = -(top + bottom) / (top - bottom);
 	return {{sx, 0.f, 0.f}, {0.f, sy, 0.f}, {tx, ty, 1.f}};
+}
+
+// boilerplate code generated with the help of gpt
+// and https://learnopengl.com/code_viewer_gh.php?code=src/7.in_practice/2.text_rendering/text_rendering.cpp
+void RenderSystem::renderText(const std::string &text, float x, float y, float scale, vec3 color)
+{
+	// Note: (0, 0) for renderText (x, y) is the bottom-left corner of the window (instead of top-left for the rest of the game)
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDisable(GL_DEPTH_TEST); // Disable depth testing to ensure text renders on top - added
+
+	GLuint textProgram = effects[(GLuint)EFFECT_ASSET_ID::TEXT];
+	glUseProgram(textProgram);
+	gl_has_errors();
+
+	// Set the text color uniform
+	GLint textColorLoc = glGetUniformLocation(textProgram, "textColor");
+	if (textColorLoc == -1)
+	{
+		std::cerr << "Could not find 'textColor' uniform location." << std::endl;
+		assert(false);
+	}
+	glUniform3f(textColorLoc, color.x, color.y, color.z);
+	gl_has_errors();
+
+	Transform transform;
+	transform.translate({x, y});
+	transform.scale({1.f, 1.f});
+	GLint textTransformLoc = glGetUniformLocation(textProgram, "transform");
+	glUniformMatrix3fv(textTransformLoc, 1, GL_FALSE, (float *)&transform.mat);
+
+	// Set the sampler uniform to use texture unit 0
+	GLint samplerLoc = glGetUniformLocation(textProgram, "text");
+	if (samplerLoc == -1)
+	{
+		std::cerr << "Could not find 'text' sampler uniform location." << std::endl;
+		assert(false);
+	}
+	glUniform1i(samplerLoc, 0); // Texture unit 0
+	gl_has_errors();
+
+	// Bind the VAO
+	glBindVertexArray(textVAO);
+	gl_has_errors();
+
+	// Activate texture unit 0
+	glActiveTexture(GL_TEXTURE0);
+	gl_has_errors();
+
+	// Iterate through all characters in the text string
+	for (const char &c : text)
+	{
+		// Check if the character exists in the map
+		if (characters.find(c) == characters.end())
+		{
+			std::cerr << "Character '" << c << "' not found in character map." << std::endl;
+			assert(false);
+
+			continue;
+		}
+
+		Character ch = characters[c];
+
+		// std::cout << "Character '" << c << "' should be rendered" << std::endl;
+
+		// Calculate the position and size of the character quad
+		float xpos = x + ch.Bearing.x * scale;
+		float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+		float w = ch.Size.x * scale;
+		float h = ch.Size.y * scale;
+
+		// Define the vertex data for the character quad
+		float vertices[6][4] = {
+				{xpos, ypos + h, 0.0f, 0.0f},
+				{xpos, ypos, 0.0f, 1.0f},
+				{xpos + w, ypos, 1.0f, 1.0f},
+
+				{xpos, ypos + h, 0.0f, 0.0f},
+				{xpos + w, ypos, 1.0f, 1.0f},
+				{xpos + w, ypos + h, 1.0f, 0.0f}};
+
+		// Bind the glyph texture
+		glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+		gl_has_errors();
+
+		// Update the content of the VBO with the character quad data
+		glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+		gl_has_errors();
+
+		// Render the character quad
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		gl_has_errors();
+
+		// Advance the cursor to the next character position
+		x += (ch.Advance >> 6) * scale; // Bitshift by 6 to get value in pixels (1/64)
+	}
+
+	// Unbind the VAO and texture
+	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	gl_has_errors();
+}
+
+void RenderSystem::initTextRendering()
+{
+	// Generate VAO and VBO
+	glGenVertexArrays(1, &textVAO);
+	glGenBuffers(1, &textVBO);
+
+	// Bind VAO and VBO
+	glBindVertexArray(textVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+
+	// Reserve buffer space but don't fill it yet
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, nullptr, GL_DYNAMIC_DRAW);
+
+	// Configure vertex attributes
+	glEnableVertexAttribArray(0); // Layout location 0 in shader
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+
+	// Unbind VAO and VBO to prevent accidental modification
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	gl_has_errors();
+
+	std::cout << "initTextRendering() completed" << std::endl;
+}
+
+void RenderSystem::loadFont(const std::string &fontPath)
+{
+
+	textProgram = effects[(GLuint)EFFECT_ASSET_ID::TEXT];
+	glUseProgram(textProgram);
+
+	glm::mat4 projection = glm::ortho(
+			0.0f, static_cast<float>(window_width_px),
+			0.0f, static_cast<float>(window_height_px));
+
+	GLint projLoc = glGetUniformLocation(textProgram, "projection");
+	if (projLoc == -1)
+	{
+		std::cerr << "Failed to find 'projection' uniform in text shader." << std::endl;
+		assert(false);
+		return;
+	}
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, (float *)&projection);
+	std::cout << "projection being set properly." << std::endl;
+
+	// Initialize FreeType library
+	FT_Library ft;
+	if (FT_Init_FreeType(&ft))
+	{
+		std::cerr << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+		assert(false);
+		return;
+	}
+
+	// Load font face
+	FT_Face face;
+	if (FT_New_Face(ft, fontPath.c_str(), 0, &face))
+	{
+		std::cerr << "ERROR::FREETYPE: Failed to load font: " << fontPath << std::endl;
+		assert(false);
+		return;
+	}
+	else
+	{
+		std::cout << "Loading font from: " << fontPath << std::endl;
+	}
+
+	// Set font size
+	FT_Set_Pixel_Sizes(face, 0, 24); // Adjust the font size as needed
+
+	// Disable byte-alignment restriction
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	// Load the first 128 ASCII characters
+	for (unsigned char c = 0; c < 128; c++)
+	{
+		// Load character glyph
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+		{
+			std::cerr << "ERROR::FREETYPE: Failed to load Glyph for character " << c << std::endl;
+			continue;
+		}
+
+		// Generate texture for the glyph
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		// Set texture parameters
+		glTexImage2D(
+				GL_TEXTURE_2D,
+				0,
+				GL_RED, // Use GL_RED since glyphs are grayscale
+				face->glyph->bitmap.width,
+				face->glyph->bitmap.rows,
+				0,
+				GL_RED,
+				GL_UNSIGNED_BYTE,
+				face->glyph->bitmap.buffer);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevent wrapping
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Prevent wrapping
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);		 // Linear filtering
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		Character character = {
+				texture,
+				glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+				glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+				static_cast<GLuint>(face->glyph->advance.x)};
+		characters.insert(std::pair<char, Character>(c, character));
+	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	// Clean up FreeType resources
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
+
+	// bind buffers
+	glBindVertexArray(textVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+
+	// Unbind texture
+	glBindTexture(GL_TEXTURE_2D, 0);
 }

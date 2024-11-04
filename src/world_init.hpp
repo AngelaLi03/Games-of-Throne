@@ -17,7 +17,7 @@ Entity createFish(RenderSystem *renderer, vec2 position);
 // the enemy
 Entity createEel(RenderSystem *renderer, vec2 position);
 
-Entity createBox(vec2 position, vec2 scale, vec3 color, float angle = 0.f);
+void createBox(vec2 position, vec2 scale, vec3 color, float angle = 0.f);
 
 // a red line for debugging purposes
 Entity createLine(vec2 position, vec2 size, vec3 color, float angle = 0.f);

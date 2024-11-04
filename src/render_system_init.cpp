@@ -5,6 +5,8 @@
 #include <fstream>
 
 #include "../ext/stb_image/stb_image.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 // This creates circular header inclusion, that is quite bad.
 #include "tiny_ecs_registry.hpp"
@@ -12,6 +14,8 @@
 // stlib
 #include <iostream>
 #include <sstream>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // World initialization
 bool RenderSystem::init(GLFWwindow *window_arg)
@@ -48,9 +52,6 @@ bool RenderSystem::init(GLFWwindow *window_arg)
 	// code to use OpenGL 4.3 (not suported in macOS) and add additional .h and .cpp
 	// glDebugMessageCallback((GLDEBUGPROC)errorCallback, nullptr);
 
-	// We are not really using VAO's but without at least one bound we will crash in
-	// some systems.
-	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	gl_has_errors();
@@ -58,7 +59,15 @@ bool RenderSystem::init(GLFWwindow *window_arg)
 	initScreenTexture();
 	initializeGlTextures();
 	initializeGlEffects();
+
+	gl_has_errors();
+
 	initializeGlGeometryBuffers();
+	initTextRendering();
+	loadFont(font_path("Arial.ttf"));
+	// initializeTextRendering();
+
+	gl_has_errors();
 
 	return true;
 }
@@ -263,6 +272,15 @@ RenderSystem::~RenderSystem()
 	glDeleteFramebuffers(1, &frame_buffer);
 	gl_has_errors();
 
+	glDeleteVertexArrays(1, &textVAO);
+	glDeleteBuffers(1, &textVBO);
+
+	// Delete character textures
+	for (auto &pair : characters)
+	{
+		glDeleteTextures(1, &pair.second.TextureID);
+	}
+
 	// remove all entities created by the render system
 	while (registry.renderRequests.entities.size() > 0)
 		registry.remove_all_components_of(registry.renderRequests.entities.back());
@@ -396,3 +414,100 @@ bool loadEffectFromFile(
 
 	return true;
 }
+
+/*
+void RenderSystem::initializeTextRendering()
+{
+	// enable blending or you will just get solid boxes instead of text
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Generate VAO and VBO
+	glGenVertexArrays(1, &textVAO);
+	glGenBuffers(1, &textVBO);
+
+	// apply orthographic projection matrix for font, i.e., screen space
+	// glUseProgram(m_font_shaderProgram);
+	// glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window.window_width_px()), 0.0f, static_cast<float>(window.window_height_px()));
+	// GLint project_location = glGetUniformLocation(m_font_shaderProgram, "projection");
+	// assert(project_location > -1);
+	// std::cout << "project_location: " << project_location << std::endl;
+	// glUniformMatrix4fv(project_location, 1, GL_FALSE, glm::value_ptr(projection));
+
+	// init freetype fonts
+	FT_Library ft;
+
+	assert(!FT_Init_FreeType(&ft) && "Could not initialize FreeType library");
+
+	FT_Face face;
+	assert(!FT_New_Face(ft, font_path("Arial.ttf").c_str(), 0, &face) && "Failed to load font");
+
+	// extract a default size
+	FT_Set_Pixel_Sizes(face, 0, 24);
+
+	// disable byte-alignment restriction in OpenGL
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	// load each of the chars - note only first 128 ASCII chars
+	for (unsigned char c = (unsigned char)0; c < (unsigned char)128; c++)
+	{
+		// load character glyph
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+		{
+			std::cerr << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+			continue;
+		}
+
+		// generate texture
+		unsigned int texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		// std::cout << "texture: " << c << " = " << texture << std::endl;
+
+		glTexImage2D(
+				GL_TEXTURE_2D,
+				0,
+				GL_RED,
+				face->glyph->bitmap.width,
+				face->glyph->bitmap.rows,
+				0,
+				GL_RED,
+				GL_UNSIGNED_BYTE,
+				face->glyph->bitmap.buffer);
+
+		// set texture options
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		// now store character for later use
+		Character character = {
+				texture,
+				glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+				glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+				static_cast<unsigned int>(face->glyph->advance.x),
+				(char)c};
+		characters.insert(std::pair<char, Character>(c, character));
+	}
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// clean up
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
+
+	// bind buffers
+	glBindVertexArray(textVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+
+	// release buffers
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	gl_has_errors();
+}
+*/

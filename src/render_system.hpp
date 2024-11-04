@@ -2,10 +2,23 @@
 
 #include <array>
 #include <utility>
+#include <map>
 
 #include "common.hpp"
 #include "components.hpp"
 #include "tiny_ecs.hpp"
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+// font character structure
+struct Character
+{
+	unsigned int TextureID; // ID handle of the glyph texture
+	glm::ivec2 Size;				// Size of glyph
+	glm::ivec2 Bearing;			// Offset from baseline to left/top of glyph
+	unsigned int Advance;		// Offset to advance to next glyph
+	char character;
+};
 
 glm::mat3 get_transform(const Motion &motion);
 
@@ -57,7 +70,7 @@ class RenderSystem
 			shader_path("water"),
 			shader_path("progress_bar"),
 			shader_path("liquid_fill"),
-	};
+			shader_path("text")};
 
 	std::array<GLuint, geometry_count> vertex_buffers;
 	std::array<GLuint, geometry_count> index_buffers;
@@ -90,8 +103,11 @@ public:
 
 	// Draw all entities
 	void draw();
-
+	void renderText(const std::string &text, float x, float y, float scale, vec3 color);
+	// void initializeTextRendering();
 	mat3 createProjectionMatrix();
+	void initTextRendering(); // Add this method declaration
+	void loadFont(const std::string &fontPath);
 
 private:
 	// Internal drawing functions for each entity type
@@ -106,7 +122,13 @@ private:
 	GLuint off_screen_render_buffer_color;
 	GLuint off_screen_render_buffer_depth;
 
+	GLuint vao;
+
+	GLuint textVAO;
+	GLuint textVBO;
+	GLuint textProgram;
 	Entity screen_state_entity;
+	std::map<char, Character> characters;
 };
 
 bool loadEffectFromFile(

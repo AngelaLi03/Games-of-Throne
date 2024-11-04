@@ -1,9 +1,9 @@
 
 #define GL3W_IMPLEMENTATION
 #include <gl3w.h>
-
 // stlib
 #include <chrono>
+#include <iostream>
 
 // internal
 #include "physics_system.hpp"

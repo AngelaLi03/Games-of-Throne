@@ -335,7 +335,7 @@ Entity createEel(RenderSystem *renderer, vec2 position)
 	return entity;
 }
 
-Entity createBox(vec2 position, vec2 scale, vec3 color, float angle)
+void createBox(vec2 position, vec2 scale, vec3 color, float angle)
 {
 	float width = 5;
 	// scale = {abs(scale.x), abs(scale.y)};

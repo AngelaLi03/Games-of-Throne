@@ -60,6 +60,40 @@ endif()
 set(glm_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/glm/cmake/glm) # if necessary
 find_package(glm REQUIRED)
 
+
+
+
+if (IS_OS_WINDOWS)
+    # Updated FreeType include directory
+    set(FREETYPE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/include")  # Path to FreeType include folder
+    # Updated FreeType library path
+    set(FREETYPE_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/freetype.lib")  # Path to freetype.lib
+else()
+    find_package(Freetype REQUIRED)
+    if (FREETYPE_FOUND)
+        message(STATUS "FreeType found: ${FREETYPE_INCLUDE_DIRS}")
+        # FreeType include and library directories found by CMake
+        set(FREETYPE_INCLUDE_DIR ${FREETYPE_INCLUDE_DIRS})
+        set(FREETYPE_LIBRARY ${FREETYPE_LIBRARIES})
+    else()
+        # Manually specify the paths if find_package fails
+        set(FREETYPE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/include")
+        set(FREETYPE_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/libfreetype.a")
+    endif()
+endif()
+
+# Add FreeType include and link directories
+target_include_directories(${PROJECT_NAME} PUBLIC ${FREETYPE_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PUBLIC "${FREETYPE_LIBRARY}")
+
+# Copy freetype.dll to the output directory
+if (IS_OS_WINDOWS)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/freetype.dll"  # Path to freetype.dll
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/freetype.dll")       # Destination directory
+endif()
+
 # GLFW, SDL2 could be precompiled (on windows) or installed by a package manager (on OSX and Linux)
 if (IS_OS_LINUX OR IS_OS_MAC)
     # Try to find packages rather than to use the precompiled ones

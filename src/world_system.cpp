@@ -13,6 +13,7 @@ int ENEMIES_COUNT = 5;
 float FLOW_CHARGE_PER_SECOND = 33.f;
 vec2 player_movement_direction = {0.f, 0.f};
 vec2 curr_mouse_position;
+bool show_fps = false;
 bool is_right_mouse_button_down = false;
 
 // create the underwater world
@@ -93,7 +94,7 @@ GLFWwindow *WorldSystem::create_window()
 	glfwWindowHint(GLFW_RESIZABLE, 0);
 
 	// Create the main window (for rendering, keyboard, and mouse input)
-	window = glfwCreateWindow(window_width_px, window_height_px, "Salmon Game Assignment", nullptr, nullptr);
+	window = glfwCreateWindow(window_width_px, window_height_px, "Games of Throne", nullptr, nullptr);
 	if (window == nullptr)
 	{
 		fprintf(stderr, "Failed to glfwCreateWindow");
@@ -168,12 +169,28 @@ void WorldSystem::init(RenderSystem *renderer_arg)
 	restart_game();
 }
 
+float elapsed_time = 0.f;
+float frame_count = 0.f;
+float fps = 0.f;
+
 // Update our game world
 bool WorldSystem::step(float elapsed_ms_since_last_update)
 {
-	// Updating window title with points
+
+	elapsed_time += elapsed_ms_since_last_update / 1000.f; // ms to second convert
+	frame_count++;
+
+	if (elapsed_time >= 1)
+	{
+		// Update FPS every second
+		fps = frame_count / elapsed_time;
+		frame_count = 0.f;
+		elapsed_time = 0.f;
+	}
+
+	// Update window title
 	std::stringstream title_ss;
-	title_ss << "Points: " << points;
+	title_ss << "Frames Per Second: " << fps;
 	glfwSetWindowTitle(window, title_ss.str().c_str());
 
 	// Remove debug info from the last step
@@ -342,9 +359,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	}
 
 	// update animations
-	 for (Entity entity : registry.spriteAnimations.entities) {
+	for (Entity entity : registry.spriteAnimations.entities)
+	{
 		// if in attack mode, change sprite to attack sprite
-		if (registry.enemies.has(entity) && registry.enemies.get(entity).state == EnemyState::ATTACK) {
+		if (registry.enemies.has(entity) && registry.enemies.get(entity).state == EnemyState::ATTACK)
+		{
 			auto &animation = registry.spriteAnimations.get(entity);
 			auto &render_request = registry.renderRequests.get(entity);
 
@@ -352,7 +371,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			animation.elapsed_time += elapsed_ms_since_last_update;
 
 			// Check if enough time has passed to switch to the next frame
-			if (animation.elapsed_time >= animation.frame_duration) {
+			if (animation.elapsed_time >= animation.frame_duration)
+			{
 				// Reset elapsed time for the next frame
 				animation.elapsed_time = 0.0f;
 
@@ -362,14 +382,15 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 				// Update the texture to the current frame
 				render_request.used_texture = animation.frames[animation.current_frame];
 			}
-    	}
-	 }
-
+		}
+	}
 
 	// update animations
-	 for (Entity entity : registry.spriteAnimations.entities) {
+	for (Entity entity : registry.spriteAnimations.entities)
+	{
 		// if in attack mode, change sprite to attack sprite
-		if (registry.enemies.has(entity) && registry.enemies.get(entity).state == EnemyState::ATTACK) {
+		if (registry.enemies.has(entity) && registry.enemies.get(entity).state == EnemyState::ATTACK)
+		{
 			auto &animation = registry.spriteAnimations.get(entity);
 			auto &render_request = registry.renderRequests.get(entity);
 
@@ -377,7 +398,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			animation.elapsed_time += elapsed_ms_since_last_update;
 
 			// Check if enough time has passed to switch to the next frame
-			if (animation.elapsed_time >= animation.frame_duration) {
+			if (animation.elapsed_time >= animation.frame_duration)
+			{
 				// Reset elapsed time for the next frame
 				animation.elapsed_time = 0.0f;
 
@@ -387,9 +409,9 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 				// Update the texture to the current frame
 				render_request.used_texture = animation.frames[animation.current_frame];
 			}
-    	}
-	 }
-	
+		}
+	}
+
 	// play attack sound for each enemy that is attacking
 	for (Entity entity : registry.enemies.entities)
 	{
@@ -414,9 +436,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			if (registry.chef.get(entity).sound_trigger_timer >= elapsed_ms_since_last_update)
 			{
 				registry.chef.get(entity).sound_trigger_timer -= elapsed_ms_since_last_update;
-			} else {
+			}
+			else
+			{
 				registry.chef.get(entity).sound_trigger_timer = 0;
-			}	
+			}
 		}
 	}
 
@@ -751,15 +775,16 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		restart_game();
 	}
 
-	if (action == GLFW_PRESS && key == GLFW_KEY_F)
-	{
-		if (registry.flows.has(flowMeterEntity))
-		{
-			Flow &flow = registry.flows.get(flowMeterEntity);
-			flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
-			std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
-		}
-	}
+	// For debugging flow meter:
+	// if (action == GLFW_PRESS && key == GLFW_KEY_F)
+	// {
+	// 	if (registry.flows.has(flowMeterEntity))
+	// 	{
+	// 		Flow &flow = registry.flows.get(flowMeterEntity);
+	// 		flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
+	// 		std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
+	// 	}
+	// }
 
 	// Debugging
 	if (key == GLFW_KEY_D && (mod & GLFW_MOD_SHIFT) && action == GLFW_PRESS)
@@ -784,6 +809,13 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
+	}
+
+	// FPS toggle
+	if (key == GLFW_KEY_F && action == GLFW_PRESS)
+	{
+		show_fps = !show_fps;
+		std::cout << "Show FPS: " << (show_fps ? "ON" : "OFF") << std::endl;
 	}
 
 	float speed = 60.f;
@@ -920,7 +952,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
 {
-
 	curr_mouse_position = mouse_position;
 	Motion &spy_motion = registry.motions.get(player_spy);
 
