@@ -8,6 +8,174 @@
 #include <queue>
 #include <unordered_map>
 
+#include "world_init.hpp"
+
+float distance_squared(vec2 a, vec2 b)
+{
+	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
+}
+
+float detection_radius_squared = 280.f * 280.f;
+float attack_radius_squared = 110.f * 110.f;
+
+void AISystem::perform_chef_attack(ChefAttack attack)
+{
+	Entity chef_entity = registry.chef.entities[0];
+	Motion &chef_motion = registry.motions.get(chef_entity);
+	Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+	vec2 player_position = player_motion.position + player_motion.bb_offset;
+	vec2 chef_position = chef_motion.position + chef_motion.bb_offset;
+	if (attack == ChefAttack::TOMATO)
+	{
+		vec2 direction = normalize(player_position - chef_position);
+		for (int i = 0; i < 5; i++)
+		{
+			float angle_offset = -0.3f + (0.6f / 9.0f) * i;
+			vec2 spread_direction = vec2((direction.x * cos(angle_offset) - direction.y * sin(angle_offset)), (direction.x * sin(angle_offset) + direction.y * cos(angle_offset)));
+			vec2 velocity = spread_direction * 200.f;
+			createTomato(renderer, chef_position, velocity);
+		}
+	}
+	else if (attack == ChefAttack::PAN)
+	{
+		vec2 direction = normalize(player_position - chef_position);
+		vec2 velocity = direction * 500.f;
+		createPan(renderer, chef_position, velocity);
+	}
+	else if (attack == ChefAttack::DASH)
+	{
+		float dash_speed = 600.f;
+		Chef &chef = registry.chef.components[0];
+		chef.dash_has_damaged = false;
+
+		vec2 direction = normalize(player_position - chef_position);
+		chef_motion.velocity = direction * dash_speed;
+	}
+}
+
+DecisionNode *AISystem::create_chef_decision_tree()
+{
+	DecisionNode *chef_decision_tree = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				Chef &chef = registry.chef.components[0];
+				return chef.state == ChefState::PATROL;
+			});
+
+	// Patrol logic
+
+	DecisionNode *patrol_node = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				Entity &entity = registry.chef.entities[0];
+				Motion &motion = registry.motions.get(entity);
+
+				Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+				vec2 player_position = player_motion.position + player_motion.bb_offset;
+				vec2 chef_position = motion.position + motion.bb_offset;
+				return distance_squared(player_position, chef_position) < 300.f * 300.f;
+			});
+	chef_decision_tree->trueBranch = patrol_node;
+
+	DecisionNode *detected_player = new DecisionNode(
+			[](float)
+			{
+				std::cout << "Chef enters combat" << std::endl;
+				Chef &chef = registry.chef.components[0];
+				Motion &motion = registry.motions.get(registry.chef.entities[0]);
+				chef.state = ChefState::COMBAT;
+				chef.trigger = true;
+				chef.sound_trigger_timer = 1200.f;
+				motion.velocity = {0.f, 0.f};
+			},
+			nullptr);
+	patrol_node->trueBranch = detected_player;
+
+	DecisionNode *patrol_time = new DecisionNode(
+			[](float elapsed_ms)
+			{
+				Chef &chef = registry.chef.components[0];
+				chef.time_since_last_patrol += elapsed_ms;
+			},
+			[](float)
+			{
+				Chef &chef = registry.chef.components[0];
+				return chef.time_since_last_patrol > 2000.f;
+			});
+	patrol_node->falseBranch = patrol_time;
+
+	DecisionNode *change_patrol_direction = new DecisionNode(
+			[](float)
+			{
+				std::cout << "Chef is patrolling" << std::endl;
+				Chef &chef = registry.chef.components[0];
+				Entity &entity = registry.chef.entities[0];
+				Motion &motion = registry.motions.get(entity);
+				motion.velocity.x *= -1;
+				chef.time_since_last_patrol = 0.f;
+			},
+			nullptr);
+	patrol_time->trueBranch = change_patrol_direction;
+
+	// Combat logic
+
+	DecisionNode *combat_state_check = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				Chef &chef = registry.chef.components[0];
+				return chef.state == ChefState::COMBAT;
+			});
+	chef_decision_tree->falseBranch = combat_state_check;
+
+	DecisionNode *combat_node = new DecisionNode(
+			[](float elapsed_ms)
+			{
+				Chef &chef = registry.chef.components[0];
+				chef.time_since_last_attack += elapsed_ms;
+			},
+			[](float)
+			{
+				Chef &chef = registry.chef.components[0];
+				return chef.time_since_last_attack > 3000.f;
+			});
+	combat_state_check->trueBranch = combat_node;
+
+	DecisionNode *initiate_attack = new DecisionNode(
+			[](float)
+			{
+				Chef &chef = registry.chef.components[0];
+				chef.state = ChefState::ATTACK;
+			},
+			nullptr);
+	combat_node->trueBranch = initiate_attack;
+
+	DecisionNode *attack_node = new DecisionNode(
+			[this](float)
+			{
+				Chef &chef = registry.chef.components[0];
+				std::cout << "Chef attacks " << (int)chef.current_attack << std::endl;
+
+				this->perform_chef_attack(chef.current_attack);
+
+				// Reset attack and choose next attack
+				chef.time_since_last_attack = 0.f;
+				chef.current_attack = static_cast<ChefAttack>(rand() % static_cast<int>(ChefAttack::ATTACK_COUNT));
+				if (chef.current_attack == ChefAttack::SPIN)
+				{
+					// TODO: not implemented yet
+					chef.current_attack = ChefAttack::DASH;
+				}
+				chef.state = ChefState::COMBAT;
+			},
+			nullptr);
+	combat_state_check->falseBranch = attack_node;
+
+	return chef_decision_tree;
+}
+
 AISystem::AISystem()
 {
 	// Loading music and sounds with SDL
@@ -22,6 +190,18 @@ AISystem::AISystem()
 	// 	return nullptr;
 	// }
 	// spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
+
+	chef_decision_tree = create_chef_decision_tree();
+}
+
+AISystem::~AISystem()
+{
+	delete chef_decision_tree;
+}
+
+void AISystem::init(RenderSystem *renderer)
+{
+	this->renderer = renderer;
 }
 
 // // Check if a position is within the grid bounds and walkable
@@ -84,14 +264,6 @@ AISystem::AISystem()
 //     return {};
 // }
 
-float distance_squared(vec2 a, vec2 b)
-{
-	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
-}
-
-float detection_radius_squared = 280.f * 280.f;
-float attack_radius_squared = 110.f * 110.f;
-
 void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 {
 	Entity player = registry.players.entities[0];
@@ -103,6 +275,12 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 	{
 		Enemy &enemy = enemies.components[i];
 		Entity entity = enemies.entities[i];
+
+		if (registry.chef.has(entity))
+		{
+			continue;
+		}
+
 		Motion &motion = registry.motions.get(entity);
 		vec2 enemy_position = motion.position + motion.bb_offset;
 		float distance_to_player = distance_squared(player_position, enemy_position);
@@ -111,17 +289,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			if (distance_to_player < detection_radius_squared)
 			{
 				enemy.state = EnemyState::COMBAT;
-				// if enemy is a chef
-				if (registry.chef.has(entity))
-				{
-					std::cout << "Chef enters combat" << std::endl;
-					// get chef
-					auto &chef = registry.chef.get(entity);
-					chef.trigger = true;
-					chef.sound_trigger_timer = 1200;
-				}
-				else
-					std::cout << "Enemy " << i << " enters combat" << std::endl;
+				std::cout << "Enemy " << i << " enters combat" << std::endl;
 			}
 		}
 		else if (enemy.state == EnemyState::COMBAT)
@@ -186,15 +354,37 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 					enemy.time_since_last_attack = 0.f;
 					// Mix_PlayChannel(-1, spy_attack_sound, 0);
+
+					float damage = 10.f; // Define the damage value
+					if (registry.healthbar.has(player))
+					{
+						HealthBar &health_bar = registry.healthbar.get(player);
+						health_bar.current_health -= damage;
+						if (health_bar.current_health < 0.f)
+							health_bar.current_health = 0.f;
+					}
+					if (registry.healths.has(player))
+					{
+						Health &player_health = registry.healths.get(player);
+						player_health.health -= damage;
+						if (player_health.health < 0.f)
+							player_health.health = 0.f;
+						for (Entity health_bar_entity : registry.healthbarlink.entities)
+						{
+							HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
+							if (healthbarlink.owner == player)
+							{
+								if (registry.healthbar.has(health_bar_entity))
+								{
+									HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
+									health_bar.current_health = player_health.health;
+								}
+								break;
+							}
+						}
+					}
 				}
 			}
-			// if chef, set trigger to false
-			if (registry.chef.has(entity))
-			{
-				auto &chef = registry.chef.get(entity);
-				if (chef.sound_trigger_timer == 0)
-					chef.trigger = false;
-			}
 		}
 		// reset state to combat after attack
 		else if (enemy.state == EnemyState::ATTACK)
@@ -234,5 +424,16 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 				enemy_motion.scale.x /= 1.1;
 			}
 		}
+		else if (enemy.state == EnemyState::DEAD)
+		{
+			motion.velocity = {0.f, 0.f};
+            continue;
+		}
+	}
+
+	if (registry.chef.size() > 0)
+	{
+		// special behavior for chef
+		chef_decision_tree->execute(elapsed_ms);
 	}
 }

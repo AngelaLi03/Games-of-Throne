@@ -34,8 +34,14 @@ Entity createEnemy(RenderSystem *renderer, vec2 pos);
 
 Entity createWeapon(RenderSystem *renderer, vec2 pos);
 
-Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity);
+Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, vec3 color = vec3(0.f, 1.f, 0.f));
 
 Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale);
 
 Entity createChef(RenderSystem *renderer, vec2 pos);
+
+Entity createTomato(RenderSystem *renderer, vec2 pos, vec2 velocity);
+
+Entity createPan(RenderSystem *renderer, vec2 pos, vec2 velocity);
+
+Entity createSpinArea(Entity chef_entity);
