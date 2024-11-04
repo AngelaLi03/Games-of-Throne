@@ -9,13 +9,15 @@
 #include "physics_system.hpp"
 
 // Game configuration
-int ENEMIES_COUNT = 5;
+int ENEMIES_COUNT = 2;
 float FLOW_CHARGE_PER_SECOND = 33.f;
 vec2 player_movement_direction = {0.f, 0.f};
 vec2 curr_mouse_position;
 bool show_fps = false;
 bool show_help_text = false;
 bool is_right_mouse_button_down = false;
+bool enlarged_player = false;
+float enlarge_countdown = 3000.f;
 
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
@@ -25,7 +27,7 @@ const float MIN_S_LENGTH = 100.0f;
 
 // create the underwater world
 WorldSystem::WorldSystem()
-		: points(0)
+	: points(0)
 {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
@@ -150,13 +152,13 @@ GLFWwindow *WorldSystem::create_window()
 	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
 	{
 		fprintf(stderr, "Failed to load sounds: %s\n %s\n %s\n %s\n %s\n %s\n %s\n make sure the data directory is present",
-						audio_path("soundtrack_1.wav").c_str(),
-						audio_path("death_sound.wav").c_str(),
-						audio_path("eat_sound.wav").c_str(),
-						audio_path("spy_death.wav").c_str(),
-						audio_path("spy_dash.wav").c_str(),
-						audio_path("spy_attack.wav").c_str(),
-						audio_path("break.wav").c_str());
+				audio_path("soundtrack_1.wav").c_str(),
+				audio_path("death_sound.wav").c_str(),
+				audio_path("eat_sound.wav").c_str(),
+				audio_path("spy_death.wav").c_str(),
+				audio_path("spy_dash.wav").c_str(),
+				audio_path("spy_attack.wav").c_str(),
+				audio_path("break.wav").c_str());
 		return nullptr;
 	}
 
@@ -488,6 +490,22 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// move camera if necessary
 	update_camera_view();
 
+	// mouse gesture enlarge countdown
+	if (enlarged_player)
+	{
+		enlarge_countdown -= elapsed_ms_since_last_update;
+		if (enlarge_countdown <= 0)
+		{
+			// reset player size
+			Motion &player_motion = registry.motions.get(player_spy);
+			player_motion.scale *= 0.65f;
+			player_motion.bb_scale *= 0.65f;
+
+			enlarged_player = false;
+			enlarge_countdown = 5000.f;
+		}
+	}
+
 	return true;
 }
 
@@ -535,7 +553,7 @@ void createRoom(std::vector<std::vector<int>> &levelMap, int x_start, int y_star
 }
 
 void createCorridor(std::vector<std::vector<int>> &levelMap, int x_start, int y_start, int length, int width,
-										bool add_wall_left = true, bool add_wall_right = true, bool add_wall_top = true, bool add_wall_bottom = true)
+					bool add_wall_left = true, bool add_wall_right = true, bool add_wall_top = true, bool add_wall_bottom = true)
 {
 	for (int i = x_start; i < x_start + length; ++i)
 	{
@@ -546,7 +564,7 @@ void createCorridor(std::vector<std::vector<int>> &levelMap, int x_start, int y_
 			if (is_edge)
 			{
 				if ((i == x_start && add_wall_left) || (i == x_start + length - 1 && add_wall_right) ||
-						(j == y_start && add_wall_top) || (j == y_start + width - 1 && add_wall_bottom))
+					(j == y_start && add_wall_top) || (j == y_start + width - 1 && add_wall_bottom))
 				{
 					levelMap[i][j] = 1; // Wall
 				}
@@ -641,14 +659,23 @@ void WorldSystem::restart_game()
 	// 	createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
 	// }
 
-	// for (int i = 0; i < ENEMIES_COUNT; i++)
-	// {
-	// 	createEnemy(renderer, vec2(window_width_px * 2 + 400 + 100 * i, window_height_px * 2 - 30));
-	// 	createEnemy(renderer, vec2(window_width_px * 2 + 300 * i, window_height_px * 2 - 150));
-	// 	// createEnemy(renderer, vec2(window_width_px + 100 * (i + 1), window_height_px - 150));
-	// }
+	for (int i = 0; i < ENEMIES_COUNT; i++)
+	{
+		createEnemy(renderer, vec2(window_width_px * 2 - 100 + 150 * (i - 1), window_height_px * 2 - 300)); // middle room
+		createEnemy(renderer, vec2(window_width_px * 2 - 100 + 150 * (i - 1), window_height_px * 2 - 150)); // middle room
+		createEnemy(renderer, vec2(window_width_px * 2 + 150 * (i - 1), window_height_px - 300)); // middle top
+		createEnemy(renderer, vec2(window_width_px * 3 + 150 * (i - 1), window_height_px - 300)); // right top
+		createEnemy(renderer, vec2(window_width_px * 2 + 150 * (i - 1), window_height_px * 3 + 200)); // middle bottom
+		createEnemy(renderer, vec2{window_width_px * 3 - 100 + 150 * (i - 1), window_height_px * 2}); // right middle
+		createEnemy(renderer, vec2{window_width_px * 2.9 + 150 * (i - 1), window_height_px * 3.1}); // right bottom
+		createEnemy(renderer, vec2{window_width_px + 50 + 150 * (i - 1), window_height_px * 2}); // left middle
+		createEnemy(renderer, vec2{window_width_px + 50 + 150 * (i - 1), window_height_px * 2 - 150}); // left middle
 
-	createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
+	}
+
+	createEnemy(renderer, vec2(window_width_px * 2 + 600, window_height_px * 2));
+
+	// createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
 
 	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2});
 	player_spy = createSpy(renderer, {window_width_px * 2 + 200, window_height_px * 2});
@@ -663,7 +690,7 @@ void WorldSystem::restart_game()
 	// registry.healthbarlink.emplace(health_bar, player_spy);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
-	Entity chef = createChef(renderer, {window_width_px * 2 + 500.f, window_height_px * 2 + 100.f});
+	Entity chef = createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
 }
 
 void process_animation(AnimationName name, float t, Entity entity)
@@ -1053,7 +1080,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			bezier.target_position = curr_mouse_position + renderer->camera_position;
 
 			bezier.control_point = calculateControlPoint(motion.position, bezier.target_position,
-																									 (motion.position + bezier.target_position) / 2.0f, 0.5f);
+														 (motion.position + bezier.target_position) / 2.0f, 0.5f);
 
 			registry.beziers.emplace(player_spy, bezier);
 			Mix_PlayChannel(-1, break_sound, 0);
@@ -1112,11 +1139,22 @@ bool WorldSystem::isSGesture()
 			rightToLeft = true;
 		}
 
-		if (leftToRight && rightToLeft && length > MIN_S_LENGTH)
-		{
-			return true;
-		}
+		// O should not be detected as S
+		// if (dy > S_THRESHOLD || dy < -S_THRESHOLD)
+		// {
+		// 	return false;
+		// }
 	}
+	if (abs(mousePath[0].y - mousePath[mousePath.size() - 1].y) < 35.f)
+	{
+		return false;
+	}
+
+	if (leftToRight && rightToLeft && length > MIN_S_LENGTH)
+	{
+		return true;
+	}
+	// if start y coordinate is far from end y coordinate, not S
 	return false;
 }
 
@@ -1150,13 +1188,14 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 	{
 		isTrackingMouse = false;
-		if (WorldSystem::isSGesture())
+		if (WorldSystem::isSGesture() && enlarged_player == false)
 		{
 			// make spy grow in size
 			Motion &spy_motion = registry.motions.get(player_spy);
 			spy_motion.scale = spy_motion.scale * 1.5f;
 			spy_motion.bb_scale *= 1.5f;
 			printf("S gesture detected\n");
+			enlarged_player = true;
 		}
 		mousePath.clear();
 	}
