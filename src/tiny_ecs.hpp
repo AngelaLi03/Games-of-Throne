@@ -20,10 +20,6 @@ public:
 		// Note, indices of already deleted entities arent re-used in this simple implementation.
 	}
 	operator unsigned int() { return id; } // this enables automatic casting to int
-	bool operator<(const Entity &other) const
-	{
-		return id < other.id;
-	}
 };
 
 // Common interface to refer to all containers in the ECS registry
@@ -43,7 +39,6 @@ private:
 	// The hash map from Entity -> array index.
 	std::unordered_map<unsigned int, unsigned int> map_entity_componentID; // the entity is cast to uint to be hashable.
 	bool registered = false;
-
 public:
 	// Container of all components of type 'Component'
 	std::vector<Component> components;
@@ -57,7 +52,7 @@ public:
 	}
 
 	// Inserting a component c associated to entity e
-	inline Component &insert(Entity e, Component c, bool check_for_duplicates = true)
+	inline Component& insert(Entity e, Component c, bool check_for_duplicates = true)
 	{
 		// Usually, every entity should only have one instance of each component type
 		assert(!(check_for_duplicates && has(e)) && "Entity already contained in ECS registry");
@@ -69,27 +64,23 @@ public:
 	};
 
 	// The emplace function takes the the provided arguments Args, creates a new object of type Component, and inserts it into the ECS system
-	template <typename... Args>
-	Component &emplace(Entity e, Args &&...args)
-	{
+	template<typename... Args>
+	Component& emplace(Entity e, Args &&... args) {
 		return insert(e, Component(std::forward<Args>(args)...));
 	};
-	template <typename... Args>
-	Component &emplace_with_duplicates(Entity e, Args &&...args)
-	{
+	template<typename... Args>
+	Component& emplace_with_duplicates(Entity e, Args &&... args) {
 		return insert(e, Component(std::forward<Args>(args)...), false);
 	};
 
 	// A wrapper to return the component of an entity
-	Component &get(Entity e)
-	{
+	Component& get(Entity e) {
 		assert(has(e) && "Entity not contained in ECS registry");
 		return components[map_entity_componentID[e]];
 	}
 
 	// Check if entity has a component of type 'Component'
-	bool has(Entity entity)
-	{
+	bool has(Entity entity) {
 		return map_entity_componentID.count(entity) > 0;
 	}
 
@@ -136,11 +127,9 @@ public:
 		// First sort the entity list as desired
 		std::sort(entities.begin(), entities.end(), comparisonFunction);
 		// Now re-arrange the components (Note, creates a new vector, which may be slow! Not sure if in-place could be faster: https://stackoverflow.com/questions/63703637/how-to-efficiently-permute-an-array-in-place-using-stdswap)
-		std::vector<Component> components_new;
-		components_new.reserve(components.size());
-		std::transform(entities.begin(), entities.end(), std::back_inserter(components_new), [&](Entity e)
-									 { return std::move(get(e)); }); // note, the get still uses the old hash map (on purpose!)
-		components = std::move(components_new);				 // note, we use move operations to not create unneccesary copies of objects, but memory is still allocated for the new vector
+		std::vector<Component> components_new; components_new.reserve(components.size());
+		std::transform(entities.begin(), entities.end(), std::back_inserter(components_new), [&](Entity e) { return std::move(get(e)); }); // note, the get still uses the old hash map (on purpose!)
+		components = std::move(components_new); // note, we use move operations to not create unneccesary copies of objects, but memory is still allocated for the new vector
 		// Fill the new hashmap
 		for (unsigned int i = 0; i < entities.size(); i++)
 			map_entity_componentID[entities[i]] = i;

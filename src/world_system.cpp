@@ -9,15 +9,13 @@
 #include "physics_system.hpp"
 
 // Game configuration
-int ENEMIES_COUNT = 2;
+int ENEMIES_COUNT = 5;
 float FLOW_CHARGE_PER_SECOND = 33.f;
 vec2 player_movement_direction = {0.f, 0.f};
 vec2 curr_mouse_position;
 bool show_fps = false;
 bool show_help_text = false;
 bool is_right_mouse_button_down = false;
-bool enlarged_player = false;
-float enlarge_countdown = 3000.f;
 
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
@@ -27,6 +25,7 @@ const float MIN_S_LENGTH = 100.0f;
 
 // create the underwater world
 WorldSystem::WorldSystem()
+		: points(0)
 {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
@@ -205,10 +204,12 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	while (registry.debugComponents.entities.size() > 0)
 		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
+	// Removing out of screen entities
+	auto &motions_registry = registry.motions;
+
 	// TODO: Remove entities that leave the screen, using new check accounting for camera view
 	// Iterate backwards to be able to remove without unterfering with the next object to visit
 	// (the containers exchange the last element with the current)
-	// auto &motions_registry = registry.motions;
 	// for (int i = (int)motions_registry.components.size() - 1; i >= 0; --i)
 	// {
 	// 	Motion &motion = motions_registry.components[i];
@@ -300,53 +301,20 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 				health_bar_motion.position = vec2(50.f, 50.f);
 			}
-			else if (registry.chef.has(owner_entity))
-			{
-				health_bar_motion.position = owner_motion.position + vec2(-95.f, -175.f);
-			}
 			else
 			{
 				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
 			}
+			if (registry.healthbar.has(owner_entity))
+			{
+				HealthBar &owner_health = registry.healthbar.get(owner_entity);
+				float health_percentage = owner_health.current_health / owner_health.max_health;
 
-			float health_percentage = 0.f;
-			if (registry.healths.has(owner_entity))
-			{
-				Health &owner_health = registry.healths.get(owner_entity);
-				health_percentage = owner_health.health / owner_health.max_health;
-			}
-
-			else if (registry.healthbar.has(health_bar_entity))
-			{
-				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-				health_percentage = health_bar.current_health / health_bar.max_health;
-			}
-			if (registry.healthbar.has(health_bar_entity))
-			{
+				// Get the original scale of health bar
 				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
 				health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
 				health_bar_motion.scale.y = health_bar.original_scale.y;
 			}
-			// float health_percentage = 0.f;
-			// if (registry.healths.has(owner_entity))
-			// {
-			//     Health &owner_health = registry.healths.get(owner_entity);
-			//     health_percentage = owner_health.health / owner_health.max_health;
-			// }
-			// else
-			// {
-			//     // Fallback to health bar's current health
-			//     health_percentage = health_bar.current_health / health_bar.max_health;
-			// }
-
-			// HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-
-			// std::cout << "Updating health bar for owner " << owner_entity
-			//   << ": health_percentage = " << health_percentage
-			//   << ", original_scale.x = " << health_bar.original_scale.x << std::endl;
-
-			// health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
-			// health_bar_motion.scale.y = health_bar.original_scale.y;
 		}
 	}
 
@@ -382,29 +350,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		else
 		{
 			registry.motions.get(registry.players.entities[0]).velocity = {0.f, 0.f};
-		}
-	}
-
-	// Pan returns to chef logic
-	for (Entity pan_entity : registry.pans.entities)
-	{
-		Pan &pan = registry.pans.get(pan_entity);
-		Motion &pan_motion = registry.motions.get(pan_entity);
-
-		if (pan.state == PanState::RETURNING)
-		{
-			for (Entity chef_entity : registry.chef.entities)
-			{
-				Motion &chef_motion = registry.motions.get(chef_entity);
-				float distance_to_chef = length(chef_motion.position - pan_motion.position);
-				// Pan returns to chef when distance < 50.
-				if (distance_to_chef < 50.f)
-				{
-					registry.remove_all_components_of(pan_entity);
-					Enemy &chef_enemy = registry.enemies.get(chef_entity);
-					chef_enemy.pan_active = false;
-				}
-			}
 		}
 	}
 
@@ -452,6 +397,33 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
+	// update animations
+	for (Entity entity : registry.spriteAnimations.entities)
+	{
+		// if in attack mode, change sprite to attack sprite
+		if (registry.enemies.has(entity) && registry.enemies.get(entity).state == EnemyState::ATTACK)
+		{
+			auto &animation = registry.spriteAnimations.get(entity);
+			auto &render_request = registry.renderRequests.get(entity);
+
+			// Increment elapsed time
+			animation.elapsed_time += elapsed_ms_since_last_update;
+
+			// Check if enough time has passed to switch to the next frame
+			if (animation.elapsed_time >= animation.frame_duration)
+			{
+				// Reset elapsed time for the next frame
+				animation.elapsed_time = 0.0f;
+
+				// Move to the next frame
+				animation.current_frame = (animation.current_frame + 1) % animation.frames.size();
+
+				// Update the texture to the current frame
+				render_request.used_texture = animation.frames[animation.current_frame];
+			}
+		}
+	}
+
 	// play attack sound for each enemy that is attacking
 	for (Entity entity : registry.enemies.entities)
 	{
@@ -467,20 +439,19 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// play chef_trigger audio if chef just entered combat mode
 	for (Entity entity : registry.chef.entities)
 	{
-		Chef &chef = registry.chef.get(entity);
-		if (chef.trigger == true)
+		auto &enemy = registry.enemies.get(entity);
+		if (registry.chef.get(entity).trigger == true)
 		{
 			// volume up
-			Mix_Volume(-1, 50);
+			Mix_Volume(-1, 80);
 			Mix_PlayChannel(-1, chef_trigger_sound, 0);
-			if (chef.sound_trigger_timer >= elapsed_ms_since_last_update)
+			if (registry.chef.get(entity).sound_trigger_timer >= elapsed_ms_since_last_update)
 			{
-				chef.sound_trigger_timer -= elapsed_ms_since_last_update;
+				registry.chef.get(entity).sound_trigger_timer -= elapsed_ms_since_last_update;
 			}
 			else
 			{
-				chef.sound_trigger_timer = 0;
-				chef.trigger = false;
+				registry.chef.get(entity).sound_trigger_timer = 0;
 			}
 		}
 	}
@@ -488,90 +459,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// move camera if necessary
 	update_camera_view();
 
-	// mouse gesture enlarge countdown
-	if (enlarged_player)
-	{
-		enlarge_countdown -= elapsed_ms_since_last_update;
-		if (enlarge_countdown <= 0)
-		{
-			// reset player size
-			Motion &player_motion = registry.motions.get(player_spy);
-			player_motion.scale *= 0.65f;
-			player_motion.bb_scale *= 0.65f;
-
-			enlarged_player = false;
-			enlarge_countdown = 5000.f;
-		}
-	}
-
 	return true;
-}
-
-void WorldSystem::performChefTomato(Entity chef_entity)
-{
-	Motion &chef_motion = registry.motions.get(chef_entity);
-	Motion &player_motion = registry.motions.get(player_spy);
-
-	vec2 chef_position = chef_motion.position;
-	vec2 player_position = player_motion.position;
-	vec2 direction = normalize(player_position - chef_position);
-
-	for (int i = 0; i < 10; ++i)
-	{
-		float angle_offset = -0.3f + (0.6f / 9.0f) * i;
-		vec2 spread_direction = vec2((direction.x * cos(angle_offset) - direction.y * sin(angle_offset)), (direction.x * sin(angle_offset) + direction.y * cos(angle_offset)));
-
-		vec2 velocity = spread_direction * 300.f;
-		// std::cout << spread_direction.x << std::endl;
-
-		createTomato(renderer, chef_position, velocity);
-	}
-}
-
-void WorldSystem::performChefPan(Entity chef_entity)
-{
-	Enemy &chef_enemy = registry.enemies.get(chef_entity);
-
-	// Make sure there can be only one pan active
-	if (chef_enemy.pan_active)
-	{
-		return;
-	}
-	chef_enemy.pan_active = true;
-
-	Motion &chef_motion = registry.motions.get(chef_entity);
-	Motion &player_motion = registry.motions.get(player_spy);
-
-	vec2 chef_position = chef_motion.position;
-	vec2 player_position = player_motion.position;
-	vec2 direction = normalize(player_position - chef_position);
-
-	vec2 velocity = direction * 500.f;
-	createPan(renderer, chef_position, velocity);
-}
-
-void WorldSystem::performChefSpin(Entity chef_entity)
-{
-	// Enemy &chef_enemy = registry.enemies.get(chef_entity);
-	// chef_enemy.spinning = true;
-	// chef_enemy.spin_duration;
-	// chef_enemy.spin_count = 0;
-	// chef_enemy.player_hit_during_spin = false;
-	// chef_enemy.spin_attack_entity = createSpinArea(chef_entity);
-}
-
-void WorldSystem::performChefDash(Entity chef_entity)
-{
-	// Motion &chef_motion = registry.motions.get(chef_entity);
-	// Motion &player_motion = registry.motions.get(player_spy);
-
-	// vec2 target_position = player_motion.position;
-	// float dash_speed = 600.f;
-
-	// vec2 chef_position = chef_motion.position;
-	// vec2 player_position = player_motion.position;
-	// vec2 direction = normalize(player_position - chef_position);
-	// chef_motion.velocity = direction * dash_speed;
 }
 
 void WorldSystem::update_camera_view()
@@ -724,22 +612,14 @@ void WorldSystem::restart_game()
 	// 	createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
 	// }
 
-	for (int i = 0; i < ENEMIES_COUNT; i++)
-	{
-		createEnemy(renderer, vec2(window_width_px * 2 - 100 + 150 * (i - 1), window_height_px * 2 - 300)); // middle room
-		createEnemy(renderer, vec2(window_width_px * 2 - 100 + 150 * (i - 1), window_height_px * 2 - 150)); // middle room
-		createEnemy(renderer, vec2(window_width_px * 2 + 150 * (i - 1), window_height_px - 300));						// middle top
-		createEnemy(renderer, vec2(window_width_px * 3 + 150 * (i - 1), window_height_px - 300));						// right top
-		createEnemy(renderer, vec2(window_width_px * 2 + 150 * (i - 1), window_height_px * 3 + 200));				// middle bottom
-		createEnemy(renderer, vec2{window_width_px * 3 - 100 + 150 * (i - 1), window_height_px * 2});				// right middle
-		createEnemy(renderer, vec2{window_width_px * 2.9 + 150 * (i - 1), window_height_px * 3.1});					// right bottom
-		createEnemy(renderer, vec2{window_width_px + 50 + 150 * (i - 1), window_height_px * 2});						// left middle
-		createEnemy(renderer, vec2{window_width_px + 50 + 150 * (i - 1), window_height_px * 2 - 150});			// left middle
-	}
+	// for (int i = 0; i < ENEMIES_COUNT; i++)
+	// {
+	// 	createEnemy(renderer, vec2(window_width_px * 2 + 400 + 100 * i, window_height_px * 2 - 30));
+	// 	createEnemy(renderer, vec2(window_width_px * 2 + 300 * i, window_height_px * 2 - 150));
+	// 	// createEnemy(renderer, vec2(window_width_px + 100 * (i + 1), window_height_px - 150));
+	// }
 
-	createEnemy(renderer, vec2(window_width_px * 2 + 600, window_height_px * 2));
-
-	// createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
+	createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
 
 	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2});
 	player_spy = createSpy(renderer, {window_width_px * 2 + 200, window_height_px * 2});
@@ -750,11 +630,11 @@ void WorldSystem::restart_game()
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
 
-	createHealthBar(renderer, {50.f, 50.f}, player_spy, vec3(0.f, 1.f, 0.f));
+	createHealthBar(renderer, {50.f, 50.f}, player_spy);
 	// registry.healthbarlink.emplace(health_bar, player_spy);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
-	createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
+	Entity chef = createChef(renderer, {window_width_px * 2 + 500.f, window_height_px * 2 + 100.f});
 }
 
 void process_animation(AnimationName name, float t, Entity entity)
@@ -763,24 +643,15 @@ void process_animation(AnimationName name, float t, Entity entity)
 	{
 		Weapon &player_weapon = registry.weapons.get(entity);
 		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
-		float angle = 0.5f * sin(t * M_PI) + M_PI / 6;
+		weapon_motion.angle = 0.5f * sin(t * M_PI) + M_PI / 6;
+		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 
 		if (t >= 1.0f)
 		{
-			angle = M_PI / 6;
+			weapon_motion.angle = M_PI / 6;
 			Player &player = registry.players.get(entity);
 			player.state = PlayerState::IDLE;
 		}
-
-		if (player_weapon.offset.x < 0)
-		{
-			weapon_motion.angle = -angle;
-		}
-		else
-		{
-			weapon_motion.angle = angle;
-		}
-		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 	}
 	else if (name == AnimationName::HEAVY_ATTACK)
 	{
@@ -791,23 +662,15 @@ void process_animation(AnimationName name, float t, Entity entity)
 		{
 			angle -= 2 * M_PI;
 		}
+		weapon_motion.angle = angle;
+		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 
 		if (t >= 1.0f)
 		{
-			angle = M_PI / 6;
+			weapon_motion.angle = M_PI / 6;
 			Player &player = registry.players.get(entity);
 			player.state = PlayerState::IDLE;
 		}
-
-		if (player_weapon.offset.x < 0)
-		{
-			weapon_motion.angle = -angle;
-		}
-		else
-		{
-			weapon_motion.angle = angle;
-		}
-		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 	}
 }
 
@@ -886,180 +749,47 @@ void WorldSystem::handle_collisions()
 
 	// Loop over all collisions detected by the physics system
 	// std::cout << "handle_collisions()" << std::endl;
-	Entity player = registry.players.entities[0];
-	Weapon &player_weapon_comp = registry.weapons.get(player);
-	Entity player_weapon = player_weapon_comp.weapon;
-	Player &player_comp = registry.players.get(player);
 	auto &collisionsRegistry = registry.collisions;
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++)
 	{
 		// The entity and its collider
-		Entity entity = collisionsRegistry.entities[i];
-		Entity entity_other = collisionsRegistry.components[i].other;
-		// std::cout << "entity = " << entity << " entity_other = " << entity_other << std::endl;
-
-		// When tomato hits player
-		// bool entity_is_tomato = registry.tomatos.has(entity);
-		// bool entity_other_is_tomato = registry.tomatos.has(entity_other);
-		// if ((entity_is_tomato && entity_other == player_spy) || (entity_other_is_tomato && entity == player_spy))
-		// {
-		// 	Entity tomato_entity = entity_is_tomato ? entity : entity_other;
-		// 	std::cout << "11" << std::endl;
-		// 	Tomato &tomato = registry.tomatos.get(tomato_entity);
-		// 	std::cout << "22" << std::endl;
-		// 	Health &player_spy_health = registry.healths.get(player_spy);
-		// 	std::cout << "33" << std::endl;
-
-		// 	player_spy_health.health -= tomato.damage;
-		// 	if (player_spy_health.health <= 0.f)
-		// 	{
-		// 		player_spy_health.health = 0.f;
-		// 		player_spy_health.isDead = true;
-		// 		if (!registry.deathTimers.has(player_spy))
-		// 		{
-		// 			registry.deathTimers.emplace(player_spy);
-		// 			Mix_PlayChannel(-1, spy_death_sound, 0);
-		// 		}
-		// 	}
-		// 	registry.remove_all_components_of(tomato_entity);
-		// }
-
-		// When tomato hits wall
-		// bool entity_is_wall = registry.physicsBodies.has(entity) && registry.physicsBodies.get(entity).body_type == BodyType::STATIC;
-		// bool entity_other_is_wall = registry.physicsBodies.has(entity_other) && registry.physicsBodies.get(entity_other).body_type == BodyType::STATIC;
-
-		// if ((entity_is_wall && entity_other_is_tomato) || (entity_other_is_wall && entity_is_tomato))
-		// {
-		// 	Entity tomato_entity = entity_is_tomato ? entity : entity_other;
-		// 	registry.remove_all_components_of(tomato_entity);
-		// }
-
-		// When pan hits player
-		bool entity_is_pan = registry.pans.has(entity);
-		bool entity_other_is_pan = registry.pans.has(entity_other);
-		if ((entity_is_pan && entity_other == player_spy) || (entity_other_is_pan && entity == player_spy))
-		{
-			Entity pan_entity = entity_is_pan ? entity : entity_other;
-			Pan &pan = registry.pans.get(pan_entity);
-
-			if (pan.player_hit == false)
-			{
-				pan.player_hit = true;
-				Health &player_spy_health = registry.healths.get(player_spy);
-				player_spy_health.health -= pan.damage;
-				// if (player_spy_health.health <= 0.f)
-				// {
-				// 	player_spy_health.health = 0.f;
-				// 	player_spy_health.isDead = true;
-				// 	if (!registry.deathTimers.has(player_spy))
-				// 	{
-				// 		registry.deathTimers.emplace(player_spy);
-				// 		Mix_PlayChannel(-1, spy_death_sound, 0);
-				// 	}
-				// }
-			}
-			pan.state = PanState::RETURNING;
-			for (Entity chef_entity : registry.chef.entities)
-			{
-				Motion &chef_motion = registry.motions.get(chef_entity);
-				Motion &pan_motion = registry.motions.get(pan_entity);
-				vec2 direction_to_chef = normalize(chef_motion.position - pan_motion.position);
-				pan_motion.velocity = direction_to_chef * 400.f;
-			}
-		}
-
-		// When pan hits wall
-		bool entity_is_wall = registry.physicsBodies.has(entity) && registry.physicsBodies.get(entity).body_type == BodyType::STATIC;
-		bool entity_other_is_wall = registry.physicsBodies.has(entity_other) && registry.physicsBodies.get(entity_other).body_type == BodyType::STATIC;
-
-		if ((entity_is_wall && entity_other_is_pan) || (entity_other_is_wall && entity_is_pan))
-		{
-			Entity pan_entity = entity_is_pan ? entity : entity_other;
-			Pan &pan = registry.pans.get(pan_entity);
-			pan.state = PanState::RETURNING;
-			for (Entity chef_entity : registry.chef.entities)
-			{
-				Motion &chef_motion = registry.motions.get(chef_entity);
-				Motion &pan_motion = registry.motions.get(pan_entity);
-				vec2 direction_to_chef = normalize(chef_motion.position - pan_motion.position);
-				pan_motion.velocity = direction_to_chef * 400.f;
-			}
-		}
-
-		// When dash hits player
-		bool entity_is_chef = registry.chef.has(entity);
-		bool entity_other_is_chef = registry.chef.has(entity_other);
-		if ((entity_is_chef && entity_other == player_spy) || (entity_other_is_chef && entity == player_spy))
-		{
-			Entity chef_entity = entity_is_chef ? entity : entity_other;
-			Chef &chef = registry.chef.get(chef_entity);
-			Health &player_spy_health = registry.healths.get(player_spy);
-
-			if (!chef.dash_has_damaged)
-			{
-				float damage = 10.f;
-				player_spy_health.health -= damage;
-				// if (player_spy_health.health <= 0.f)
-				// {
-				// 	player_spy_health.health = 0.f;
-				// 	player_spy_health.isDead = true;
-				// 	if (!registry.deathTimers.has(player_spy))
-				// 	{
-				// 		registry.deathTimers.emplace(player_spy);
-				// 		Mix_PlayChannel(-1, spy_death_sound, 0);
-				// 	}
-				// }
-				chef.dash_has_damaged = true;
-			}
-		}
-
-		if ((entity == player_weapon || entity_other == player_weapon) &&
-				(registry.enemies.has(entity) || registry.enemies.has(entity_other)))
-		{
-			Entity enemy_entity = registry.enemies.has(entity) ? entity : entity_other;
-
-			if (registry.healths.has(enemy_entity))
-			{
-				Health &enemy_health = registry.healths.get(enemy_entity);
-				if (enemy_health.isDead)
-				{
-					// Enemy is dead; skip collision processing
-					continue;
-				}
-			}
-
-			if (player_comp.state == PlayerState::LIGHT_ATTACK || player_comp.state == PlayerState::HEAVY_ATTACK)
-			{
-				float damage = (player_comp.state == PlayerState::LIGHT_ATTACK) ? 20.f : 40.f; // Define damage values
-
-				if (registry.healths.has(enemy_entity))
-				{
-					Health &enemy_health = registry.healths.get(enemy_entity);
-					enemy_health.health -= damage;
-					if (enemy_health.health < 0.f)
-						enemy_health.health = 0.f;
-
-					for (Entity health_bar_entity : registry.healthbarlink.entities)
-					{
-						HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
-						if (healthbarlink.owner == enemy_entity)
-						{
-							if (registry.healthbar.has(health_bar_entity))
-							{
-								HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-								health_bar.current_health = enemy_health.health;
-							}
-						}
-					}
-				}
-			}
-		} // The entity and its collider
 		// Entity entity = collisionsRegistry.entities[i];
 		// Entity entity_other = collisionsRegistry.components[i].other;
 
+		// std::cout << entity << " collided with " << entity_other << std::endl;
 		// registry.list_all_components_of(entity);
 
-		// std::cout << "entity = " << entity << " entity_other = " << entity_other << " DONE" << std::endl;
+		// // for now, we are only interested in collisions that involve the salmon
+		// if (registry.players.has(entity))
+		// {
+		// 	// Player& player = registry.players.get(entity);
+
+		// 	// Checking Player - Deadly collisions
+		// 	if (registry.deadlys.has(entity_other))
+		// 	{
+		// 		// initiate death unless already dying
+		// 		if (!registry.deathTimers.has(entity))
+		// 		{
+		// 			// Scream, reset timer, and make the salmon sink
+		// 			registry.deathTimers.emplace(entity);
+		// 			Mix_PlayChannel(-1, salmon_dead_sound, 0);
+		// 		}
+		// 	}
+		// }
+		// 	// Checking Player - Eatable collisions
+		// 	else if (registry.eatables.has(entity_other))
+		// 	{
+		// 		if (!registry.deathTimers.has(entity))
+		// 		{
+		// 			// chew, count points, and set the LightUp timer
+		// 			registry.remove_all_components_of(entity_other);
+		// 			Mix_PlayChannel(-1, salmon_eat_sound, 0);
+		// 			++points;
+
+		// 			// !!! TODO A1: create a new struct called LightUp in components.hpp and add an instance to the salmon entity by modifying the ECS registry
+		// 		}
+		// 	}
+		// }
 	}
 
 	// Remove all collisions from this simulation step
@@ -1135,37 +865,37 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 	float speed = 60.f;
 
-	// if (key == GLFW_KEY_H && action == GLFW_PRESS)
-	// {
-	// 	if (registry.healthbar.has(player_spy))
-	// 	{
-	// 		HealthBar &health_bar = registry.healthbar.get(player_spy);
-	// 		auto &spy_health = registry.healths.get(player_spy);
-	// 		// hardcoded damage, TODO
-	// 		health_bar.current_health -= 10.f;
-	// 		spy_health.health -= 10.f;
-	// 		if (health_bar.current_health < 0.f)
-	// 		{
-	// 			health_bar.current_health = 0.f;
-	// 		}
-	// 	}
-	// }
+	if (key == GLFW_KEY_H && action == GLFW_PRESS)
+	{
+		if (registry.healthbar.has(player_spy))
+		{
+			HealthBar &health_bar = registry.healthbar.get(player_spy);
+			auto &spy_health = registry.healths.get(player_spy);
+			// hardcoded damage, TODO
+			health_bar.current_health -= 10.f;
+			spy_health.health -= 10.f;
+			if (health_bar.current_health < 0.f)
+			{
+				health_bar.current_health = 0.f;
+			}
+		}
+	}
 
-	// if (key == GLFW_KEY_G && action == GLFW_PRESS)
-	// {
-	// 	for (Entity enemy_entity : registry.enemies.entities)
-	// 	{
-	// 		if (registry.healthbar.has(enemy_entity))
-	// 		{
-	// 			HealthBar &health = registry.healthbar.get(enemy_entity);
-	// 			health.current_health -= 10.f;
-	// 			if (health.current_health < 0.f)
-	// 			{
-	// 				health.current_health = 0.f;
-	// 			}
-	// 		}
-	// 	}
-	// }
+	if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	{
+		for (Entity enemy_entity : registry.enemies.entities)
+		{
+			if (registry.healthbar.has(enemy_entity))
+			{
+				HealthBar &health = registry.healthbar.get(enemy_entity);
+				health.current_health -= 10.f;
+				if (health.current_health < 0.f)
+				{
+					health.current_health = 0.f;
+				}
+			}
+		}
+	}
 
 	if (action == GLFW_PRESS)
 	{
@@ -1316,22 +1046,11 @@ bool WorldSystem::isSGesture()
 			rightToLeft = true;
 		}
 
-		// O should not be detected as S
-		// if (dy > S_THRESHOLD || dy < -S_THRESHOLD)
-		// {
-		// 	return false;
-		// }
+		if (leftToRight && rightToLeft && length > MIN_S_LENGTH)
+		{
+			return true;
+		}
 	}
-	if (abs(mousePath[0].y - mousePath[mousePath.size() - 1].y) < 35.f)
-	{
-		return false;
-	}
-
-	if (leftToRight && rightToLeft && length > MIN_S_LENGTH)
-	{
-		return true;
-	}
-	// if start y coordinate is far from end y coordinate, not S
 	return false;
 }
 
@@ -1365,14 +1084,13 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 	{
 		isTrackingMouse = false;
-		if (WorldSystem::isSGesture() && enlarged_player == false)
+		if (WorldSystem::isSGesture())
 		{
 			// make spy grow in size
 			Motion &spy_motion = registry.motions.get(player_spy);
 			spy_motion.scale = spy_motion.scale * 1.5f;
 			spy_motion.bb_scale *= 1.5f;
 			printf("S gesture detected\n");
-			enlarged_player = true;
 		}
 		mousePath.clear();
 	}

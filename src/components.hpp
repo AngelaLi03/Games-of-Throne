@@ -17,12 +17,16 @@ enum class PlayerState
 struct Player
 {
 	PlayerState state = PlayerState::IDLE;
-	float attack_damage = 20.0f;
 };
 
-struct Damage
+// anything that is deadly to the player
+struct Deadly
 {
-	float damage;
+};
+
+// anything the player can eat
+struct Eatable
+{
 };
 
 enum class EnemyState
@@ -30,35 +34,15 @@ enum class EnemyState
 	IDLE = 0,
 	COMBAT = 1,
 	ATTACK = 2,
-	DEAD = 3,
 };
 struct Enemy
 {
 	EnemyState state = EnemyState::IDLE;
-	float time_since_last_attack = 0.f;
+	float time_since_last_attack = 0;
 	float attack_countdown = 500;
-	float time_since_last_pan_attack = 0.f;
-	float time_since_last_spin_attack = 0.f;
-	float time_since_last_dash_attack = 0.f;
-	bool pan_active = false;
-	bool spinning = false;
-	float spin_duration = 0.f;
-	int spin_count = 0;
-	bool player_hit_during_spin = false;
-	Entity spin_attack_entity;
-	float attack_damage = 10.0f;
-	// std::vector<Node> path;			// The path to the player
-	// int current_path_index = 0; // Index of the next node to follow
-};
 
-struct SpinArea
-{
-};
-
-struct Attachment
-{
-	Entity parent;
-	Attachment(Entity parent_entity) : parent(parent_entity) {}
+	std::vector<Node> path; // The path to the player
+    int current_path_index = 0;       // Index of the next node to follow
 };
 
 struct Weapon
@@ -69,8 +53,7 @@ struct Weapon
 
 struct Health
 {
-	float health;
-	float max_health = 100.f;
+	float health = 100.f;
 	bool isDead = false;
 };
 
@@ -122,10 +105,9 @@ struct Flow
 
 enum class BodyType
 {
-	STATIC = 0, // reserved for walls
+	STATIC = 0,
 	KINEMATIC = STATIC + 1,
-	PROJECTILE = KINEMATIC + 1,
-	NONE = PROJECTILE + 1
+	NONE = KINEMATIC + 1
 };
 struct PhysicsBody
 {
@@ -142,32 +124,14 @@ struct Collision
 
 struct HealthBar
 {
-	float current_health;
 	float max_health;
+	float current_health;
 	vec2 original_scale;
 	HealthBar(float max_health, vec2 scale)
 	{
 		this->max_health = max_health;
 		this->current_health = max_health;
 		this->original_scale = scale;
-	}
-};
-
-enum class PanState
-{
-	TOWARDS_PLAYER,
-	RETURNING,
-};
-
-struct Pan
-{
-	float damage;
-	PanState state;
-	bool player_hit = false;
-	Pan(float dmg)
-	{
-		this->damage = dmg;
-		this->state = PanState::TOWARDS_PLAYER;
 	}
 };
 
@@ -235,30 +199,8 @@ struct TexturedMesh
 	std::vector<uint16_t> vertex_indices;
 };
 
-enum class ChefState
-{
-	PATROL = 0,
-	COMBAT = 1,
-	ATTACK = 2,
-};
-enum class ChefAttack
-{
-	TOMATO = 0,
-	PAN = 1,
-	DASH = 2,
-	SPIN = 3,
-	ATTACK_COUNT = 4,
-};
 struct Chef
 {
-	ChefState state = ChefState::PATROL;
-	ChefAttack current_attack = ChefAttack::TOMATO;
-
-	float time_since_last_patrol = 0;
-	float time_since_last_attack = 0;
-
-	bool dash_has_damaged = false;
-
 	// when chef just entered combat, play a sound and set back to false
 	bool trigger = false;
 	float sound_trigger_timer = 0;
@@ -266,6 +208,7 @@ struct Chef
 
 struct MoveUI
 {
+	
 };
 /**
  * The following enumerators represent global identifiers refering to graphic
@@ -307,9 +250,7 @@ enum class TEXTURE_ASSET_ID
 	ENEMY_ATTACK = ENEMY_CORPSE + 1,
 	SPY_CORPSE = ENEMY_ATTACK + 1,
 	CHEF = SPY_CORPSE + 1,
-	TOMATO = CHEF + 1,
-	PAN = TOMATO + 1,
-	TEXTURE_COUNT = PAN + 1
+	TEXTURE_COUNT = CHEF + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -322,7 +263,7 @@ enum class EFFECT_ASSET_ID
 	WATER = TEXTURED + 1,
 	PROGRESS_BAR = WATER + 1,
 	LIQUID_FILL = PROGRESS_BAR + 1,
-	TEXT = LIQUID_FILL + 1,
+	TEXT = LIQUID_FILL + 1,   
 	EFFECT_COUNT = TEXT + 1
 };
 const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
@@ -341,12 +282,11 @@ enum class GEOMETRY_BUFFER_ID
 };
 const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 
-struct SpriteAnimation
-{
-	std::vector<TEXTURE_ASSET_ID> frames; // Texture IDs for each animation frame
-	int current_frame = 0;								// Index of the current frame
-	float frame_duration = 0.1f;					// Duration for each frame (seconds)
-	float elapsed_time = 0.0f;						// Time since the last frame switch
+struct SpriteAnimation {
+    std::vector<TEXTURE_ASSET_ID> frames; // Texture IDs for each animation frame
+    int current_frame = 0;                 // Index of the current frame
+    float frame_duration = 0.1f;           // Duration for each frame (seconds)
+    float elapsed_time = 0.0f;             // Time since the last frame switch
 };
 
 struct RenderRequest

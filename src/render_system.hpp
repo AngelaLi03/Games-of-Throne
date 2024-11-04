@@ -58,8 +58,6 @@ class RenderSystem
 			textures_path("enemy_attack.png"),
 			textures_path("spy_corpse.png"),
 			textures_path("chef.png"),
-			textures_path("tomato.png"),
-			textures_path("pan.png"),
 	};
 
 	std::array<GLuint, effect_count> effects;

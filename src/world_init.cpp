@@ -1,8 +1,6 @@
 #include "world_init.hpp"
 #include "tiny_ecs_registry.hpp"
-#include "ai_system.hpp"
 #include "iostream"
-#include "world_system.hpp"
 
 // Create floor tile entity and add to registry.
 Entity createFloorTile(RenderSystem *renderer, vec2 pos)
@@ -101,7 +99,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);
-	// registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
+	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
 	registry.healths.insert(entity, {100.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
@@ -109,7 +107,6 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 			{TEXTURE_ASSET_ID::SPY, // TEXTURE_COUNT indicates that no texture is needed
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
-	createHealthBar(renderer, {50.f, 50.f}, entity);
 
 	return entity;
 }
@@ -126,20 +123,19 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
 	motion.angle = 0.f;
-	// motion.velocity = {0.f, 0.f};
-	motion.velocity = {50.f, 0.f};
+	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 300.f;
 	motion.scale.x *= 1.1;
 	motion.bb_scale = {150.f, 130.f};
 	motion.bb_offset = {0.f, 40.f};
 
-	createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
+	createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity);
 
 	// create an empty Spy component for our character
 	registry.chef.emplace(entity);
 	registry.enemies.emplace(entity);
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
-	registry.healths.insert(entity, {3000.f, 3000.f});
+	registry.healths.insert(entity, {100.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
@@ -163,8 +159,8 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	// Setting initial motion values
 	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = M_PI / 6; // 30 degrees
-	// motion.angle = 0.f;
+	// motion.angle = M_PI / 6; // 30 degrees
+	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 100.f;
 	motion.scale.x *= 0.45;
@@ -185,7 +181,7 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
-Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, vec3 color)
+Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity)
 {
 	auto entity = Entity();
 
@@ -206,7 +202,7 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, ve
 			 EFFECT_ASSET_ID::PROGRESS_BAR,
 			 GEOMETRY_BUFFER_ID::PROGRESS_BAR});
 	// Set to green
-	registry.colors.emplace(entity, color);
+	registry.colors.emplace(entity, vec3(0.f, 1.f, 0.f));
 
 	// Link the owner and health bar, for player and enemy.
 	registry.healthbarlink.emplace(entity, owner_entity);
@@ -270,7 +266,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
-	registry.healths.insert(entity, {100.f, 100.f});
+	registry.healths.insert(entity, {100.f});
 	registry.renderRequests.insert(
 			entity,
 			{animation.frames[animation.current_frame],
@@ -281,7 +277,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	return entity;
 }
 
-Entity createTomato(RenderSystem *renderer, vec2 position, vec2 velocity)
+Entity createFish(RenderSystem *renderer, vec2 position)
 {
 	// Reserve en entity
 	auto entity = Entity();
@@ -293,55 +289,48 @@ Entity createTomato(RenderSystem *renderer, vec2 position, vec2 velocity)
 	// Initialize the position, scale, and physics components
 	auto &motion = registry.motions.emplace(entity);
 	motion.angle = 0.f;
-	motion.velocity = velocity;
+	motion.velocity = {0, 50};
 	motion.position = position;
-	motion.scale = mesh.original_size * 100.f;
-	motion.scale.x *= -0.8;
-	motion.bb_scale = {30.f, 30.f};
-	motion.bb_offset = {0.f, 0.f};
 
-	std::cout << "create tomato" << std::endl;
-	registry.damages.insert(entity, {10.f});
-	registry.physicsBodies.insert(entity, {BodyType::PROJECTILE});
+	// Setting initial values, scale is negative to make it face the opposite way
+	motion.scale = vec2({-FISH_BB_WIDTH, FISH_BB_HEIGHT});
+
+	// Create an (empty) Bug component to be able to refer to all bug
+	registry.eatables.emplace(entity);
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::TOMATO,
+			{TEXTURE_ASSET_ID::FISH,
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	// TODO: Need to disappear after hitting player or wall or boundaries.
 	return entity;
 }
 
-Entity createPan(RenderSystem *renderer, vec2 position, vec2 velocity)
+Entity createEel(RenderSystem *renderer, vec2 position)
 {
-	// Reserve en entity
 	auto entity = Entity();
 
-	// Store a reference to the potentially re-used mesh object
+	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
 	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	// Initialize the position, scale, and physics components
+	// Initialize the motion
 	auto &motion = registry.motions.emplace(entity);
 	motion.angle = 0.f;
-	motion.velocity = velocity;
+	motion.velocity = {0, 100.f};
 	motion.position = position;
-	motion.scale = mesh.original_size * 200.f;
-	motion.scale.x *= -0.8;
-	motion.bb_scale = {30.f, 30.f};
-	motion.bb_offset = {0.f, 0.f};
 
-	// Create an (empty) Bug component to be able to refer to all bug
-	registry.pans.emplace(entity, Pan(25.f));
-	registry.physicsBodies.insert(entity, {BodyType::NONE});
+	// Setting initial values, scale is negative to make it face the opposite way
+	motion.scale = vec2({-EEL_BB_WIDTH, EEL_BB_HEIGHT});
+
+	// create an empty Eel component to be able to refer to all eels
+	registry.deadlys.emplace(entity);
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::PAN,
+			{TEXTURE_ASSET_ID::EEL,
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	// TODO: Need to disappear after hitting player or wall or boundaries.
 	return entity;
 }
 
@@ -377,69 +366,3 @@ Entity createLine(vec2 position, vec2 scale, vec3 color, float angle)
 	registry.debugComponents.emplace(entity);
 	return entity;
 }
-
-Entity createSpinArea(Entity chef_entity)
-{
-	Entity entity = Entity();
-	Motion &chef_motion = registry.motions.get(chef_entity);
-
-	// // Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
-	// registry.renderRequests.insert(
-	// 		entity, {TEXTURE_ASSET_ID::TEXTURE_COUNT,
-	// 						 EFFECT_ASSET_ID::DEBUG_LINE,
-	// 						 GEOMETRY_BUFFER_ID::DEBUG_LINE});
-
-	// Create motion
-	Motion &motion = registry.motions.emplace(entity);
-	motion.angle = 0.f;
-	motion.velocity = {0, 0};
-	motion.position = chef_motion.position;
-	motion.scale = {200.f, 200.f};
-	motion.bb_scale = motion.scale;
-	motion.bb_offset = vec2(0.f, 0.f);
-
-	registry.attachments.emplace(entity, Attachment(chef_entity));
-	registry.spinareas.emplace(entity, SpinArea());
-	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
-	return entity;
-}
-
-// const float CLOSE_ATTACK_RANGE = 150.f;
-// const float DISTANCED_ATTACK_RANGE = 400.f;
-// Entity chef_entity = registry.chef.entities[0];
-// Entity player_spy = registry.players.entities[0];
-// std::function<bool()> isPlayerInCloseRange = []()
-// {
-// 	Motion& chef_motion = registry.motions.get(chef_entity);
-// 	Motion& player_motion = registry.motions.get(player_spy);
-// 	float distance = length(chef_motion.position - player_motion.position);
-// 	return distance <= CLOSE_ATTACK_RANGE;
-// };
-
-// std::function<bool()> isPlayerInDistancedRange = []()
-// {
-// 	Motion& chef_motion = registry.motions.get(chef_entity);
-// 	Motion& player_motion = registry.motions.get(player_spy);
-// 	float distance = length(chef_motion.position - player_motion.position);
-// 	return distance >= DISTANCED_ATTACK_RANGE;
-// };
-
-// std::function<bool()> performSpinAttack = []()
-// {
-// 	performChefSpin(chef_entity);
-// };
-
-// std::function<bool()> performTomatoAttack = []()
-// {
-// 	performChefTomato(chef_entity);
-// };
-
-// std::function<bool()> performPanAttack = []()
-// {
-// 	performChefPan(chef_entity);
-// };
-
-// std::function<bool()> performStompAttack = []()
-// {
-// 	performChefStomp(chef_entity);
-// };
