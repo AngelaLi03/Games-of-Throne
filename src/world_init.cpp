@@ -109,7 +109,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 			{TEXTURE_ASSET_ID::SPY, // TEXTURE_COUNT indicates that no texture is needed
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
-	Entity health_bar_entity = createHealthBar(renderer, {50.f, 50.f}, entity);
+	createHealthBar(renderer, {50.f, 50.f}, entity);
 
 	return entity;
 }
@@ -277,7 +277,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	Entity health_bar_entity = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+	createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
 	return entity;
 }
 

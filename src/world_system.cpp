@@ -27,7 +27,6 @@ const float MIN_S_LENGTH = 100.0f;
 
 // create the underwater world
 WorldSystem::WorldSystem()
-		: points(0)
 {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
@@ -206,12 +205,10 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	while (registry.debugComponents.entities.size() > 0)
 		registry.remove_all_components_of(registry.debugComponents.entities.back());
 
-	// Removing out of screen entities
-	auto &motions_registry = registry.motions;
-
 	// TODO: Remove entities that leave the screen, using new check accounting for camera view
 	// Iterate backwards to be able to remove without unterfering with the next object to visit
 	// (the containers exchange the last element with the current)
+	// auto &motions_registry = registry.motions;
 	// for (int i = (int)motions_registry.components.size() - 1; i >= 0; --i)
 	// {
 	// 	Motion &motion = motions_registry.components[i];
@@ -399,8 +396,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			for (Entity chef_entity : registry.chef.entities)
 			{
 				Motion &chef_motion = registry.motions.get(chef_entity);
-				vec2 direction_to_chef = normalize(chef_motion.position - pan_motion.position);
-
 				float distance_to_chef = length(chef_motion.position - pan_motion.position);
 				// Pan returns to chef when distance < 50.
 				if (distance_to_chef < 50.f)
@@ -472,7 +467,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// play chef_trigger audio if chef just entered combat mode
 	for (Entity entity : registry.chef.entities)
 	{
-		auto &enemy = registry.enemies.get(entity);
 		Chef &chef = registry.chef.get(entity);
 		if (chef.trigger == true)
 		{
@@ -522,7 +516,6 @@ void WorldSystem::performChefTomato(Entity chef_entity)
 	vec2 player_position = player_motion.position;
 	vec2 direction = normalize(player_position - chef_position);
 
-	float tomato_damage = 20.f;
 	for (int i = 0; i < 10; ++i)
 	{
 		float angle_offset = -0.3f + (0.6f / 9.0f) * i;
@@ -553,34 +546,32 @@ void WorldSystem::performChefPan(Entity chef_entity)
 	vec2 player_position = player_motion.position;
 	vec2 direction = normalize(player_position - chef_position);
 
-	float pan_damage = 50.f;
 	vec2 velocity = direction * 500.f;
 	createPan(renderer, chef_position, velocity);
 }
 
 void WorldSystem::performChefSpin(Entity chef_entity)
 {
-	Enemy &chef_enemy = registry.enemies.get(chef_entity);
-	chef_enemy.spinning = true;
-	chef_enemy.spin_duration;
-	chef_enemy.spin_count = 0;
-	chef_enemy.player_hit_during_spin = false;
-	chef_enemy.spin_attack_entity = createSpinArea(chef_entity);
+	// Enemy &chef_enemy = registry.enemies.get(chef_entity);
+	// chef_enemy.spinning = true;
+	// chef_enemy.spin_duration;
+	// chef_enemy.spin_count = 0;
+	// chef_enemy.player_hit_during_spin = false;
+	// chef_enemy.spin_attack_entity = createSpinArea(chef_entity);
 }
 
 void WorldSystem::performChefDash(Entity chef_entity)
 {
-	Enemy &chef_enemy = registry.enemies.get(chef_entity);
-	Motion &chef_motion = registry.motions.get(chef_entity);
-	Motion &player_motion = registry.motions.get(player_spy);
+	// Motion &chef_motion = registry.motions.get(chef_entity);
+	// Motion &player_motion = registry.motions.get(player_spy);
 
-	vec2 target_position = player_motion.position;
-	float dash_speed = 600.f;
+	// vec2 target_position = player_motion.position;
+	// float dash_speed = 600.f;
 
-	vec2 chef_position = chef_motion.position;
-	vec2 player_position = player_motion.position;
-	vec2 direction = normalize(player_position - chef_position);
-	chef_motion.velocity = direction * dash_speed;
+	// vec2 chef_position = chef_motion.position;
+	// vec2 player_position = player_motion.position;
+	// vec2 direction = normalize(player_position - chef_position);
+	// chef_motion.velocity = direction * dash_speed;
 }
 
 void WorldSystem::update_camera_view()
@@ -763,7 +754,7 @@ void WorldSystem::restart_game()
 	// registry.healthbarlink.emplace(health_bar, player_spy);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
-	Entity chef = createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
+	createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
 }
 
 void process_animation(AnimationName name, float t, Entity entity)
