@@ -301,6 +301,10 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 				health_bar_motion.position = vec2(50.f, 50.f);
 			}
+			else if (registry.chef.has(owner_entity))
+			{
+				health_bar_motion.position = owner_motion.position + vec2(-95.f, -175.f);
+			}
 			else
 			{
 				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
