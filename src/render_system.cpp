@@ -336,6 +336,13 @@ void RenderSystem::draw()
 				motion.scale *= 0.85;
 				health.isDead = true;
 			}
+			Enemy &enemy_comp = registry.enemies.get(enemy);
+        	enemy_comp.state = EnemyState::DEAD;
+			if (registry.motions.has(enemy))
+			{
+				Motion &enemy_motion = registry.motions.get(enemy);
+				enemy_motion.velocity = {0.f, 0.f};
+			}
 			// Change texture to corpse
 			render_request.used_texture = TEXTURE_ASSET_ID::ENEMY_CORPSE;
 		}

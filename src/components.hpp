@@ -35,6 +35,7 @@ enum class EnemyState
 	IDLE = 0,
 	COMBAT = 1,
 	ATTACK = 2,
+	DEAD = 3,
 };
 struct Enemy
 {

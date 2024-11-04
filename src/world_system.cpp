@@ -820,6 +820,16 @@ void WorldSystem::handle_collisions()
         {
             Entity enemy_entity = registry.enemies.has(entity) ? entity : entity_other;
 
+			if (registry.healths.has(enemy_entity))
+			{
+				Health &enemy_health = registry.healths.get(enemy_entity);
+				if (enemy_health.isDead)
+				{
+					// Enemy is dead; skip collision processing
+					continue;
+				}
+			}
+
             if (player_comp.state == PlayerState::LIGHT_ATTACK || player_comp.state == PlayerState::HEAVY_ATTACK)
             {
                 float damage = (player_comp.state == PlayerState::LIGHT_ATTACK) ? 20.f : 40.f; // Define damage values
