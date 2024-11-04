@@ -20,7 +20,7 @@ bool is_right_mouse_button_down = false;
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
 // Threshold constants for gesture detection
-const float S_THRESHOLD = 20.0f;
+const float S_THRESHOLD1 = 20.0f;
 const float MIN_S_LENGTH = 100.0f;
 
 // create the underwater world
@@ -1037,11 +1037,11 @@ bool WorldSystem::isSGesture()
 		float dy = mousePath[i].y - mousePath[i - 1].y;
 		length += std::sqrt(dx * dx + dy * dy);
 
-		if (dx > S_THRESHOLD)
+		if (dx > S_THRESHOLD1)
 		{
 			leftToRight = true;
 		}
-		else if (dx < -S_THRESHOLD && leftToRight)
+		else if (dx < -S_THRESHOLD1 && leftToRight)
 		{
 			rightToLeft = true;
 		}
