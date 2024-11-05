@@ -38,6 +38,14 @@ public:
 	// Should the game be over ?
 	bool is_over() const;
 
+	void performChefTomato(Entity chef_entity);
+
+	void performChefPan(Entity chef_entity);
+
+	void performChefSpin(Entity chef_entity);
+
+	void performChefDash(Entity chef_entity);
+
 	std::vector<std::vector<int>> levelMap;
 
 	bool isSGesture();
@@ -56,9 +64,6 @@ private:
 
 	// OpenGL window handle
 	GLFWwindow *window;
-
-	// Number of fish eaten by the salmon, displayed in the window title
-	unsigned int points;
 
 	// Game state
 	RenderSystem *renderer;

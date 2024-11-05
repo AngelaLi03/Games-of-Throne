@@ -111,6 +111,19 @@ void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 
 		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
 													sizeof(ColoredVertex), (void *)0);
 		gl_has_errors();
+		// GLint in_position_loc = glGetAttribLocation(program, "in_position");
+		// GLint in_color_loc = glGetAttribLocation(program, "in_color");
+		// gl_has_errors();
+
+		// glEnableVertexAttribArray(in_position_loc);
+		// glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+		//                       sizeof(ColoredVertex), (void *)0);
+		// gl_has_errors();
+
+		// glEnableVertexAttribArray(in_color_loc);
+		// glVertexAttribPointer(in_color_loc, 3, GL_FLOAT, GL_FALSE,
+		//                       sizeof(ColoredVertex), (void *)sizeof(vec3));
+		// gl_has_errors();
 	}
 	else if (render_request.used_effect == EFFECT_ASSET_ID::LIQUID_FILL)
 	{
@@ -281,10 +294,16 @@ void RenderSystem::draw()
 		Weapon &player_weapon = registry.weapons.get(spy);
 		Entity weapon = player_weapon.weapon;
 		Motion &weapon_motion = registry.motions.get(weapon);
-		vec2 weapon_offset = player_weapon.offset;
-		if (player_motion.scale.x > 0)
+		vec2 &weapon_offset = player_weapon.offset;
+		if (player_motion.scale.x < 0 && weapon_offset.x < 0)
 		{
-			weapon_offset.x *= -1;
+			weapon_offset.x = abs(weapon_offset.x);
+			weapon_motion.angle = -weapon_motion.angle;
+		}
+		else if (player_motion.scale.x > 0 && weapon_offset.x > 0)
+		{
+			weapon_offset.x = -abs(weapon_offset.x);
+			weapon_motion.angle = -weapon_motion.angle;
 		}
 		weapon_motion.position = player_motion.position + weapon_offset;
 	}
@@ -302,9 +321,9 @@ void RenderSystem::draw()
 			mat3 identity_view = mat3(1.0f); // Identity matrix
 			drawTexturedMesh(entity, identity_view, projection_2D);
 		}
-		else {
+		else
+		{
 			drawTexturedMesh(entity, camera_view, projection_2D);
-
 		}
 	}
 
@@ -322,6 +341,15 @@ void RenderSystem::draw()
 				motion.scale.x *= -1;
 				motion.scale *= 0.85;
 				health.isDead = true;
+				PhysicsBody &enemy_physics = registry.physicsBodies.get(enemy);
+				enemy_physics.body_type = BodyType::NONE;
+			}
+			Enemy &enemy_comp = registry.enemies.get(enemy);
+			enemy_comp.state = EnemyState::DEAD;
+			if (registry.motions.has(enemy))
+			{
+				Motion &enemy_motion = registry.motions.get(enemy);
+				enemy_motion.velocity = {0.f, 0.f};
 			}
 			// Change texture to corpse
 			render_request.used_texture = TEXTURE_ASSET_ID::ENEMY_CORPSE;
@@ -374,20 +402,18 @@ void RenderSystem::draw()
 
 	if (show_help_text)
 	{
-		float x = 10.0f; // Starting x position
+		float x = 10.0f;										 // Starting x position
 		float y = window_height_px - 100.0f; // Starting y position (from top)
-		float lineSpacing = 25.0f; 
-		float scale = 0.8f; 
-		vec3 textColor = vec3(0.2f, 1.0f, 0.1f); 
+		float lineSpacing = 25.0f;
+		float scale = 0.8f;
+		vec3 textColor = vec3(0.2f, 1.0f, 0.1f);
 
-
-		for (const std::string& line : gameInstructions)
+		for (const std::string &line : gameInstructions)
 		{
 			renderText(line, x, y, scale, textColor);
-			y -= lineSpacing; 
+			y -= lineSpacing;
 		}
 	}
-
 
 	// Truely render to the screen
 	drawToScreen();

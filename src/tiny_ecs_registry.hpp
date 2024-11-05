@@ -23,8 +23,7 @@ public:
 	ComponentContainer<TexturedMesh *> texturedMeshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
-	ComponentContainer<Eatable> eatables;
-	ComponentContainer<Deadly> deadlys;
+	ComponentContainer<Damage> damages;
 	ComponentContainer<DebugComponent> debugComponents;
 	ComponentContainer<vec3> colors;
 	ComponentContainer<Enemy> enemies;
@@ -34,9 +33,11 @@ public:
 	ComponentContainer<Health> healths;
 	ComponentContainer<Flow> flows;
 	ComponentContainer<Chef> chef;
+	ComponentContainer<Pan> pans;
+	ComponentContainer<SpinArea> spinareas;
+	ComponentContainer<Attachment> attachments;
 	ComponentContainer<SpriteAnimation> spriteAnimations;
 	ComponentContainer<MoveUI> cameraUI;
-
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -52,8 +53,7 @@ public:
 		registry_list.push_back(&texturedMeshPtrs);
 		registry_list.push_back(&renderRequests);
 		registry_list.push_back(&screenStates);
-		registry_list.push_back(&eatables);
-		registry_list.push_back(&deadlys);
+		registry_list.push_back(&damages);
 		registry_list.push_back(&debugComponents);
 		registry_list.push_back(&colors);
 		registry_list.push_back(&enemies);
@@ -64,10 +64,12 @@ public:
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&interpolations);
 		registry_list.push_back(&beziers);
+		registry_list.push_back(&pans);
+		registry_list.push_back(&spinareas);
+		registry_list.push_back(&attachments);
 		registry_list.push_back(&chef);
 		registry_list.push_back(&spriteAnimations);
 		registry_list.push_back(&cameraUI);
-
 	}
 
 	void clear_all_components()
