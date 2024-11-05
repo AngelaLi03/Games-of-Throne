@@ -20,6 +20,7 @@ float attack_radius_squared = 110.f * 110.f;
 
 void AISystem::perform_chef_attack(ChefAttack attack)
 {
+	Chef &chef = registry.chef.components[0];
 	Entity chef_entity = registry.chef.entities[0];
 	Motion &chef_motion = registry.motions.get(chef_entity);
 	Motion &player_motion = registry.motions.get(registry.players.entities[0]);
@@ -38,6 +39,11 @@ void AISystem::perform_chef_attack(ChefAttack attack)
 	}
 	else if (attack == ChefAttack::PAN)
 	{
+		if (chef.pan_active)
+		{
+			return;
+		}
+		chef.pan_active = true;
 		vec2 direction = normalize(player_position - chef_position);
 		vec2 velocity = direction * 500.f;
 		createPan(renderer, chef_position, velocity);
@@ -45,7 +51,6 @@ void AISystem::perform_chef_attack(ChefAttack attack)
 	else if (attack == ChefAttack::DASH)
 	{
 		float dash_speed = 600.f;
-		Chef &chef = registry.chef.components[0];
 		chef.dash_has_damaged = false;
 
 		vec2 direction = normalize(player_position - chef_position);
@@ -75,7 +80,7 @@ DecisionNode *AISystem::create_chef_decision_tree()
 				Motion &player_motion = registry.motions.get(registry.players.entities[0]);
 				vec2 player_position = player_motion.position + player_motion.bb_offset;
 				vec2 chef_position = motion.position + motion.bb_offset;
-				return distance_squared(player_position, chef_position) < 300.f * 300.f;
+				return distance_squared(player_position, chef_position) < 330.f * 330.f;
 			});
 	chef_decision_tree->trueBranch = patrol_node;
 
@@ -109,7 +114,7 @@ DecisionNode *AISystem::create_chef_decision_tree()
 	DecisionNode *change_patrol_direction = new DecisionNode(
 			[](float)
 			{
-				std::cout << "Chef is patrolling" << std::endl;
+				// std::cout << "Chef is patrolling" << std::endl;
 				Chef &chef = registry.chef.components[0];
 				Entity &entity = registry.chef.entities[0];
 				Motion &motion = registry.motions.get(entity);
@@ -178,19 +183,6 @@ DecisionNode *AISystem::create_chef_decision_tree()
 
 AISystem::AISystem()
 {
-	// Loading music and sounds with SDL
-	// if (SDL_Init(SDL_INIT_AUDIO) < 0)
-	// {
-	// 	fprintf(stderr, "Failed to initialize SDL Audio");
-	// 	return nullptr;
-	// }
-	// if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) == -1)
-	// {
-	// 	fprintf(stderr, "Failed to open audio device");
-	// 	return nullptr;
-	// }
-	// spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
-
 	chef_decision_tree = create_chef_decision_tree();
 }
 
@@ -353,7 +345,6 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 					enemy_motion.scale.x *= 1.1;
 
 					enemy.time_since_last_attack = 0.f;
-					// Mix_PlayChannel(-1, spy_attack_sound, 0);
 
 					float damage = 10.f; // Define the damage value
 					if (registry.healthbar.has(player))
@@ -427,13 +418,18 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		else if (enemy.state == EnemyState::DEAD)
 		{
 			motion.velocity = {0.f, 0.f};
-            continue;
+			continue;
 		}
 	}
 
 	if (registry.chef.size() > 0)
 	{
 		// special behavior for chef
-		chef_decision_tree->execute(elapsed_ms);
+		Entity chef_entity = registry.chef.entities[0];
+		Health &chef_health = registry.healths.get(chef_entity);
+		if (!chef_health.isDead)
+		{
+			chef_decision_tree->execute(elapsed_ms);
+		}
 	}
 }

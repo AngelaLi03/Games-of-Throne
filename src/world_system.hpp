@@ -38,14 +38,6 @@ public:
 	// Should the game be over ?
 	bool is_over() const;
 
-	void performChefTomato(Entity chef_entity);
-
-	void performChefPan(Entity chef_entity);
-
-	void performChefSpin(Entity chef_entity);
-
-	void performChefDash(Entity chef_entity);
-
 	std::vector<std::vector<int>> levelMap;
 
 	bool isSGesture();
@@ -53,6 +45,7 @@ public:
 private:
 	void update_camera_view();
 	void handle_animations(float elapsed_ms);
+	void process_animation(AnimationName name, float t, Entity entity);
 
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
@@ -71,6 +64,9 @@ private:
 	Entity player_salmon;
 	Entity player_spy;
 	Entity flowMeterEntity;
+
+	// universal attack id, to track unique attack instances (to prevent duplicate damage in the same attack)
+	unsigned int attack_id_counter = 0;
 
 	// music references
 	Mix_Music *background_music;

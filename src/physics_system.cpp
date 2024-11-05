@@ -76,8 +76,8 @@ bool mesh_collides(Entity mesh_entity, const Motion &mesh_motion, const Motion &
 	auto &vertices = mesh->vertices;
 	auto &indices = mesh->vertex_indices;
 	// use original bounding box (without bb_scale) for actual mesh collision use
-	vec2 mesh_bb = {abs(mesh_motion.scale.x), abs(mesh_motion.scale.y)};
-	vec2 mesh_center = mesh_motion.position;
+	// vec2 mesh_bb = {abs(mesh_motion.scale.x), abs(mesh_motion.scale.y)};
+	// vec2 mesh_center = mesh_motion.position;
 	vec2 box_bb = get_bounding_box(box_motion);
 	vec2 box_pos = box_motion.position + box_motion.bb_offset - box_bb / 2.f;
 	glm::mat3 transform = get_transform(mesh_motion);
@@ -296,7 +296,7 @@ void PhysicsSystem::step(float elapsed_ms)
 
 	for (Entity entity : entities_to_remove)
 	{
-		std::cout << "removing entity " << entity << std::endl;
+		// std::cout << "removing entity " << entity << std::endl;
 		registry.remove_all_components_of(entity);
 	}
 }

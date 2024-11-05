@@ -18,6 +18,8 @@ struct Player
 {
 	PlayerState state = PlayerState::IDLE;
 	float attack_damage = 20.0f;
+	unsigned int current_attack_id = 0;
+	bool is_heavy_attack_second_half = false;
 };
 
 struct Damage
@@ -37,16 +39,8 @@ struct Enemy
 	EnemyState state = EnemyState::IDLE;
 	float time_since_last_attack = 0.f;
 	float attack_countdown = 500;
-	float time_since_last_pan_attack = 0.f;
-	float time_since_last_spin_attack = 0.f;
-	float time_since_last_dash_attack = 0.f;
-	bool pan_active = false;
-	bool spinning = false;
-	float spin_duration = 0.f;
-	int spin_count = 0;
-	bool player_hit_during_spin = false;
-	Entity spin_attack_entity;
 	float attack_damage = 10.0f;
+	unsigned int last_hit_attack_id = 0;
 	// std::vector<Node> path;			// The path to the player
 	// int current_path_index = 0; // Index of the next node to follow
 };
@@ -100,9 +94,9 @@ struct Animation
 
 struct Interpolation
 {
-	float elapsed_time;
-	float total_time_to_0_ms = 1500; // 1.5 second time to observe effect
-	vec2 initial_velocity;					 // velocity when button is released
+	float elapsed_time = 0;
+	float total_time_to_0_ms = 700; // time to observe effect
+	vec2 initial_velocity;					// velocity when button is released
 };
 
 struct Bezier
@@ -183,7 +177,7 @@ struct HealthBarLink
 // Data structure for toggling debug mode
 struct Debug
 {
-	bool in_debug_mode = 1;
+	bool in_debug_mode = 0;
 	bool in_freeze_mode = 0;
 };
 extern Debug debugging;
@@ -257,6 +251,7 @@ struct Chef
 	float time_since_last_patrol = 0;
 	float time_since_last_attack = 0;
 
+	bool pan_active = false;
 	bool dash_has_damaged = false;
 
 	// when chef just entered combat, play a sound and set back to false

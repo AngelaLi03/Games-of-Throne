@@ -80,7 +80,6 @@ private:
     DecisionNode *create_chef_decision_tree();
     void perform_chef_attack(ChefAttack attack);
 
-    Mix_Chunk *spy_attack_sound;
     // bool isWalkable(int x, int y, const std::vector<std::vector<int>>& grid);
     // std::vector<Node> findPathBFS(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>>& grid);
 };

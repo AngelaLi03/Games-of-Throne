@@ -22,7 +22,7 @@ float enlarge_countdown = 3000.f;
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
 // Threshold constants for gesture detection
-const float S_THRESHOLD = 20.0f;
+const float S_THRESHOLD1 = 20.0f;
 const float MIN_S_LENGTH = 100.0f;
 
 // create the underwater world
@@ -401,8 +401,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 				if (distance_to_chef < 50.f)
 				{
 					registry.remove_all_components_of(pan_entity);
-					Enemy &chef_enemy = registry.enemies.get(chef_entity);
-					chef_enemy.pan_active = false;
+					Chef &chef = registry.chef.get(chef_entity);
+					chef.pan_active = false;
 				}
 			}
 		}
@@ -505,73 +505,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	}
 
 	return true;
-}
-
-void WorldSystem::performChefTomato(Entity chef_entity)
-{
-	Motion &chef_motion = registry.motions.get(chef_entity);
-	Motion &player_motion = registry.motions.get(player_spy);
-
-	vec2 chef_position = chef_motion.position;
-	vec2 player_position = player_motion.position;
-	vec2 direction = normalize(player_position - chef_position);
-
-	for (int i = 0; i < 10; ++i)
-	{
-		float angle_offset = -0.3f + (0.6f / 9.0f) * i;
-		vec2 spread_direction = vec2((direction.x * cos(angle_offset) - direction.y * sin(angle_offset)), (direction.x * sin(angle_offset) + direction.y * cos(angle_offset)));
-
-		vec2 velocity = spread_direction * 300.f;
-		// std::cout << spread_direction.x << std::endl;
-
-		createTomato(renderer, chef_position, velocity);
-	}
-}
-
-void WorldSystem::performChefPan(Entity chef_entity)
-{
-	Enemy &chef_enemy = registry.enemies.get(chef_entity);
-
-	// Make sure there can be only one pan active
-	if (chef_enemy.pan_active)
-	{
-		return;
-	}
-	chef_enemy.pan_active = true;
-
-	Motion &chef_motion = registry.motions.get(chef_entity);
-	Motion &player_motion = registry.motions.get(player_spy);
-
-	vec2 chef_position = chef_motion.position;
-	vec2 player_position = player_motion.position;
-	vec2 direction = normalize(player_position - chef_position);
-
-	vec2 velocity = direction * 500.f;
-	createPan(renderer, chef_position, velocity);
-}
-
-void WorldSystem::performChefSpin(Entity chef_entity)
-{
-	// Enemy &chef_enemy = registry.enemies.get(chef_entity);
-	// chef_enemy.spinning = true;
-	// chef_enemy.spin_duration;
-	// chef_enemy.spin_count = 0;
-	// chef_enemy.player_hit_during_spin = false;
-	// chef_enemy.spin_attack_entity = createSpinArea(chef_entity);
-}
-
-void WorldSystem::performChefDash(Entity chef_entity)
-{
-	// Motion &chef_motion = registry.motions.get(chef_entity);
-	// Motion &player_motion = registry.motions.get(player_spy);
-
-	// vec2 target_position = player_motion.position;
-	// float dash_speed = 600.f;
-
-	// vec2 chef_position = chef_motion.position;
-	// vec2 player_position = player_motion.position;
-	// vec2 direction = normalize(player_position - chef_position);
-	// chef_motion.velocity = direction * dash_speed;
 }
 
 void WorldSystem::update_camera_view()
@@ -757,13 +690,13 @@ void WorldSystem::restart_game()
 	createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
 }
 
-void process_animation(AnimationName name, float t, Entity entity)
+void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 {
 	if (name == AnimationName::LIGHT_ATTACK)
 	{
 		Weapon &player_weapon = registry.weapons.get(entity);
 		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
-		float angle = 0.5f * sin(t * M_PI) + M_PI / 6;
+		float angle = sin(t * M_PI) + M_PI / 6;
 
 		if (t >= 1.0f)
 		{
@@ -790,6 +723,17 @@ void process_animation(AnimationName name, float t, Entity entity)
 		while (angle > 2 * M_PI)
 		{
 			angle -= 2 * M_PI;
+		}
+
+		if (t >= 0.5f)
+		{
+			Player &player = registry.players.get(entity);
+			if (!player.is_heavy_attack_second_half)
+			{
+				player.is_heavy_attack_second_half = true;
+				player.current_attack_id = ++attack_id_counter;
+				// std::cout << "Heavy attack second half " << player.current_attack_id << std::endl;
+			}
 		}
 
 		if (t >= 1.0f)
@@ -1028,14 +972,34 @@ void WorldSystem::handle_collisions()
 				}
 			}
 
+			Enemy &enemy = registry.enemies.get(enemy_entity);
+
 			if (player_comp.state == PlayerState::LIGHT_ATTACK || player_comp.state == PlayerState::HEAVY_ATTACK)
 			{
+				if (enemy.last_hit_attack_id != player_comp.current_attack_id)
+				{
+					enemy.last_hit_attack_id = player_comp.current_attack_id;
+				}
+				else
+				{
+					// Skip collision processing if the enemy has already been hit by this attack
+					continue;
+				}
+
 				float damage = (player_comp.state == PlayerState::LIGHT_ATTACK) ? 20.f : 40.f; // Define damage values
 
 				if (registry.healths.has(enemy_entity))
 				{
 					Health &enemy_health = registry.healths.get(enemy_entity);
 					enemy_health.health -= damage;
+
+					if (player_comp.state == PlayerState::LIGHT_ATTACK)
+					{
+						Flow &flow = registry.flows.get(flowMeterEntity);
+						flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel);
+					}
+
+					// std::cout << "Enemy health: " << enemy_health.health << ", damage: " << damage << std::endl;
 					if (enemy_health.health < 0.f)
 						enemy_health.health = 0.f;
 
@@ -1133,7 +1097,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		std::cout << "Show Help Text: " << (show_help_text ? "ON" : "OFF") << std::endl;
 	}
 
-	float speed = 60.f;
+	float speed = 70.f;
 
 	// if (key == GLFW_KEY_H && action == GLFW_PRESS)
 	// {
@@ -1307,11 +1271,11 @@ bool WorldSystem::isSGesture()
 		float dy = mousePath[i].y - mousePath[i - 1].y;
 		length += std::sqrt(dx * dx + dy * dy);
 
-		if (dx > S_THRESHOLD)
+		if (dx > S_THRESHOLD1)
 		{
 			leftToRight = true;
 		}
-		else if (dx < -S_THRESHOLD && leftToRight)
+		else if (dx < -S_THRESHOLD1 && leftToRight)
 		{
 			rightToLeft = true;
 		}
@@ -1337,7 +1301,7 @@ bool WorldSystem::isSGesture()
 
 void WorldSystem::on_mouse_button(int button, int action, int mods)
 {
-	std::cout << "Mouse button " << button << " " << action << " " << mods << std::endl;
+	// std::cout << "Mouse button " << button << " " << action << " " << mods << std::endl;
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{
 		isTrackingMouse = true; // tracking mouse gesture if any
@@ -1347,6 +1311,8 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 		{
 			std::cout << "Player light attack" << std::endl;
 			player.state = PlayerState::LIGHT_ATTACK;
+			player.current_attack_id = ++attack_id_counter;
+
 			if (registry.animations.has(player_spy))
 			{
 				registry.animations.remove(player_spy);
@@ -1401,6 +1367,8 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 						Mix_Volume(2, 120);
 						Mix_PlayChannel(2, heavy_attack_sound, 0);
 						player.state = PlayerState::HEAVY_ATTACK;
+						player.current_attack_id = ++attack_id_counter;
+						player.is_heavy_attack_second_half = false;
 						flow.flowLevel = 0;
 						if (registry.animations.has(player_spy))
 						{

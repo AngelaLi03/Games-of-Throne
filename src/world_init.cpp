@@ -139,7 +139,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	registry.chef.emplace(entity);
 	registry.enemies.emplace(entity);
 	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
-	registry.healths.insert(entity, {3000.f, 3000.f});
+	registry.healths.insert(entity, {500.f, 500.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
@@ -257,7 +257,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	motion.scale = mesh.original_size * 100.f;
 	motion.scale.x *= -0.8;
 	motion.bb_scale = {60.f, 60.f};
-	motion.bb_offset = {0.f, 40.f};
+	motion.bb_offset = {-5.f, 25.f};
 
 	// Initialize the animation component with frames
 	auto &animation = registry.spriteAnimations.emplace(entity);
@@ -403,43 +403,3 @@ Entity createSpinArea(Entity chef_entity)
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	return entity;
 }
-
-// const float CLOSE_ATTACK_RANGE = 150.f;
-// const float DISTANCED_ATTACK_RANGE = 400.f;
-// Entity chef_entity = registry.chef.entities[0];
-// Entity player_spy = registry.players.entities[0];
-// std::function<bool()> isPlayerInCloseRange = []()
-// {
-// 	Motion& chef_motion = registry.motions.get(chef_entity);
-// 	Motion& player_motion = registry.motions.get(player_spy);
-// 	float distance = length(chef_motion.position - player_motion.position);
-// 	return distance <= CLOSE_ATTACK_RANGE;
-// };
-
-// std::function<bool()> isPlayerInDistancedRange = []()
-// {
-// 	Motion& chef_motion = registry.motions.get(chef_entity);
-// 	Motion& player_motion = registry.motions.get(player_spy);
-// 	float distance = length(chef_motion.position - player_motion.position);
-// 	return distance >= DISTANCED_ATTACK_RANGE;
-// };
-
-// std::function<bool()> performSpinAttack = []()
-// {
-// 	performChefSpin(chef_entity);
-// };
-
-// std::function<bool()> performTomatoAttack = []()
-// {
-// 	performChefTomato(chef_entity);
-// };
-
-// std::function<bool()> performPanAttack = []()
-// {
-// 	performChefPan(chef_entity);
-// };
-
-// std::function<bool()> performStompAttack = []()
-// {
-// 	performChefStomp(chef_entity);
-// };
