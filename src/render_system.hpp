@@ -142,13 +142,13 @@ private:
 	"D / Right Arrow: Move Right",
 	"X: Stealth Travel (Point mouse and press X)",
 	"H: Decrease Player Health",
-	"F: Increase Flow",
 	"Space Bar: Dash (when already moving)",
 	"Escape: Exit Game",
-	"Press 'H' ten times to die",
 	"Press 'P' to see FPS",
 	"Press 'O' to toggle instructions",
-
+	"Left mouse click for light attack",
+	"Right mouse click for heavy attack (when flow meter is full)",
+	"Draw S with mouse with left mouse button pressed - Animation"
 
 	};
 };
