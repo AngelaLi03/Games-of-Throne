@@ -52,7 +52,7 @@ class RenderSystem
 			textures_path("wall.png"),
 			textures_path("spy_no_weapon.png"),
 			textures_path("enemy_small.png"),
-			textures_path("weapon.png"),
+			textures_path("sword_lvl3.png"),
 			textures_path("flow_meter.png"),
 			textures_path("enemy_corpse.png"),
 			textures_path("enemy_attack.png"),
