@@ -60,6 +60,17 @@ endif()
 set(glm_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/glm/cmake/glm) # if necessary
 find_package(glm REQUIRED)
 
+#find_package(LDtkLoader 1.5)
+#target_link_libraries(${PROJECT_NAME} PRIVATE LDtkLoader::LDtkLoader)
+# Set LDtkLoader include directory
+set(LDTKLOADER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ext/LDtkLoader/include")
+target_include_directories(${PROJECT_NAME} PRIVATE ${LDTKLOADER_INCLUDE_DIR})
+
+# Link LDtkLoader static library (if it exists)
+set(LDTKLOADER_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/ext/LDtkLoader/lib/libLDtkLoader.a")
+if (EXISTS ${LDTKLOADER_LIBRARY})
+    target_link_libraries(${PROJECT_NAME} PRIVATE "${LDTKLOADER_LIBRARY}")
+endif()
 
 
 

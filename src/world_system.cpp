@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "physics_system.hpp"
+#include "LDtkLoader/Project.hpp"
 
 // Game configuration
 int ENEMIES_COUNT = 2;
@@ -552,6 +553,70 @@ void createCorridor(std::vector<std::vector<int>> &levelMap, int x_start, int y_
 		}
 	}
 }
+// using json = nlohmann::json;
+// json loadLevelData(const std::string& filename) {
+//     std::ifstream file(filename);
+//     if (!file.is_open()) {
+//         throw std::runtime_error("Could not open level file: " + filename);
+//     }
+//     json levelData;
+//     file >> levelData;
+//     return levelData;
+// }
+
+// void parseTileLayer(const json& layer, RenderSystem* renderer) {
+//     std::string layerName = layer["__identifier"];
+//     auto tiles = layer["gridTiles"];
+
+//     for (const auto& tile : tiles) {
+//         int px = tile["px"][0]; 
+//         int py = tile["px"][1];
+//         vec2 position = { static_cast<float>(px), static_cast<float>(py) };
+
+//         if (layerName == "FloorLayer") {
+//             createFloorTile(renderer, position);
+//         } else if (layerName == "WallLayer") {
+//             createWall(renderer, position);
+//         }
+//     }
+// }
+
+// void parseEntityLayer(const json& layer, RenderSystem* renderer) {
+//     auto entities = layer["entityInstances"];
+//     for (const auto& entity : entities) {
+//         std::string entityName = entity["__identifier"];
+//         int px = entity["px"][0];
+//         int py = entity["px"][1];
+//         vec2 position = { static_cast<float>(px), static_cast<float>(py) };
+
+//         // if (entityName == "Chest") {
+//         //     createChest(renderer, position);
+//         // } else if (entityName == "Fountain") {
+//         //     createFountain(renderer, position);
+//         // }
+//     }
+// }
+
+// void loadLevel(RenderSystem* renderer, const std::string& filename) {
+//     json levelData = loadLevelData(filename);
+
+//     auto levels = levelData["levels"];
+//     auto level = levels[0]; // Assuming a single level
+
+//     auto layers = level["layerInstances"];
+
+//     // Layers are in reverse draw order
+//     for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+//         const json& layer = *it;
+//         std::string layerType = layer["__type"];
+
+//         if (layerType == "Tiles") {
+//             parseTileLayer(layer, renderer);
+//         } else if (layerType == "Entities") {
+//             parseEntityLayer(layer, renderer);
+//         }
+//     }
+// }
 
 // Reset the world state to its initial state
 void WorldSystem::restart_game()
@@ -577,59 +642,66 @@ void WorldSystem::restart_game()
 	// Expanded grid dimensions to cover a larger map
 	int floor_number_width = screen_width * 4 / TILE_SCALE + 1;
 	int floor_number_height = screen_height * 4 / TILE_SCALE + 1;
+	// std::cout << "map width" << screen_width * 4 << std::endl;
+	// std::cout << "map height" << screen_height * 4 << std::endl;
+	// std::cout << "tile scale" << TILE_SCALE << std::endl;
 
 	levelMap = std::vector<std::vector<int>>(floor_number_width, std::vector<int>(floor_number_height, 0));
 
 	int center_x = floor_number_width / 2;
 	int center_y = floor_number_height / 2;
+
+	load_level();
+
+	// LevelLoader::loadLevel(renderer, "data/levels/levels.ldtk");
 	// Central room (15x15 tiles)
-	createRoom(levelMap, center_x - 7, center_y - 7, 15, 15);
+	// createRoom(levelMap, center_x - 7, center_y - 7, 15, 15);
 
-	// Top room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x - 5, center_y - 20, 10, 10);
-	createCorridor(levelMap, center_x - 2, center_y - 11, 5, 5, true, true, false, false); // No wall on bottom side
+	// // Top room (10x10 tiles) and corridor connecting to central room
+	// createRoom(levelMap, center_x - 5, center_y - 20, 10, 10);
+	// createCorridor(levelMap, center_x - 2, center_y - 11, 5, 5, true, true, false, false); // No wall on bottom side
 
-	// Bottom room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x - 5, center_y + 10, 10, 10);
-	createCorridor(levelMap, center_x - 1, center_y + 7, 5, 4, true, true, false, false); // No wall on top side
+	// // Bottom room (10x10 tiles) and corridor connecting to central room
+	// createRoom(levelMap, center_x - 5, center_y + 10, 10, 10);
+	// createCorridor(levelMap, center_x - 1, center_y + 7, 5, 4, true, true, false, false); // No wall on top side
 
-	// Left room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x - 25, center_y - 5, 10, 10);
-	createCorridor(levelMap, center_x - 16, center_y - 1, 10, 4, false, false, true, true); // No wall on right side
+	// // Left room (10x10 tiles) and corridor connecting to central room
+	// createRoom(levelMap, center_x - 25, center_y - 5, 10, 10);
+	// createCorridor(levelMap, center_x - 16, center_y - 1, 10, 4, false, false, true, true); // No wall on right side
 
-	// Right room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x + 15, center_y - 5, 10, 10);
-	createCorridor(levelMap, center_x + 7, center_y - 1, 9, 4, false, false, true, true); // No wall on left side
+	// // Right room (10x10 tiles) and corridor connecting to central room
+	// createRoom(levelMap, center_x + 15, center_y - 5, 10, 10);
+	// createCorridor(levelMap, center_x + 7, center_y - 1, 9, 4, false, false, true, true); // No wall on left side
 
-	// Additional rooms with corridors
-	createRoom(levelMap, center_x + 15, center_y - 20, 10, 10);
-	createCorridor(levelMap, center_x + 4, center_y - 15, 12, 4, false, false, true, true);
+	// // Additional rooms with corridors
+	// createRoom(levelMap, center_x + 15, center_y - 20, 10, 10);
+	// createCorridor(levelMap, center_x + 4, center_y - 15, 12, 4, false, false, true, true);
 
-	createRoom(levelMap, center_x + 15, center_y + 10, 7, 8);
-	createCorridor(levelMap, center_x + 16, center_y + 4, 4, 7, true, true, false, false);
+	// createRoom(levelMap, center_x + 15, center_y + 10, 7, 8);
+	// createCorridor(levelMap, center_x + 16, center_y + 4, 4, 7, true, true, false, false);
 
-	for (int i = 0; i < levelMap.size(); ++i)
-	{
-		for (int j = 0; j < levelMap[i].size(); ++j)
-		{
-			vec2 pos = {i * TILE_SCALE, j * TILE_SCALE};
-
-			if (levelMap[i][j] == 1)
-			{
-				createWall(renderer, pos); // Render wall
-			}
-			else if (levelMap[i][j] == 2)
-			{
-				createFloorTile(renderer, pos); // Render floor
-			}
-		}
-	}
-
-	// 	// create enemy with random initial position
-	// while (registry.enemies.components.size() < ENEMIES_COUNT)
+	// for (int i = 0; i < levelMap.size(); ++i)
 	// {
-	// 	createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
+	// 	for (int j = 0; j < levelMap[i].size(); ++j)
+	// 	{
+	// 		vec2 pos = {i * TILE_SCALE, j * TILE_SCALE};
+
+	// 		if (levelMap[i][j] == 1)
+	// 		{
+	// 			createWall(renderer, pos); // Render wall
+	// 		}
+	// 		else if (levelMap[i][j] == 2)
+	// 		{
+	// 			createFloorTile(renderer, pos); // Render floor
+	// 		}
+	// 	}
 	// }
+
+		// create enemy with random initial position
+	while (registry.enemies.components.size() < ENEMIES_COUNT)
+	{
+		createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
+	}
 
 	for (int i = 0; i < ENEMIES_COUNT; i++)
 	{
@@ -660,6 +732,46 @@ void WorldSystem::restart_game()
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 	createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
 }
+
+void WorldSystem::load_level(){
+	ldtk::Project ldtk_project;
+    ldtk_project.loadFromFile("data/levels/levels.ldtk");
+	const ldtk::World& world = ldtk_project.getWorld();
+	const ldtk::Level& level = world.getLevel("Level_1");
+	const std::vector<ldtk::Layer>& layers = level.allLayers();
+	for (const auto& layer : level.allLayers()) {
+		if (layer.getType() == ldtk::LayerType::Tiles) {
+			for (const auto& tile : layer.allTiles()) {
+				// Get tile position in pixels
+				int px = tile.getPosition().x;
+				int py = tile.getPosition().y;
+				vec2 position = { static_cast<float>(px), static_cast<float>(py) };
+				if (layer.getName() == "Floor_Tiles") {
+					createFloorTile(renderer, position);
+				} else if (layer.getName() == "Wall_Tiles") {
+					createWall(renderer, position);
+				}
+			}
+		}
+	}
+	for (const auto& layer : level.allLayers()) {
+		if (layer.getType() == ldtk::LayerType::Entities) {
+			for (const auto& entity : layer.allEntities()) {
+				std::string entity_name = entity.getName();
+				int px = entity.getPosition().x;
+				int py = entity.getPosition().y;
+				vec2 position = { static_cast<float>(px), static_cast<float>(py) };
+
+				if (entity_name == "Chest") {
+					// createChest(renderer, position);
+				} else if (entity_name == "Fountain") {
+					// createFountain(renderer, position);
+				}
+			}
+		}
+	}
+}
+
 
 void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 {

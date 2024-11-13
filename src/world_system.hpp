@@ -46,6 +46,7 @@ private:
 	void update_camera_view();
 	void handle_animations(float elapsed_ms);
 	void process_animation(AnimationName name, float t, Entity entity);
+	void load_level();
 
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
