@@ -118,8 +118,7 @@ bool mesh_collides(Entity mesh_entity, const Motion &mesh_motion, const Motion &
 
 void PhysicsSystem::step(float elapsed_ms)
 {
-	// Move fish based on how much time has passed, this is to (partially) avoid
-	// having entities move at different speed based on the machine.
+	// Move all entities according to their velocity
 	auto &motion_registry = registry.motions;
 	for (uint i = 0; i < motion_registry.size(); i++)
 	{
@@ -127,6 +126,29 @@ void PhysicsSystem::step(float elapsed_ms)
 		// Entity entity = motion_registry.entities[i];
 		float step_seconds = elapsed_ms / 1000.f;
 		motion.position += motion.velocity * step_seconds;
+	}
+
+	// After movement, before collision checks. Do all relative position calculations here
+	Entity &spy = registry.players.entities[0];
+	Motion &player_motion = registry.motions.get(spy);
+	if (registry.weapons.has(spy))
+	{
+		// Set weapon position to correct offset from player
+		Weapon &player_weapon = registry.weapons.get(spy);
+		Entity weapon = player_weapon.weapon;
+		Motion &weapon_motion = registry.motions.get(weapon);
+		vec2 &weapon_offset = player_weapon.offset;
+		if (player_motion.scale.x < 0 && weapon_offset.x < 0)
+		{
+			weapon_offset.x = abs(weapon_offset.x);
+			weapon_motion.angle = -weapon_motion.angle;
+		}
+		else if (player_motion.scale.x > 0 && weapon_offset.x > 0)
+		{
+			weapon_offset.x = -abs(weapon_offset.x);
+			weapon_motion.angle = -weapon_motion.angle;
+		}
+		weapon_motion.position = player_motion.position + weapon_offset;
 	}
 
 	// Check for collisions between all moving entities
@@ -206,7 +228,7 @@ void PhysicsSystem::step(float elapsed_ms)
 					{
 						Health &player_health = registry.healths.get(player);
 						Damage &projectile_damage = registry.damages.get(projectile_entity);
-						player_health.health -= projectile_damage.damage;
+						player_health.take_damage(projectile_damage.damage);
 
 						entities_to_remove.insert(projectile_entity);
 					}

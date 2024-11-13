@@ -281,16 +281,20 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 		// std::cout << "Interpolation factor: " << interpolation_factor << std::endl;
 	}
-	for (Entity health_bar_entity : registry.healthbarlink.entities)
+
+	// Update health bar percentage
+	for (unsigned int i = 0; i < registry.healths.size(); i++)
 	{
-		HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
-		Entity owner_entity = healthbarlink.owner;
+		Health &health = registry.healths.components[i];
+		Entity owner_entity = registry.healths.entities[i];
+		Entity health_bar_entity = health.healthbar;
 
 		if (registry.motions.has(owner_entity) && registry.motions.has(health_bar_entity))
 		{
 			Motion &owner_motion = registry.motions.get(owner_entity);
 			Motion &health_bar_motion = registry.motions.get(health_bar_entity);
 
+			// TODO: refactor the following lines code by introducing healthbar_offset and put code in renderer.draw()
 			if (owner_entity == player_spy)
 			{
 				if (!registry.cameraUI.has(health_bar_entity))
@@ -309,44 +313,13 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 				health_bar_motion.position = owner_motion.position + vec2(-105.f, -75.f);
 			}
 
-			float health_percentage = 0.f;
-			if (registry.healths.has(owner_entity))
-			{
-				Health &owner_health = registry.healths.get(owner_entity);
-				health_percentage = owner_health.health / owner_health.max_health;
-			}
-
-			else if (registry.healthbar.has(health_bar_entity))
-			{
-				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-				health_percentage = health_bar.current_health / health_bar.max_health;
-			}
+			float health_percentage = health.health / health.max_health;
 			if (registry.healthbar.has(health_bar_entity))
 			{
 				HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
 				health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
 				health_bar_motion.scale.y = health_bar.original_scale.y;
 			}
-			// float health_percentage = 0.f;
-			// if (registry.healths.has(owner_entity))
-			// {
-			//     Health &owner_health = registry.healths.get(owner_entity);
-			//     health_percentage = owner_health.health / owner_health.max_health;
-			// }
-			// else
-			// {
-			//     // Fallback to health bar's current health
-			//     health_percentage = health_bar.current_health / health_bar.max_health;
-			// }
-
-			// HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-
-			// std::cout << "Updating health bar for owner " << owner_entity
-			//   << ": health_percentage = " << health_percentage
-			//   << ", original_scale.x = " << health_bar.original_scale.x << std::endl;
-
-			// health_bar_motion.scale.x = health_bar.original_scale.x * health_percentage;
-			// health_bar_motion.scale.y = health_bar.original_scale.y;
 		}
 	}
 
@@ -372,7 +345,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	}
 
 	auto &health = registry.healths.get(registry.players.entities[0]);
-	if (health.isDead)
+	if (health.is_dead)
 	{
 		if (!registry.deathTimers.has(registry.players.entities[0]))
 		{
@@ -464,6 +437,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
+	// TODO: create audio_system class and delegate audio playing to it, so this logic does not have to be in world_system
 	// play chef_trigger audio if chef just entered combat mode
 	for (Entity entity : registry.chef.entities)
 	{
@@ -683,9 +657,6 @@ void WorldSystem::restart_game()
 	player_weapon.weapon = weapon;
 	player_weapon.offset = weapon_offset;
 
-	createHealthBar(renderer, {50.f, 50.f}, player_spy, vec3(0.f, 1.f, 0.f));
-	// registry.healthbarlink.emplace(health_bar, player_spy);
-
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 	createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
 }
@@ -858,7 +829,7 @@ void WorldSystem::handle_collisions()
 		// 	if (player_spy_health.health <= 0.f)
 		// 	{
 		// 		player_spy_health.health = 0.f;
-		// 		player_spy_health.isDead = true;
+		// 		player_spy_health.is_dead = true;
 		// 		if (!registry.deathTimers.has(player_spy))
 		// 		{
 		// 			registry.deathTimers.emplace(player_spy);
@@ -890,17 +861,7 @@ void WorldSystem::handle_collisions()
 			{
 				pan.player_hit = true;
 				Health &player_spy_health = registry.healths.get(player_spy);
-				player_spy_health.health -= pan.damage;
-				// if (player_spy_health.health <= 0.f)
-				// {
-				// 	player_spy_health.health = 0.f;
-				// 	player_spy_health.isDead = true;
-				// 	if (!registry.deathTimers.has(player_spy))
-				// 	{
-				// 		registry.deathTimers.emplace(player_spy);
-				// 		Mix_PlayChannel(-1, spy_death_sound, 0);
-				// 	}
-				// }
+				player_spy_health.take_damage(pan.damage);
 			}
 			pan.state = PanState::RETURNING;
 			for (Entity chef_entity : registry.chef.entities)
@@ -942,17 +903,7 @@ void WorldSystem::handle_collisions()
 			if (!chef.dash_has_damaged)
 			{
 				float damage = 10.f;
-				player_spy_health.health -= damage;
-				// if (player_spy_health.health <= 0.f)
-				// {
-				// 	player_spy_health.health = 0.f;
-				// 	player_spy_health.isDead = true;
-				// 	if (!registry.deathTimers.has(player_spy))
-				// 	{
-				// 		registry.deathTimers.emplace(player_spy);
-				// 		Mix_PlayChannel(-1, spy_death_sound, 0);
-				// 	}
-				// }
+				player_spy_health.take_damage(damage);
 				chef.dash_has_damaged = true;
 			}
 		}
@@ -965,7 +916,7 @@ void WorldSystem::handle_collisions()
 			if (registry.healths.has(enemy_entity))
 			{
 				Health &enemy_health = registry.healths.get(enemy_entity);
-				if (enemy_health.isDead)
+				if (enemy_health.is_dead)
 				{
 					// Enemy is dead; skip collision processing
 					continue;
@@ -991,7 +942,7 @@ void WorldSystem::handle_collisions()
 				if (registry.healths.has(enemy_entity))
 				{
 					Health &enemy_health = registry.healths.get(enemy_entity);
-					enemy_health.health -= damage;
+					enemy_health.take_damage(damage);
 
 					if (player_comp.state == PlayerState::LIGHT_ATTACK)
 					{
@@ -1000,21 +951,6 @@ void WorldSystem::handle_collisions()
 					}
 
 					// std::cout << "Enemy health: " << enemy_health.health << ", damage: " << damage << std::endl;
-					if (enemy_health.health < 0.f)
-						enemy_health.health = 0.f;
-
-					for (Entity health_bar_entity : registry.healthbarlink.entities)
-					{
-						HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
-						if (healthbarlink.owner == enemy_entity)
-						{
-							if (registry.healthbar.has(health_bar_entity))
-							{
-								HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-								health_bar.current_health = enemy_health.health;
-							}
-						}
-					}
 				}
 			}
 		} // The entity and its collider
@@ -1098,38 +1034,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	float speed = 70.f;
-
-	// if (key == GLFW_KEY_H && action == GLFW_PRESS)
-	// {
-	// 	if (registry.healthbar.has(player_spy))
-	// 	{
-	// 		HealthBar &health_bar = registry.healthbar.get(player_spy);
-	// 		auto &spy_health = registry.healths.get(player_spy);
-	// 		// hardcoded damage, TODO
-	// 		health_bar.current_health -= 10.f;
-	// 		spy_health.health -= 10.f;
-	// 		if (health_bar.current_health < 0.f)
-	// 		{
-	// 			health_bar.current_health = 0.f;
-	// 		}
-	// 	}
-	// }
-
-	// if (key == GLFW_KEY_G && action == GLFW_PRESS)
-	// {
-	// 	for (Entity enemy_entity : registry.enemies.entities)
-	// 	{
-	// 		if (registry.healthbar.has(enemy_entity))
-	// 		{
-	// 			HealthBar &health = registry.healthbar.get(enemy_entity);
-	// 			health.current_health -= 10.f;
-	// 			if (health.current_health < 0.f)
-	// 			{
-	// 				health.current_health = 0.f;
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	if (action == GLFW_PRESS)
 	{

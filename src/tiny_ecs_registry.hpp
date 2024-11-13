@@ -29,7 +29,6 @@ public:
 	ComponentContainer<Enemy> enemies;
 	ComponentContainer<Weapon> weapons;
 	ComponentContainer<HealthBar> healthbar;
-	ComponentContainer<HealthBarLink> healthbarlink;
 	ComponentContainer<Health> healths;
 	ComponentContainer<Flow> flows;
 	ComponentContainer<Chef> chef;
@@ -58,7 +57,6 @@ public:
 		registry_list.push_back(&colors);
 		registry_list.push_back(&enemies);
 		registry_list.push_back(&healthbar);
-		registry_list.push_back(&healthbarlink);
 		registry_list.push_back(&healths);
 		registry_list.push_back(&flows);
 		registry_list.push_back(&weapons);

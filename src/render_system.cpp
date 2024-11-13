@@ -286,28 +286,6 @@ void RenderSystem::draw()
 	mat3 projection_2D = createProjectionMatrix();
 	mat3 camera_view = createCameraViewMatrix();
 
-	// Set weapon position to correct offset from player
-	Entity &spy = registry.players.entities[0];
-	Motion &player_motion = registry.motions.get(spy);
-	if (registry.weapons.has(spy))
-	{
-		Weapon &player_weapon = registry.weapons.get(spy);
-		Entity weapon = player_weapon.weapon;
-		Motion &weapon_motion = registry.motions.get(weapon);
-		vec2 &weapon_offset = player_weapon.offset;
-		if (player_motion.scale.x < 0 && weapon_offset.x < 0)
-		{
-			weapon_offset.x = abs(weapon_offset.x);
-			weapon_motion.angle = -weapon_motion.angle;
-		}
-		else if (player_motion.scale.x > 0 && weapon_offset.x > 0)
-		{
-			weapon_offset.x = -abs(weapon_offset.x);
-			weapon_motion.angle = -weapon_motion.angle;
-		}
-		weapon_motion.position = player_motion.position + weapon_offset;
-	}
-
 	// Draw all textured meshes that have a position and size component
 	for (Entity entity : registry.renderRequests.entities)
 	{
@@ -335,12 +313,12 @@ void RenderSystem::draw()
 
 		if (health.health <= 0)
 		{
-			if (!health.isDead)
+			if (!health.is_dead)
 			{
 				motion.scale.y *= 0.7;
 				motion.scale.x *= -1;
 				motion.scale *= 0.85;
-				health.isDead = true;
+				health.is_dead = true;
 				PhysicsBody &enemy_physics = registry.physicsBodies.get(enemy);
 				enemy_physics.body_type = BodyType::NONE;
 			}
@@ -368,16 +346,17 @@ void RenderSystem::draw()
 		// }
 	}
 
+	Entity spy = registry.players.entities[0];
 	auto &health = registry.healths.get(spy);
 	auto &render_request = registry.renderRequests.get(spy);
 	auto &motion = registry.motions.get(spy);
 	if (health.health <= 0)
 	{
 		// Change texture to corpse
-		if (!health.isDead)
+		if (!health.is_dead)
 		{
 			motion.scale.y *= 0.65;
-			health.isDead = true;
+			health.is_dead = true;
 			// implementation only consider case with 1 weapon
 			// assertion fails
 			// if(registry.weapons.has(spy)){

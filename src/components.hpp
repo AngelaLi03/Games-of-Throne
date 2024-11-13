@@ -61,13 +61,6 @@ struct Weapon
 	vec2 offset;	 // weapon offset relative to player's position
 };
 
-struct Health
-{
-	float health;
-	float max_health = 100.f;
-	bool isDead = false;
-};
-
 // All data relevant to the shape and motion of entities
 struct Motion
 {
@@ -114,6 +107,20 @@ struct Flow
 	float maxFlowLevel; // Maximum flow level
 };
 
+struct Health
+{
+	float health;
+	float max_health = 100.f;
+	Entity healthbar;
+	bool is_dead = false;
+	void take_damage(float damage);
+};
+
+struct HealthBar
+{
+	vec2 original_scale;
+};
+
 enum class BodyType
 {
 	STATIC = 0, // reserved for walls
@@ -134,19 +141,6 @@ struct Collision
 	Collision(Entity &other) { this->other = other; };
 };
 
-struct HealthBar
-{
-	float current_health;
-	float max_health;
-	vec2 original_scale;
-	HealthBar(float max_health, vec2 scale)
-	{
-		this->max_health = max_health;
-		this->current_health = max_health;
-		this->original_scale = scale;
-	}
-};
-
 enum class PanState
 {
 	TOWARDS_PLAYER,
@@ -162,15 +156,6 @@ struct Pan
 	{
 		this->damage = dmg;
 		this->state = PanState::TOWARDS_PLAYER;
-	}
-};
-
-struct HealthBarLink
-{
-	Entity owner;
-	HealthBarLink(Entity owner_entity)
-	{
-		this->owner = owner_entity;
 	}
 };
 

@@ -101,15 +101,15 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 
 	// create an empty Spy component for our character
 	registry.players.emplace(entity);
-	// registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
-	registry.healths.insert(entity, {100.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::SPY, // TEXTURE_COUNT indicates that no texture is needed
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
-	createHealthBar(renderer, {50.f, 50.f}, entity);
+
+	Entity healthbar = createHealthBar(renderer, {50.f, 50.f}, entity);
+	registry.healths.insert(entity, {100.f, 100.f, healthbar});
 
 	return entity;
 }
@@ -133,19 +133,18 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	motion.bb_scale = {150.f, 130.f};
 	motion.bb_offset = {0.f, 40.f};
 
-	createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
-
 	// create an empty Spy component for our character
 	registry.chef.emplace(entity);
 	registry.enemies.emplace(entity);
-	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
-	registry.healths.insert(entity, {500.f, 500.f});
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::CHEF, // TEXTURE_COUNT indicates that no texture is needed
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
+	registry.healths.insert(entity, {500.f, 500.f, healthbar});
 
 	return entity;
 }
@@ -199,7 +198,7 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, ve
 	motion.velocity = {0.f, 0.f};
 	motion.scale = {200.f, 20.f};
 
-	registry.healthbar.emplace(entity, HealthBar(100.f, motion.scale));
+	registry.healthbar.insert(entity, {motion.scale});
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no texture is needed
@@ -207,9 +206,6 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, ve
 			 GEOMETRY_BUFFER_ID::PROGRESS_BAR});
 	// Set to green
 	registry.colors.emplace(entity, color);
-
-	// Link the owner and health bar, for player and enemy.
-	registry.healthbarlink.emplace(entity, owner_entity);
 
 	return entity;
 }
@@ -270,14 +266,15 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
-	registry.healths.insert(entity, {100.f, 100.f});
 	registry.renderRequests.insert(
 			entity,
 			{animation.frames[animation.current_frame],
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+	Entity healthbar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+	registry.healths.insert(entity, {100.f, 100.f, healthbar});
+
 	return entity;
 }
 

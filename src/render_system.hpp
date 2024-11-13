@@ -106,10 +106,9 @@ public:
 	// Draw all entities
 	void draw();
 	void renderText(const std::string &text, float x, float y, float scale, vec3 color);
-	// void initializeTextRendering();
 	mat3 createProjectionMatrix();
 	mat3 createCameraViewMatrix();
-	void initTextRendering(); // Add this method declaration
+	void initTextRendering();
 	void loadFont(const std::string &fontPath);
 
 	vec2 camera_position = {0.f, 0.f};
@@ -135,20 +134,19 @@ private:
 	Entity screen_state_entity;
 	std::map<char, Character> characters;
 	std::vector<std::string> gameInstructions = {
-	"Controls:",
-	"W / Up Arrow: Move Up",
-	"A / Left Arrow: Move Left",
-	"S / Down Arrow: Move Down",
-	"D / Right Arrow: Move Right",
-	"X: Stealth Travel (Point mouse and press X)",
-	"H: Decrease Player Health",
-	"Space Bar: Dash (when already moving)",
-	"Escape: Exit Game",
-	"Press 'P' to see FPS",
-	"Press 'O' to toggle instructions",
-	"Left mouse click for light attack",
-	"Right mouse click for heavy attack (when flow meter is full)",
-	"Draw S with mouse with left mouse button pressed - Animation"
+			"Controls:",
+			"W / Up Arrow: Move Up",
+			"A / Left Arrow: Move Left",
+			"S / Down Arrow: Move Down",
+			"D / Right Arrow: Move Right",
+			"X: Stealth Travel (Point mouse and press X)",
+			"Space Bar: Dash (when already moving)",
+			"Escape: Exit Game",
+			"Press 'P' to see FPS",
+			"Press 'O' to toggle instructions",
+			"Left mouse click for light attack",
+			"Right mouse click for heavy attack (when flow meter is full)",
+			"Draw S with mouse with left mouse button pressed - Animation"
 
 	};
 };

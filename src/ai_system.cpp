@@ -286,7 +286,6 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		}
 		else if (enemy.state == EnemyState::COMBAT)
 		{
-
 			if (distance_to_player > detection_radius_squared * 2)
 			{
 				enemy.state = EnemyState::IDLE;
@@ -347,32 +346,10 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 					enemy.time_since_last_attack = 0.f;
 
 					float damage = 10.f; // Define the damage value
-					if (registry.healthbar.has(player))
-					{
-						HealthBar &health_bar = registry.healthbar.get(player);
-						health_bar.current_health -= damage;
-						if (health_bar.current_health < 0.f)
-							health_bar.current_health = 0.f;
-					}
 					if (registry.healths.has(player))
 					{
 						Health &player_health = registry.healths.get(player);
-						player_health.health -= damage;
-						if (player_health.health < 0.f)
-							player_health.health = 0.f;
-						for (Entity health_bar_entity : registry.healthbarlink.entities)
-						{
-							HealthBarLink &healthbarlink = registry.healthbarlink.get(health_bar_entity);
-							if (healthbarlink.owner == player)
-							{
-								if (registry.healthbar.has(health_bar_entity))
-								{
-									HealthBar &health_bar = registry.healthbar.get(health_bar_entity);
-									health_bar.current_health = player_health.health;
-								}
-								break;
-							}
-						}
+						player_health.take_damage(damage);
 					}
 				}
 			}
@@ -427,7 +404,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		// special behavior for chef
 		Entity chef_entity = registry.chef.entities[0];
 		Health &chef_health = registry.healths.get(chef_entity);
-		if (!chef_health.isDead)
+		if (!chef_health.is_dead)
 		{
 			chef_decision_tree->execute(elapsed_ms);
 		}
