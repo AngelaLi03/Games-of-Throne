@@ -54,6 +54,221 @@
 				"color": 2943221,
 				"customFields" : {}
 			}
+		],
+		"Minions": [
+			{
+				"id": "Minions",
+				"iid": "3b0d7790-9b00-11ef-86e7-f3b59841001f",
+				"layer": "Fountain",
+				"x": 1080,
+				"y": 1200,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "3c8327a0-9b00-11ef-86e7-7b1b7648eec4",
+				"layer": "Fountain",
+				"x": 1200,
+				"y": 1440,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "3edc0bc0-9b00-11ef-86e7-ef7d38cfc47c",
+				"layer": "Fountain",
+				"x": 1020,
+				"y": 1560,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "4109e840-9b00-11ef-86e7-bd24da86884c",
+				"layer": "Fountain",
+				"x": 1500,
+				"y": 1200,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "437ae840-9b00-11ef-86e7-a7cdf205ab5d",
+				"layer": "Fountain",
+				"x": 1140,
+				"y": 240,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "444d2c60-9b00-11ef-86e7-a7bbe9e4c1fb",
+				"layer": "Fountain",
+				"x": 1440,
+				"y": 180,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "45615b80-9b00-11ef-86e7-230d93822c64",
+				"layer": "Fountain",
+				"x": 2400,
+				"y": 300,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "46fa9920-9b00-11ef-86e7-91477fe1b2aa",
+				"layer": "Fountain",
+				"x": 2100,
+				"y": 540,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "4a2dd7b0-9b00-11ef-86e7-4b3726f05e34",
+				"layer": "Fountain",
+				"x": 2160,
+				"y": 1140,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "4b9dbb60-9b00-11ef-86e7-11b833a5d101",
+				"layer": "Fountain",
+				"x": 360,
+				"y": 1800,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "4cbf30f0-9b00-11ef-86e7-39a845409ae7",
+				"layer": "Fountain",
+				"x": 300,
+				"y": 1320,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "4ed6c650-9b00-11ef-86e7-e9455c57a729",
+				"layer": "Fountain",
+				"x": 360,
+				"y": 1500,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "4fe06e20-9b00-11ef-86e7-e194cb320174",
+				"layer": "Fountain",
+				"x": 1080,
+				"y": 2280,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "50ae1e60-9b00-11ef-86e7-8b4e762e97fa",
+				"layer": "Fountain",
+				"x": 1380,
+				"y": 2340,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "51a0bbc0-9b00-11ef-86e7-87baf16aff89",
+				"layer": "Fountain",
+				"x": 1680,
+				"y": 2340,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "52a644e0-9b00-11ef-86e7-5f6791f749d2",
+				"layer": "Fountain",
+				"x": 1980,
+				"y": 2100,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "5393d930-9b00-11ef-86e7-c55a4bcdcdcf",
+				"layer": "Fountain",
+				"x": 2040,
+				"y": 2640,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			}
+		],
+		"Chef": [
+			{
+				"id": "Chef",
+				"iid": "b6faa030-9b00-11ef-86e7-0bcea77433b3",
+				"layer": "Fountain",
+				"x": 3600,
+				"y": 1380,
+				"width": 60,
+				"height": 60,
+				"color": 14120515,
+				"customFields" : {}
+			}
+		],
+		"Spy": [
+			{
+				"id": "Spy",
+				"iid": "c57729c0-9b00-11ef-86e7-0f32c384ce65",
+				"layer": "Fountain",
+				"x": 1980,
+				"y": 1440,
+				"width": 60,
+				"height": 60,
+				"color": 4073265,
+				"customFields" : {}
+			}
 		]
 	}
 }
