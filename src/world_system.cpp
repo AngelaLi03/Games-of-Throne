@@ -478,6 +478,32 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			enlarge_countdown = 5000.f;
 		}
 	}
+		// Switch to level 1
+	if (registry.chef.size() > 0)
+	{
+		Entity chef_entity = registry.chef.entities[0];
+		Health &chef_health = registry.healths.get(chef_entity);
+		if (chef_health.is_dead)
+		{
+			registry.remove_all_components_of(chef_entity);
+			while (registry.motions.entities.size() > 0)
+				registry.remove_all_components_of(registry.motions.entities.back());
+			load_level("Level_1");
+		}
+	}
+
+	// if (registry.knight.size() > 0)
+	// {
+	// 	Entity knight_entity = registry.knight.entities[0];
+	// 	Health &knight_health = registry.healths.get(knight_entity);
+	// 	if (knight_health.is_dead)
+	// 	{
+	// 		registry.remove_all_components_of(knight_entity);
+	// 		while (registry.motions.entities.size() > 0)
+	// 			registry.remove_all_components_of(registry.motions.entities.back());
+	// 		load_level("Level_2");
+	// 	}
+	// }
 
 	return true;
 }
@@ -575,29 +601,7 @@ void WorldSystem::restart_game()
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 
-	// Expanded grid dimensions to cover a larger map
-	int floor_number_width = screen_width * 4 / TILE_SCALE + 1;
-	int floor_number_height = screen_height * 4 / TILE_SCALE + 1;
-	// std::cout << "map width" << screen_width * 4 << std::endl;
-	// std::cout << "map height" << screen_height * 4 << std::endl;
-	// std::cout << "tile scale" << TILE_SCALE << std::endl;
-
-	levelMap = std::vector<std::vector<int>>(floor_number_width, std::vector<int>(floor_number_height, 0));
-
-	int center_x = floor_number_width / 2;
-	int center_y = floor_number_height / 2;
-
 	load_level("Level_0");
-
-	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2});
-
-	vec2 weapon_offset = vec2(45.f, -50.f);
-
-	Weapon &player_weapon = registry.weapons.emplace(player_spy);
-	player_weapon.weapon = weapon;
-	player_weapon.offset = weapon_offset;
-
-	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 }
 
 void WorldSystem::load_level(const std::string& levelName){
@@ -647,6 +651,15 @@ void WorldSystem::load_level(const std::string& levelName){
 			}
 		}
 	}
+	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2});
+
+	vec2 weapon_offset = vec2(45.f, -50.f);
+
+	Weapon &player_weapon = registry.weapons.emplace(player_spy);
+	player_weapon.weapon = weapon;
+	player_weapon.offset = weapon_offset;
+
+	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 }
 
 
