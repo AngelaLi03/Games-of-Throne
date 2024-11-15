@@ -1,0 +1,212 @@
+{
+	"identifier": "Level_1",
+	"uniqueIdentifer": "f16b72c0-9b00-11ef-b787-d343c21b2005",
+	"x": 4096,
+	"y": 0,
+	"width": 4096,
+	"height": 2880,
+	"bgColor": "#696A79",
+	"neighbourLevels": [
+		{
+			"levelIid": "5a53d2f0-9b00-11ef-b787-5f07235b7bbd",
+			"dir": "w"
+		},
+		{
+			"levelIid": "90b4ecc0-9b00-11ef-b787-8f220b2c2eab",
+			"dir": "e"
+		}
+	],
+	"customFields" : {},
+	"layers": [
+		"Floor_Tiles.png",
+		"Wall_Tiles.png"
+	],
+	"entities": {
+		"Chest": [
+			{
+				"id": "Chest",
+				"iid": "55f98640-9b00-11ef-b787-993d2ab3ff24",
+				"layer": "Fountain",
+				"x": 900,
+				"y": 8550,
+				"width": 120,
+				"height": 120,
+				"color": 7552569,
+				"customFields" : {}
+			},
+			{
+				"id": "Chest",
+				"iid": "f8fac330-9b00-11ef-86e7-d33c28b1a542",
+				"layer": "Fountain",
+				"x": 240,
+				"y": 2340,
+				"width": 120,
+				"height": 120,
+				"color": 7552569,
+				"customFields" : {}
+			}
+		],
+		"Fountain": [
+			{
+				"id": "Fountain",
+				"iid": "4ef28360-9b00-11ef-b787-59972f37cf9a",
+				"layer": "Fountain",
+				"x": 1560,
+				"y": 480,
+				"width": 120,
+				"height": 120,
+				"color": 2943221,
+				"customFields" : {}
+			}
+		],
+		"Minions": [
+			{
+				"id": "Minions",
+				"iid": "62f9cdd0-9b00-11ef-86e7-91df2331715f",
+				"layer": "Fountain",
+				"x": 240,
+				"y": 420,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "63ac2de0-9b00-11ef-86e7-b1e8f442e66c",
+				"layer": "Fountain",
+				"x": 360,
+				"y": 720,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "64614d10-9b00-11ef-86e7-2134a04711ff",
+				"layer": "Fountain",
+				"x": 240,
+				"y": 1020,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "658d7100-9b00-11ef-86e7-91959f9917ac",
+				"layer": "Fountain",
+				"x": 840,
+				"y": 600,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "666b26d0-9b00-11ef-86e7-536c87c5090a",
+				"layer": "Fountain",
+				"x": 720,
+				"y": 1320,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "67985c30-9b00-11ef-86e7-1f166e7d208f",
+				"layer": "Fountain",
+				"x": 420,
+				"y": 2340,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "6834c340-9b00-11ef-86e7-f1da1370f692",
+				"layer": "Fountain",
+				"x": 1920,
+				"y": 2220,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "68c96220-9b00-11ef-86e7-313d8b70e70b",
+				"layer": "Fountain",
+				"x": 1560,
+				"y": 2280,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "69644290-9b00-11ef-86e7-ebf1685c35d7",
+				"layer": "Fountain",
+				"x": 2880,
+				"y": 2220,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "69d92470-9b00-11ef-86e7-57f7f9f1d1ff",
+				"layer": "Fountain",
+				"x": 2280,
+				"y": 2100,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "6a53f9c0-9b00-11ef-86e7-b900d69f443a",
+				"layer": "Fountain",
+				"x": 2280,
+				"y": 2580,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
+			}
+		],
+		"Knight": [
+			{
+				"id": "Knight",
+				"iid": "dd4e7c20-9b00-11ef-86e7-1dcd9ab30d07",
+				"layer": "Fountain",
+				"x": 3240,
+				"y": 780,
+				"width": 60,
+				"height": 60,
+				"color": 15389866,
+				"customFields" : {}
+			}
+		],
+		"Spy": [
+			{
+				"id": "Spy",
+				"iid": "cddc5d10-9b00-11ef-86e7-35eed1913368",
+				"layer": "Fountain",
+				"x": 1680,
+				"y": 600,
+				"width": 60,
+				"height": 60,
+				"color": 4073265,
+				"customFields" : {}
+			}
+		]
+	}
+}

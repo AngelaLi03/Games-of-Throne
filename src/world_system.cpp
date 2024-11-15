@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "physics_system.hpp"
+#include "LDtkLoader/Project.hpp"
 
 // Game configuration
 int ENEMIES_COUNT = 2;
@@ -477,6 +478,32 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			enlarge_countdown = 5000.f;
 		}
 	}
+		// Switch to level 1
+	if (registry.chef.size() > 0)
+	{
+		Entity chef_entity = registry.chef.entities[0];
+		Health &chef_health = registry.healths.get(chef_entity);
+		if (chef_health.is_dead)
+		{
+			registry.remove_all_components_of(chef_entity);
+			while (registry.motions.entities.size() > 0)
+				registry.remove_all_components_of(registry.motions.entities.back());
+			load_level("Level_1");
+		}
+	}
+
+	// if (registry.knight.size() > 0)
+	// {
+	// 	Entity knight_entity = registry.knight.entities[0];
+	// 	Health &knight_health = registry.healths.get(knight_entity);
+	// 	if (knight_health.is_dead)
+	// 	{
+	// 		registry.remove_all_components_of(knight_entity);
+	// 		while (registry.motions.entities.size() > 0)
+	// 			registry.remove_all_components_of(registry.motions.entities.back());
+	// 		load_level("Level_2");
+	// 	}
+	// }
 
 	return true;
 }
@@ -574,82 +601,57 @@ void WorldSystem::restart_game()
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 
-	// Expanded grid dimensions to cover a larger map
-	int floor_number_width = screen_width * 4 / TILE_SCALE + 1;
-	int floor_number_height = screen_height * 4 / TILE_SCALE + 1;
+	load_level("Level_0");
+}
 
-	levelMap = std::vector<std::vector<int>>(floor_number_width, std::vector<int>(floor_number_height, 0));
-
-	int center_x = floor_number_width / 2;
-	int center_y = floor_number_height / 2;
-	// Central room (15x15 tiles)
-	createRoom(levelMap, center_x - 7, center_y - 7, 15, 15);
-
-	// Top room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x - 5, center_y - 20, 10, 10);
-	createCorridor(levelMap, center_x - 2, center_y - 11, 5, 5, true, true, false, false); // No wall on bottom side
-
-	// Bottom room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x - 5, center_y + 10, 10, 10);
-	createCorridor(levelMap, center_x - 1, center_y + 7, 5, 4, true, true, false, false); // No wall on top side
-
-	// Left room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x - 25, center_y - 5, 10, 10);
-	createCorridor(levelMap, center_x - 16, center_y - 1, 10, 4, false, false, true, true); // No wall on right side
-
-	// Right room (10x10 tiles) and corridor connecting to central room
-	createRoom(levelMap, center_x + 15, center_y - 5, 10, 10);
-	createCorridor(levelMap, center_x + 7, center_y - 1, 9, 4, false, false, true, true); // No wall on left side
-
-	// Additional rooms with corridors
-	createRoom(levelMap, center_x + 15, center_y - 20, 10, 10);
-	createCorridor(levelMap, center_x + 4, center_y - 15, 12, 4, false, false, true, true);
-
-	createRoom(levelMap, center_x + 15, center_y + 10, 7, 8);
-	createCorridor(levelMap, center_x + 16, center_y + 4, 4, 7, true, true, false, false);
-
-	for (int i = 0; i < levelMap.size(); ++i)
-	{
-		for (int j = 0; j < levelMap[i].size(); ++j)
-		{
-			vec2 pos = {i * TILE_SCALE, j * TILE_SCALE};
-
-			if (levelMap[i][j] == 1)
-			{
-				createWall(renderer, pos); // Render wall
-			}
-			else if (levelMap[i][j] == 2)
-			{
-				createFloorTile(renderer, pos); // Render floor
+void WorldSystem::load_level(const std::string& levelName){
+	ldtk::Project ldtk_project;
+    ldtk_project.loadFromFile("data/levels/levels.ldtk");
+	const ldtk::World& world = ldtk_project.getWorld();
+	const ldtk::Level& level = world.getLevel(levelName);
+	const std::vector<ldtk::Layer>& layers = level.allLayers();
+	for (const auto& layer : level.allLayers()) {
+		if (layer.getType() == ldtk::LayerType::Tiles) {
+			for (const auto& tile : layer.allTiles()) {
+				// Get tile position in pixels
+				int px = tile.getPosition().x;
+				int py = tile.getPosition().y;
+				vec2 position = { static_cast<float>(px), static_cast<float>(py) };
+				if (layer.getName() == "Floor_Tiles") {
+					createFloorTile(renderer, position);
+				} else if (layer.getName() == "Wall_Tiles") {
+					createWall(renderer, position);
+				}
 			}
 		}
 	}
+	for (const auto& layer : level.allLayers()) {
+		if (layer.getType() == ldtk::LayerType::Entities) {
+			for (const auto& entity : layer.allEntities()) {
+				std::string entity_name = entity.getName();
+				int px = entity.getPosition().x;
+				int py = entity.getPosition().y;
+				vec2 position = { static_cast<float>(px), static_cast<float>(py) };
 
-	// 	// create enemy with random initial position
-	// while (registry.enemies.components.size() < ENEMIES_COUNT)
-	// {
-	// 	createEnemy(renderer, vec2(uniform_dist(rng) * (window_width_px - 100) + 50, 50.f + uniform_dist(rng) * (window_height_px - 100.f)));
-	// }
-
-	for (int i = 0; i < ENEMIES_COUNT; i++)
-	{
-		createEnemy(renderer, vec2(window_width_px * 2 - 100 + 150 * (i - 1), window_height_px * 2 - 300)); // middle room
-		createEnemy(renderer, vec2(window_width_px * 2 - 100 + 150 * (i - 1), window_height_px * 2 - 150)); // middle room
-		createEnemy(renderer, vec2(window_width_px * 2 + 150 * (i - 1), window_height_px - 300));						// middle top
-		createEnemy(renderer, vec2(window_width_px * 3 + 150 * (i - 1), window_height_px - 300));						// right top
-		createEnemy(renderer, vec2(window_width_px * 2 + 150 * (i - 1), window_height_px * 3 + 200));				// middle bottom
-		createEnemy(renderer, vec2{window_width_px * 3 - 100 + 150 * (i - 1), window_height_px * 2});				// right middle
-		createEnemy(renderer, vec2{window_width_px * 2.9 + 150 * (i - 1), window_height_px * 3.1});					// right bottom
-		createEnemy(renderer, vec2{window_width_px + 50 + 150 * (i - 1), window_height_px * 2});						// left middle
-		createEnemy(renderer, vec2{window_width_px + 50 + 150 * (i - 1), window_height_px * 2 - 150});			// left middle
+				if (entity_name == "Chest") {
+					// createChest(renderer, position);
+				} else if (entity_name == "Fountain") {
+					// createFountain(renderer, position);
+				} else if (entity_name == "Minions") {
+					createEnemy(renderer, position);
+				} else if (entity_name == "Chef") {
+					createChef(renderer, position);
+				} else if (entity_name == "Knight") {
+					// createKnight (renderer, position);
+				} else if (entity_name == "Prince") {
+					// createPrince (renderer, position);
+				} else if (entity_name == "Spy") {
+					player_spy = createSpy(renderer, position);
+				}
+			}
+		}
 	}
-
-	createEnemy(renderer, vec2(window_width_px * 2 + 600, window_height_px * 2));
-
-	// createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
-
 	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2});
-	player_spy = createSpy(renderer, {window_width_px * 2 + 200, window_height_px * 2});
 
 	vec2 weapon_offset = vec2(45.f, -50.f);
 
@@ -658,8 +660,8 @@ void WorldSystem::restart_game()
 	player_weapon.offset = weapon_offset;
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
-	createChef(renderer, {window_width_px * 3 + 100.f, window_height_px * 2 - 70});
 }
+
 
 void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 {
