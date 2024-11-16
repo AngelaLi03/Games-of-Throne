@@ -15,7 +15,8 @@ public:
 	ComponentContainer<Motion> motions;
 	ComponentContainer<Animation> animations;
 	ComponentContainer<Interpolation> interpolations;
-	ComponentContainer<Bezier> beziers;
+	//ComponentContainer<Bezier> beziers;
+	ComponentContainer<Dash> dashes;
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<PhysicsBody> physicsBodies;
 	ComponentContainer<Player> players;
@@ -64,7 +65,8 @@ public:
 		registry_list.push_back(&flows);
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&interpolations);
-		registry_list.push_back(&beziers);
+		//registry_list.push_back(&beziers);
+		registry_list.push_back(&dashes);
 		registry_list.push_back(&pans);
 		registry_list.push_back(&spinareas);
 		registry_list.push_back(&attachments);

@@ -19,6 +19,9 @@ bool show_help_text = false;
 bool is_right_mouse_button_down = false;
 bool enlarged_player = false;
 float enlarge_countdown = 3000.f;
+float speed = 70.f;
+bool dashAvailable = true;
+bool dashInUse = false;
 
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
@@ -182,12 +185,22 @@ float elapsed_time = 0.f;
 float frame_count = 0.f;
 float fps = 0.f;
 
+float bezzy(float t, float P0, float P1, float P2)
+{
+	return (1 - t) * (1 - t) * P0 + 2 * (1 - t) * t * P1 + t * t * P2;
+}
+
 // Update our game world
 bool WorldSystem::step(float elapsed_ms_since_last_update)
 {
 
 	elapsed_time += elapsed_ms_since_last_update / 1000.f; // ms to second convert
 	frame_count++;
+
+	Player &player = registry.players.get(player_spy);
+	Motion &spy_motion = registry.motions.get(player_spy);
+	dashAvailable = player.state != PlayerState::DASHING && player.dash_cooldown_remaining_ms <= 0.0f;
+	dashInUse = (player.state == PlayerState::DASHING);
 
 	if (elapsed_time >= 1)
 	{
@@ -324,26 +337,47 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	for (Entity entity : registry.beziers.entities)
+	for (Entity entity : registry.dashes.entities)
 	{
-		Bezier &bezier = registry.beziers.get(entity);
-		Motion &motion = registry.motions.get(entity);
+		Player &player = registry.players.get(entity);
+		Motion &spy_motion = registry.motions.get(player_spy);
+		dashAvailable = player.state != PlayerState::DASHING && player.dash_cooldown_remaining_ms <= 0.0f;
+		dashInUse = (player.state == PlayerState::DASHING);
+		Dash &dash = registry.dashes.get(entity);
+		dash.elapsed_time += elapsed_ms_since_last_update;
 
-		bezier.elapsed_time += elapsed_ms_since_last_update;
-
-		float t = (float)bezier.elapsed_time / (float)bezier.total_time_to_0_ms;
-		t = std::min(t, 1.0f);
-
-		glm::vec2 new_position = bezierInterpolation(t, motion.position, bezier.control_point, bezier.target_position);
-
-		motion.position = new_position;
-
-		if (t >= 1.0f)
+		if (dash.elapsed_time <= dash.total_time_ms)
 		{
-			registry.beziers.remove(entity);
-			motion.velocity = vec2(0.f, 0.f);
+			float t = dash.elapsed_time / dash.total_time_ms;
+			float scaling_factor = bezzy(t, 1.0f, 2.0f, 1.0f);
+			spy_motion.velocity = player_movement_direction * speed * scaling_factor * 5.f;
+			// std::cout << "dash active, velocity is (" << spy_motion.velocity.x << ", " << spy_motion.velocity.y << ")" << std::endl;
+		}
+		else
+		{
+			player.state = PlayerState::IDLE;
+			dash.elapsed_time = 0;
+			player.dash_cooldown_remaining_ms = dash.total_time_ms;
+			registry.dashes.remove(entity);
+			std::cout << "Dash ended, player back to IDLE" << std::endl;
 		}
 	}
+
+	for (Entity entity : registry.players.entities)
+	{
+		Player &player = registry.players.get(entity);
+		if (player.dash_cooldown_remaining_ms > 0.0f)
+		{
+			player.dash_cooldown_remaining_ms -= elapsed_ms_since_last_update;
+		}
+	}
+
+	//// Update positions based on velocities
+	// for (Entity entity : registry.motions.entities)
+	//{
+	// Motion& motion = registry.motions.get(player_spy);
+	//	motion.position += motion.velocity * (elapsed_ms_since_last_update / 1000.0f);
+	////}
 
 	auto &health = registry.healths.get(registry.players.entities[0]);
 	if (health.is_dead)
@@ -1077,8 +1111,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		std::cout << "Show Help Text: " << (show_help_text ? "ON" : "OFF") << std::endl;
 	}
 
-	float speed = 70.f;
-
 	if (action == GLFW_PRESS)
 	{
 		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
@@ -1156,23 +1188,23 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
-	// bezier logic
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+	if (action == GLFW_PRESS && key == GLFW_KEY_X)
 	{
-		if (!registry.beziers.has(player_spy))
+		Player &player = registry.players.get(player_spy);
+
+		if (player.state == PlayerState::IDLE && player.dash_cooldown_remaining_ms <= 0.0f)
 		{
-			Bezier bezier;
-			bezier.elapsed_time = 0.f;
+			player.state = PlayerState::DASHING;
+			std::cout << "DASHING NOW" << std::endl;
 
-			Motion &motion = registry.motions.get(player_spy);
-			bezier.initial_velocity = motion.velocity;
-			bezier.target_position = curr_mouse_position + renderer->camera_position;
-
-			bezier.control_point = calculateControlPoint(motion.position, bezier.target_position,
-																									 (motion.position + bezier.target_position) / 2.0f, 0.5f);
-
-			registry.beziers.emplace(player_spy, bezier);
-			Mix_PlayChannel(-1, break_sound, 0);
+			// Add dash component and play dash sound
+			Dash dash;
+			registry.dashes.emplace(player_spy, dash);
+			Mix_PlayChannel(-1, spy_dash_sound, 0);
+		}
+		else if (player.dash_cooldown_remaining_ms > 0.0f)
+		{
+			std::cout << "Dash on cooldown: " << player.dash_cooldown_remaining_ms << "ms remaining." << std::endl;
 		}
 	}
 }

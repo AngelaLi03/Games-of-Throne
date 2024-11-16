@@ -13,6 +13,7 @@ enum class PlayerState
 	CHARGING_FLOW = DODGING + 1,
 	LIGHT_ATTACK = CHARGING_FLOW + 1,
 	HEAVY_ATTACK = LIGHT_ATTACK + 1,
+	DASHING = HEAVY_ATTACK + 1,
 };
 struct Player
 {
@@ -20,6 +21,8 @@ struct Player
 	float attack_damage = 20.0f;
 	unsigned int current_attack_id = 0;
 	bool is_heavy_attack_second_half = false;
+	float dash_cooldown_remaining_ms = 0.0f; 
+
 };
 
 struct Damage
@@ -105,13 +108,19 @@ struct Interpolation
 	vec2 initial_velocity;			// velocity when button is released
 };
 
-struct Bezier
+//struct Bezier
+//{
+//	glm::vec2 initial_velocity;
+//	glm::vec2 target_position;
+//	glm::vec2 control_point;
+//	float elapsed_time;
+//	float total_time_to_0_ms = 2000;
+//};
+
+struct Dash
 {
-	glm::vec2 initial_velocity;
-	glm::vec2 target_position;
-	glm::vec2 control_point;
-	float elapsed_time;
-	float total_time_to_0_ms = 2000;
+	float elapsed_time = 0.f;
+	float total_time_ms = 10000.f;
 };
 
 struct Flow

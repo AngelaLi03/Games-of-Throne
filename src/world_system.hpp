@@ -39,7 +39,6 @@ public:
 	bool is_over() const;
 
 	std::vector<std::vector<int>> levelMap;
-
 	bool isSGesture();
 
 private:
