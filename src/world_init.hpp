@@ -4,19 +4,6 @@
 #include "tiny_ecs.hpp"
 #include "render_system.hpp"
 
-// These are hardcoded to the dimensions of the entity texture
-// BB = bounding box
-const float FISH_BB_WIDTH = 0.6f * 165.f;
-const float FISH_BB_HEIGHT = 0.6f * 165.f;
-const float EEL_BB_WIDTH = 0.6f * 300.f;  // 1001
-const float EEL_BB_HEIGHT = 0.6f * 202.f; // 870
-
-// the prey
-Entity createFish(RenderSystem *renderer, vec2 position);
-
-// the enemy
-Entity createEel(RenderSystem *renderer, vec2 position);
-
 void createBox(vec2 position, vec2 scale, vec3 color, float angle = 0.f);
 
 // a red line for debugging purposes
@@ -45,5 +32,7 @@ Entity createTomato(RenderSystem *renderer, vec2 pos, vec2 velocity);
 Entity createPan(RenderSystem *renderer, vec2 pos, vec2 velocity);
 
 Entity createSpinArea(Entity chef_entity);
+
+Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, float time_until_active, float duration, float damage_cooldown = 0, bool relative_position = false, vec2 offset_from_owner = vec2(0, 0));
 
 Entity createKnight(RenderSystem *renderer, vec2 pos);

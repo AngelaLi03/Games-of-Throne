@@ -343,6 +343,44 @@ Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale)
 	return entity;
 }
 
+Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, float time_until_active, float duration, float damage_cooldown, bool relative_position, vec2 offset_from_owner)
+{
+	Entity entity = Entity();
+
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = position;
+	motion.scale = scale;
+	motion.bb_scale = scale;
+
+	registry.damages.insert(entity, {damage});
+	registry.physicsBodies.insert(entity, {BodyType::NONE});
+
+	DamageArea &damage_area = registry.damageAreas.emplace(entity);
+	damage_area.owner = owner;
+	damage_area.time_until_active = time_until_active;
+	if (time_until_active == 0.f)
+	{
+		damage_area.active = true;
+	}
+	else
+	{
+		damage_area.active = false;
+	}
+	damage_area.time_until_inactive = duration;
+	damage_area.relative_position = relative_position;
+	damage_area.offset_from_owner = offset_from_owner;
+
+	if (damage_cooldown == 0)
+	{
+		damage_area.single_damage = true;
+	}
+	else
+	{
+		damage_area.single_damage = false;
+		damage_area.damage_cooldown = damage_cooldown;
+	}
+}
+
 Entity createEnemy(RenderSystem *renderer, vec2 position)
 {
 	// Reserve en entity

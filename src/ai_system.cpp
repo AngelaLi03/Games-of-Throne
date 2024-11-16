@@ -332,7 +332,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			{
 				motion.velocity = {0.f, 0.f};
 				enemy.time_since_last_attack += elapsed_ms;
-				if (enemy.time_since_last_attack > 1000.f)
+				if (enemy.time_since_last_attack > 2000.f)
 				{
 					// attack player
 					std::cout << "Enemy " << i << " attacks player" << std::endl;
@@ -350,32 +350,14 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 					enemy.time_since_last_attack = 0.f;
 
-					float damage = 10.f; // Define the damage value
-					if (registry.healths.has(player))
-					{
-						Health &player_health = registry.healths.get(player);
-						player_health.take_damage(damage);
-					}
+					createDamageArea(entity, motion.position, {100.f, 70.f}, 10.f, 200.f, 500.f, 0.f, true, {50.f, 50.f});
+					// float damage = 10.f; // Define the damage value
+					// if (registry.healths.has(player))
+					// {
+					// 	Health &player_health = registry.healths.get(player);
+					// 	player_health.take_damage(damage);
+					// }
 				}
-			}
-		}
-		// reset state to combat after attack
-		else if (enemy.state == EnemyState::ATTACK)
-		{
-			auto &animation = registry.spriteAnimations.get(entity);
-			auto &render_request = registry.renderRequests.get(entity);
-			enemy.attack_countdown -= elapsed_ms;
-
-			if (enemy.attack_countdown <= 0)
-			{
-				enemy.state = EnemyState::COMBAT;
-				printf("Enemy %d finish attack\n", i);
-				enemy.attack_countdown = 500;
-				// change to combat animation sprite
-				render_request.used_texture = animation.frames[0];
-				// get motion of the enemy
-				auto &enemy_motion = registry.motions.get(entity);
-				enemy_motion.scale.x /= 1.1;
 			}
 		}
 		// reset state to combat after attack

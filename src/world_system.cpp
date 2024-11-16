@@ -816,11 +816,20 @@ void WorldSystem::handle_collisions()
 			createLine((p2 + p3) / 2.f, {glm::length(p3 - p2), 3.f}, {1.f, 1.f, 0.f}, atan2(p3.y - p2.y, p3.x - p2.x));
 			createLine((p3 + p1) / 2.f, {glm::length(p1 - p3), 3.f}, {1.f, 1.f, 0.f}, atan2(p1.y - p3.y, p1.x - p3.x));
 		}
-		// for (uint i = 0; i < weapon_mesh.vertices.size(); i++)
-		// {
-		// 	vec2 p = xy(transform * weapon_mesh.vertices[i].position);
-		// 	createBox(weapon_motion.position + p, {5.f, 5.f}, {1.f, 1.f, 0.f});
-		// }
+
+		// Draw damage areas
+		for (uint i = 0; i < registry.damageAreas.components.size(); i++)
+		{
+			Entity entity = registry.damageAreas.entities[i];
+			DamageArea &damage_area = registry.damageAreas.components[i];
+			Motion &motion = registry.motions.get(entity);
+			vec3 color = {0.6f, 0.6f, 0.f};
+			if (!damage_area.active)
+			{
+				color = {0.3f, 0.3f, 0.f};
+			}
+			createBox(motion.position + motion.bb_offset, get_bounding_box(motion), color);
+		}
 	}
 
 	// Loop over all collisions detected by the physics system
@@ -836,6 +845,27 @@ void WorldSystem::handle_collisions()
 		Entity entity = collisionsRegistry.entities[i];
 		Entity entity_other = collisionsRegistry.components[i].other;
 		// std::cout << "entity = " << entity << " entity_other = " << entity_other << std::endl;
+
+		bool entity_is_damage_area = registry.damageAreas.has(entity);
+		if (entity_is_damage_area && entity_other == player)
+		{
+			DamageArea &damage_area = registry.damageAreas.get(entity);
+			if (damage_area.active)
+			{
+				if (damage_area.single_damage)
+				{
+					damage_area.time_until_inactive = 0; // deactivate damage area asap to avoid another damage
+				}
+				else
+				{
+					// todo multiple damages with cooldown
+				}
+				std::cout << "Damage area hit player" << std::endl;
+				Damage &damage = registry.damages.get(entity);
+				Health &player_health = registry.healths.get(player);
+				player_health.take_damage(damage.damage);
+			}
+		}
 
 		// When tomato hits player
 		// bool entity_is_tomato = registry.tomatos.has(entity);
@@ -875,11 +905,9 @@ void WorldSystem::handle_collisions()
 
 		// When pan hits player
 		bool entity_is_pan = registry.pans.has(entity);
-		bool entity_other_is_pan = registry.pans.has(entity_other);
-		if ((entity_is_pan && entity_other == player_spy) || (entity_other_is_pan && entity == player_spy))
+		if (entity_is_pan && entity_other == player)
 		{
-			Entity pan_entity = entity_is_pan ? entity : entity_other;
-			Pan &pan = registry.pans.get(pan_entity);
+			Pan &pan = registry.pans.get(entity);
 
 			if (pan.player_hit == false)
 			{
@@ -891,25 +919,22 @@ void WorldSystem::handle_collisions()
 			for (Entity chef_entity : registry.chef.entities)
 			{
 				Motion &chef_motion = registry.motions.get(chef_entity);
-				Motion &pan_motion = registry.motions.get(pan_entity);
+				Motion &pan_motion = registry.motions.get(entity);
 				vec2 direction_to_chef = normalize(chef_motion.position - pan_motion.position);
 				pan_motion.velocity = direction_to_chef * 400.f;
 			}
 		}
 
 		// When pan hits wall
-		bool entity_is_wall = registry.physicsBodies.has(entity) && registry.physicsBodies.get(entity).body_type == BodyType::STATIC;
 		bool entity_other_is_wall = registry.physicsBodies.has(entity_other) && registry.physicsBodies.get(entity_other).body_type == BodyType::STATIC;
-
-		if ((entity_is_wall && entity_other_is_pan) || (entity_other_is_wall && entity_is_pan))
+		if (entity_is_pan && entity_other_is_wall)
 		{
-			Entity pan_entity = entity_is_pan ? entity : entity_other;
-			Pan &pan = registry.pans.get(pan_entity);
+			Pan &pan = registry.pans.get(entity);
 			pan.state = PanState::RETURNING;
 			for (Entity chef_entity : registry.chef.entities)
 			{
 				Motion &chef_motion = registry.motions.get(chef_entity);
-				Motion &pan_motion = registry.motions.get(pan_entity);
+				Motion &pan_motion = registry.motions.get(entity);
 				vec2 direction_to_chef = normalize(chef_motion.position - pan_motion.position);
 				pan_motion.velocity = direction_to_chef * 400.f;
 			}
@@ -917,11 +942,9 @@ void WorldSystem::handle_collisions()
 
 		// When dash hits player
 		bool entity_is_chef = registry.chef.has(entity);
-		bool entity_other_is_chef = registry.chef.has(entity_other);
-		if ((entity_is_chef && entity_other == player_spy) || (entity_other_is_chef && entity == player_spy))
+		if (entity_is_chef && entity_other == player)
 		{
-			Entity chef_entity = entity_is_chef ? entity : entity_other;
-			Chef &chef = registry.chef.get(chef_entity);
+			Chef &chef = registry.chef.get(entity);
 			Health &player_spy_health = registry.healths.get(player_spy);
 
 			if (!chef.dash_has_damaged)
@@ -932,14 +955,11 @@ void WorldSystem::handle_collisions()
 			}
 		}
 
-		if ((entity == player_weapon || entity_other == player_weapon) &&
-				(registry.enemies.has(entity) || registry.enemies.has(entity_other)))
+		if (entity == player_weapon && registry.enemies.has(entity_other))
 		{
-			Entity enemy_entity = registry.enemies.has(entity) ? entity : entity_other;
-
-			if (registry.healths.has(enemy_entity))
+			if (registry.healths.has(entity_other))
 			{
-				Health &enemy_health = registry.healths.get(enemy_entity);
+				Health &enemy_health = registry.healths.get(entity_other);
 				if (enemy_health.is_dead)
 				{
 					// Enemy is dead; skip collision processing
@@ -947,7 +967,7 @@ void WorldSystem::handle_collisions()
 				}
 			}
 
-			Enemy &enemy = registry.enemies.get(enemy_entity);
+			Enemy &enemy = registry.enemies.get(entity_other);
 
 			if (player_comp.state == PlayerState::LIGHT_ATTACK || player_comp.state == PlayerState::HEAVY_ATTACK)
 			{
@@ -963,9 +983,9 @@ void WorldSystem::handle_collisions()
 
 				float damage = (player_comp.state == PlayerState::LIGHT_ATTACK) ? 20.f : 40.f; // Define damage values
 
-				if (registry.healths.has(enemy_entity))
+				if (registry.healths.has(entity_other))
 				{
-					Health &enemy_health = registry.healths.get(enemy_entity);
+					Health &enemy_health = registry.healths.get(entity_other);
 					enemy_health.take_damage(damage);
 
 					if (player_comp.state == PlayerState::LIGHT_ATTACK)

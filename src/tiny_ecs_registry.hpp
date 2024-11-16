@@ -37,6 +37,7 @@ public:
 	ComponentContainer<Attachment> attachments;
 	ComponentContainer<SpriteAnimation> spriteAnimations;
 	ComponentContainer<MoveUI> cameraUI;
+	ComponentContainer<DamageArea> damageAreas;
 	ComponentContainer<BossAnimation> bossAnimations;
 	ComponentContainer<Knight> knight;
 
@@ -70,6 +71,7 @@ public:
 		registry_list.push_back(&chef);
 		registry_list.push_back(&spriteAnimations);
 		registry_list.push_back(&cameraUI);
+		registry_list.push_back(&damageAreas);
 		registry_list.push_back(&bossAnimations);
 		registry_list.push_back(&knight);
 	}

@@ -27,6 +27,19 @@ struct Damage
 	float damage;
 };
 
+struct DamageArea
+{
+	float time_until_active;
+	float time_until_inactive;
+	Entity owner;
+	bool relative_position = false;
+	vec2 offset_from_owner;
+	bool active = false;
+	bool single_damage = true;
+	float damage_cooldown = 0;
+	float time_since_last_damage = 0;
+};
+
 enum class EnemyState
 {
 	IDLE = 0,

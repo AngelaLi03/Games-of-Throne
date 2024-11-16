@@ -151,6 +151,39 @@ void PhysicsSystem::step(float elapsed_ms)
 		weapon_motion.position = player_motion.position + weapon_offset;
 	}
 
+	// Update damage area status & position
+	for (int i = registry.damageAreas.components.size() - 1; i >= 0; i--)
+	{
+		DamageArea &damage_area = registry.damageAreas.components[i];
+		Entity owner_entity = damage_area.owner;
+		Entity damage_area_entity = registry.damageAreas.entities[i];
+
+		if (damage_area.relative_position && registry.motions.has(owner_entity) && registry.motions.has(damage_area_entity))
+		{
+			Motion &owner_motion = registry.motions.get(owner_entity);
+			Motion &damage_area_motion = registry.motions.get(damage_area_entity);
+
+			damage_area_motion.position = owner_motion.position + damage_area.offset_from_owner;
+		}
+
+		if (damage_area.active)
+		{
+			damage_area.time_until_inactive -= elapsed_ms;
+			if (damage_area.time_until_inactive <= 0.f)
+			{
+				registry.remove_all_components_of(damage_area_entity);
+			}
+		}
+		else
+		{
+			damage_area.time_until_active -= elapsed_ms;
+			if (damage_area.time_until_active <= 0.f)
+			{
+				damage_area.active = true;
+			}
+		}
+	}
+
 	// Check for collisions between all moving entities
 	Entity player = registry.players.entities[0];
 	Weapon &player_weapon = registry.weapons.get(player);
