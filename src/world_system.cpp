@@ -478,7 +478,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			enlarge_countdown = 5000.f;
 		}
 	}
-		// Switch to level 1
+	// Switch to level 1
 	if (registry.chef.size() > 0)
 	{
 		Entity chef_entity = registry.chef.entities[0];
@@ -604,48 +604,71 @@ void WorldSystem::restart_game()
 	load_level("Level_0");
 }
 
-void WorldSystem::load_level(const std::string& levelName){
+void WorldSystem::load_level(const std::string &levelName)
+{
 	ldtk::Project ldtk_project;
-    ldtk_project.loadFromFile("data/levels/levels.ldtk");
-	const ldtk::World& world = ldtk_project.getWorld();
-	const ldtk::Level& level = world.getLevel(levelName);
-	const std::vector<ldtk::Layer>& layers = level.allLayers();
-	for (const auto& layer : level.allLayers()) {
-		if (layer.getType() == ldtk::LayerType::Tiles) {
-			for (const auto& tile : layer.allTiles()) {
+	ldtk_project.loadFromFile("data/levels/levels.ldtk");
+	const ldtk::World &world = ldtk_project.getWorld();
+	const ldtk::Level &level = world.getLevel(levelName);
+	const std::vector<ldtk::Layer> &layers = level.allLayers();
+	for (const auto &layer : level.allLayers())
+	{
+		if (layer.getType() == ldtk::LayerType::Tiles)
+		{
+			for (const auto &tile : layer.allTiles())
+			{
 				// Get tile position in pixels
 				int px = tile.getPosition().x;
 				int py = tile.getPosition().y;
-				vec2 position = { static_cast<float>(px), static_cast<float>(py) };
-				if (layer.getName() == "Floor_Tiles") {
+				vec2 position = {static_cast<float>(px), static_cast<float>(py)};
+				if (layer.getName() == "Floor_Tiles")
+				{
 					createFloorTile(renderer, position);
-				} else if (layer.getName() == "Wall_Tiles") {
+				}
+				else if (layer.getName() == "Wall_Tiles")
+				{
 					createWall(renderer, position);
 				}
 			}
 		}
 	}
-	for (const auto& layer : level.allLayers()) {
-		if (layer.getType() == ldtk::LayerType::Entities) {
-			for (const auto& entity : layer.allEntities()) {
+	for (const auto &layer : level.allLayers())
+	{
+		if (layer.getType() == ldtk::LayerType::Entities)
+		{
+			for (const auto &entity : layer.allEntities())
+			{
 				std::string entity_name = entity.getName();
 				int px = entity.getPosition().x;
 				int py = entity.getPosition().y;
-				vec2 position = { static_cast<float>(px), static_cast<float>(py) };
+				vec2 position = {static_cast<float>(px), static_cast<float>(py)};
 
-				if (entity_name == "Chest") {
+				if (entity_name == "Chest")
+				{
 					// createChest(renderer, position);
-				} else if (entity_name == "Fountain") {
+				}
+				else if (entity_name == "Fountain")
+				{
 					// createFountain(renderer, position);
-				} else if (entity_name == "Minions") {
+				}
+				else if (entity_name == "Minions")
+				{
 					createEnemy(renderer, position);
-				} else if (entity_name == "Chef") {
+				}
+				else if (entity_name == "Chef")
+				{
 					createChef(renderer, position);
-				} else if (entity_name == "Knight") {
+				}
+				else if (entity_name == "Knight")
+				{
 					// createKnight (renderer, position);
-				} else if (entity_name == "Prince") {
+				}
+				else if (entity_name == "Prince")
+				{
 					// createPrince (renderer, position);
-				} else if (entity_name == "Spy") {
+				}
+				else if (entity_name == "Spy")
+				{
 					player_spy = createSpy(renderer, position);
 				}
 			}
@@ -661,7 +684,6 @@ void WorldSystem::load_level(const std::string& levelName){
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 }
-
 
 void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 {

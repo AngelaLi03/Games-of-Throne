@@ -60,6 +60,7 @@ public:
     ~AISystem();
     void init(RenderSystem *renderer);
     void step(float elapsed_ms, std::vector<std::vector<int>> &levelMap);
+    void boss_attack(Entity entity, int attack_id, float elapsed_ms);
     // struct Node
     // {
     // 	int x, y;

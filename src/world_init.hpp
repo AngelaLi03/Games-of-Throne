@@ -45,3 +45,5 @@ Entity createTomato(RenderSystem *renderer, vec2 pos, vec2 velocity);
 Entity createPan(RenderSystem *renderer, vec2 pos, vec2 velocity);
 
 Entity createSpinArea(Entity chef_entity);
+
+Entity createKnight(RenderSystem *renderer, vec2 pos);

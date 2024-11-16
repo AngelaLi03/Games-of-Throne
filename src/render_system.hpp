@@ -14,9 +14,9 @@
 struct Character
 {
 	unsigned int TextureID; // ID handle of the glyph texture
-	glm::ivec2 Size;				// Size of glyph
-	glm::ivec2 Bearing;			// Offset from baseline to left/top of glyph
-	unsigned int Advance;		// Offset to advance to next glyph
+	glm::ivec2 Size;		// Size of glyph
+	glm::ivec2 Bearing;		// Offset from baseline to left/top of glyph
+	unsigned int Advance;	// Offset to advance to next glyph
 	char character;
 };
 
@@ -39,117 +39,178 @@ class RenderSystem
 	// Make sure these paths remain in sync with the associated enumerators.
 	// Associated id with .obj path
 	const std::vector<std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths =
-			{
-					std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::SALMON, mesh_path("salmon.obj"))
-					// specify meshes of other assets here
+		{
+			std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::SALMON, mesh_path("salmon.obj"))
+			// specify meshes of other assets here
 	};
 
-	// Make sure these paths remain in sync with the associated enumerators.
-	const std::array<std::string, texture_count> texture_paths = {
-			textures_path("green_fish.png"),
-			textures_path("eel.png"),
-			textures_path("floor_tile.png"),
-			textures_path("wall.png"),
-			textures_path("spy_no_weapon.png"),
-			textures_path("enemy_small.png"),
-			textures_path("sword_lvl3.png"),
-			textures_path("flow_meter.png"),
-			textures_path("enemy_corpse.png"),
-			textures_path("enemy_attack.png"),
-			textures_path("spy_corpse.png"),
-			textures_path("chef.png"),
-			textures_path("tomato.png"),
-			textures_path("pan.png"),
-	};
+// Make sure these paths remain in sync with the associated enumerators.
+const std::array<std::string, texture_count> texture_paths = {
+	textures_path("green_fish.png"),
+	textures_path("eel.png"),
+	textures_path("floor_tile.png"),
+	textures_path("wall.png"),
+	textures_path("spy_no_weapon.png"),
+	textures_path("enemy_small.png"),
+	textures_path("sword_lvl3.png"),
+	textures_path("flow_meter.png"),
+	textures_path("enemy_corpse.png"),
+	textures_path("enemy_attack.png"),
+	textures_path("spy_corpse.png"),
+	textures_path("chef.png"),
+	textures_path("tomato.png"),
+	textures_path("pan.png"),
+	textures_path("knight.png"),
 
-	std::array<GLuint, effect_count> effects;
-	// Make sure these paths remain in sync with the associated enumerators.
-	const std::array<std::string, effect_count> effect_paths = {
-			shader_path("coloured"),
-			shader_path("debug_line"),
-			shader_path("salmon"),
-			shader_path("textured"),
-			shader_path("water"),
-			shader_path("progress_bar"),
-			shader_path("liquid_fill"),
-			shader_path("text")};
+	textures_path("/boss_animation/chef_1/chef_attack(1)0.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)1.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)2.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)3.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)4.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)5.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)6.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)7.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)8.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)9.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)10.png"),
+	textures_path("/boss_animation/chef_1/chef_attack(1)11.png"),
 
-	std::array<GLuint, geometry_count> vertex_buffers;
-	std::array<GLuint, geometry_count> index_buffers;
-	std::array<Mesh, geometry_count> meshes;
-	std::array<TexturedMesh, geometry_count> textured_meshes;
+	// chef attack 2
+	textures_path("/boss_animation/chef_2/chef_attack(2)0000.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0001.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0002.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0003.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0004.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0005.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0006.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0007.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0008.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0009.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0010.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0011.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0012.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0013.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0014.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0015.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0016.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0017.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0018.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0019.png"),
+	textures_path("/boss_animation/chef_2/chef_attack(2)0020.png"),
 
-public:
-	// Initialize the window
-	bool init(GLFWwindow *window);
-
-	template <class T>
-	void bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices);
-
-	void initializeGlTextures();
-
-	void initializeGlEffects();
-
-	void initializeGlMeshes();
-	Mesh &getMesh(GEOMETRY_BUFFER_ID id) { return meshes[(int)id]; };
-	TexturedMesh &getTexturedMesh(GEOMETRY_BUFFER_ID id) { return textured_meshes[(int)id]; };
-
-	void initializeGlGeometryBuffers();
-	// Initialize the screen texture used as intermediate render target
-	// The draw loop first renders to this texture, then it is used for the wind
-	// shader
-	bool initScreenTexture();
-
-	// Destroy resources associated to one or all entities created by the system
-	~RenderSystem();
-
-	// Draw all entities
-	void draw();
-	void renderText(const std::string &text, float x, float y, float scale, vec3 color);
-	mat3 createProjectionMatrix();
-	mat3 createCameraViewMatrix();
-	void initTextRendering();
-	void loadFont(const std::string &fontPath);
-
-	vec2 camera_position = {0.f, 0.f};
-
-private:
-	// Internal drawing functions for each entity type
-	void drawTexturedMesh(Entity entity, const mat3 &view, const mat3 &projection);
-	void drawToScreen();
-
-	// Window handle
-	GLFWwindow *window;
-
-	// Screen texture handles
-	GLuint frame_buffer;
-	GLuint off_screen_render_buffer_color;
-	GLuint off_screen_render_buffer_depth;
-
-	GLuint vao;
-
-	GLuint textVAO;
-	GLuint textVBO;
-	GLuint textProgram;
-	Entity screen_state_entity;
-	std::map<char, Character> characters;
-	std::vector<std::string> gameInstructions = {
-			"Controls:",
-			"W / Up Arrow: Move Up",
-			"A / Left Arrow: Move Left",
-			"S / Down Arrow: Move Down",
-			"D / Right Arrow: Move Right",
-			"X: Stealth Travel (Point mouse and press X)",
-			"Space Bar: Dash (when already moving)",
-			"Escape: Exit Game",
-			"Press 'P' to see FPS",
-			"Press 'O' to toggle instructions",
-			"Left mouse click for light attack",
-			"Right mouse click for heavy attack (when flow meter is full)",
-			"Draw S with mouse with left mouse button pressed - Animation"
-
-	};
+	// chef attack 3
+	textures_path("/boss_animation/chef_3/chef_attack(3)0000.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0001.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0002.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0003.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0004.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0005.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0006.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0007.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0008.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0009.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0010.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0011.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0012.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0013.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0014.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0015.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0016.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0017.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0018.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0019.png"),
+	textures_path("/boss_animation/chef_3/chef_attack(3)0020.png"),
 };
 
+std::array<GLuint, effect_count> effects;
+// Make sure these paths remain in sync with the associated enumerators.
+const std::array<std::string, effect_count> effect_paths = {
+	shader_path("coloured"),
+	shader_path("debug_line"),
+	shader_path("salmon"),
+	shader_path("textured"),
+	shader_path("water"),
+	shader_path("progress_bar"),
+	shader_path("liquid_fill"),
+	shader_path("text")};
+
+std::array<GLuint, geometry_count> vertex_buffers;
+std::array<GLuint, geometry_count> index_buffers;
+std::array<Mesh, geometry_count> meshes;
+std::array<TexturedMesh, geometry_count> textured_meshes;
+
+public:
+// Initialize the window
+bool init(GLFWwindow *window);
+
+template <class T>
+void bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices);
+
+void initializeGlTextures();
+
+void initializeGlEffects();
+
+void initializeGlMeshes();
+Mesh &getMesh(GEOMETRY_BUFFER_ID id) { return meshes[(int)id]; };
+TexturedMesh &getTexturedMesh(GEOMETRY_BUFFER_ID id) { return textured_meshes[(int)id]; };
+
+void initializeGlGeometryBuffers();
+// Initialize the screen texture used as intermediate render target
+// The draw loop first renders to this texture, then it is used for the wind
+// shader
+bool initScreenTexture();
+
+// Destroy resources associated to one or all entities created by the system
+~RenderSystem();
+
+// Draw all entities
+void draw();
+void renderText(const std::string &text, float x, float y, float scale, vec3 color);
+mat3 createProjectionMatrix();
+mat3 createCameraViewMatrix();
+void initTextRendering();
+void loadFont(const std::string &fontPath);
+
+vec2 camera_position = {0.f, 0.f};
+
+private:
+// Internal drawing functions for each entity type
+void drawTexturedMesh(Entity entity, const mat3 &view, const mat3 &projection);
+void drawToScreen();
+
+// Window handle
+GLFWwindow *window;
+
+// Screen texture handles
+GLuint frame_buffer;
+GLuint off_screen_render_buffer_color;
+GLuint off_screen_render_buffer_depth;
+
+GLuint vao;
+
+GLuint textVAO;
+GLuint textVBO;
+GLuint textProgram;
+Entity screen_state_entity;
+std::map<char, Character> characters;
+std::vector<std::string> gameInstructions = {
+	"Controls:",
+	"W / Up Arrow: Move Up",
+	"A / Left Arrow: Move Left",
+	"S / Down Arrow: Move Down",
+	"D / Right Arrow: Move Right",
+	"X: Stealth Travel (Point mouse and press X)",
+	"Space Bar: Dash (when already moving)",
+	"Escape: Exit Game",
+	"Press 'P' to see FPS",
+	"Press 'O' to toggle instructions",
+	"Left mouse click for light attack",
+	"Right mouse click for heavy attack (when flow meter is full)",
+	"Draw S with mouse with left mouse button pressed - Animation"
+
+};
+}
+;
+
 bool loadEffectFromFile(
-		const std::string &vs_path, const std::string &fs_path, GLuint &out_program);
+	const std::string &vs_path, const std::string &fs_path, GLuint &out_program);

@@ -129,17 +129,124 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	// motion.velocity = {0.f, 0.f};
 	motion.velocity = {50.f, 0.f};
 	motion.scale = mesh.original_size * 300.f;
-	motion.scale.x *= 1.1;
+	motion.scale.x *= 1.6;
 	motion.bb_scale = {150.f, 130.f};
 	motion.bb_offset = {0.f, 40.f};
 
 	// create an empty Spy component for our character
 	registry.chef.emplace(entity);
 	registry.enemies.emplace(entity);
+
+	auto &bossAnimation = registry.bossAnimations.emplace(entity);
+	bossAnimation.attack_1 = std::vector<TEXTURE_ASSET_ID>{
+			TEXTURE_ASSET_ID::CHEF1_0,
+			TEXTURE_ASSET_ID::CHEF1_1,
+			TEXTURE_ASSET_ID::CHEF1_2,
+			TEXTURE_ASSET_ID::CHEF1_3,
+			TEXTURE_ASSET_ID::CHEF1_4,
+			TEXTURE_ASSET_ID::CHEF1_5,
+			TEXTURE_ASSET_ID::CHEF1_6,
+			TEXTURE_ASSET_ID::CHEF1_7,
+			TEXTURE_ASSET_ID::CHEF1_8,
+			TEXTURE_ASSET_ID::CHEF1_9,
+			TEXTURE_ASSET_ID::CHEF1_10,
+			TEXTURE_ASSET_ID::CHEF1_11,
+	};
+
+	bossAnimation.attack_2 = std::vector<TEXTURE_ASSET_ID>{
+			TEXTURE_ASSET_ID::CHEF2_0,
+			TEXTURE_ASSET_ID::CHEF2_1,
+			TEXTURE_ASSET_ID::CHEF2_2,
+			TEXTURE_ASSET_ID::CHEF2_3,
+			TEXTURE_ASSET_ID::CHEF2_4,
+			TEXTURE_ASSET_ID::CHEF2_5,
+			TEXTURE_ASSET_ID::CHEF2_6,
+			TEXTURE_ASSET_ID::CHEF2_7,
+			TEXTURE_ASSET_ID::CHEF2_8,
+			TEXTURE_ASSET_ID::CHEF2_9,
+			TEXTURE_ASSET_ID::CHEF2_10,
+			TEXTURE_ASSET_ID::CHEF2_11,
+			TEXTURE_ASSET_ID::CHEF2_12,
+			TEXTURE_ASSET_ID::CHEF2_13,
+			TEXTURE_ASSET_ID::CHEF2_14,
+			TEXTURE_ASSET_ID::CHEF2_15,
+			TEXTURE_ASSET_ID::CHEF2_16,
+			TEXTURE_ASSET_ID::CHEF2_17,
+			TEXTURE_ASSET_ID::CHEF2_18,
+			TEXTURE_ASSET_ID::CHEF2_19,
+			TEXTURE_ASSET_ID::CHEF2_20,
+	};
+
+	bossAnimation.attack_3 = std::vector<TEXTURE_ASSET_ID>{
+			TEXTURE_ASSET_ID::CHEF3_0,
+			TEXTURE_ASSET_ID::CHEF3_1,
+			TEXTURE_ASSET_ID::CHEF3_2,
+			TEXTURE_ASSET_ID::CHEF3_3,
+			TEXTURE_ASSET_ID::CHEF3_4,
+			TEXTURE_ASSET_ID::CHEF3_5,
+			TEXTURE_ASSET_ID::CHEF3_6,
+			TEXTURE_ASSET_ID::CHEF3_7,
+			TEXTURE_ASSET_ID::CHEF3_8,
+			TEXTURE_ASSET_ID::CHEF3_9,
+			TEXTURE_ASSET_ID::CHEF3_10,
+			TEXTURE_ASSET_ID::CHEF3_11,
+			TEXTURE_ASSET_ID::CHEF3_12,
+			TEXTURE_ASSET_ID::CHEF3_13,
+			TEXTURE_ASSET_ID::CHEF3_14,
+			TEXTURE_ASSET_ID::CHEF3_15,
+			TEXTURE_ASSET_ID::CHEF3_16,
+			TEXTURE_ASSET_ID::CHEF3_17,
+			TEXTURE_ASSET_ID::CHEF3_18,
+			TEXTURE_ASSET_ID::CHEF3_19,
+			TEXTURE_ASSET_ID::CHEF3_20,
+	};
+
+	bossAnimation.frame_duration = 100.f; // 0.1s per frame
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::CHEF, // TEXTURE_COUNT indicates that no texture is needed
+			{bossAnimation.attack_1[bossAnimation.current_frame], // TEXTURE_COUNT indicates that no texture is needed
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
+	registry.healths.insert(entity, {500.f, 500.f, healthbar});
+
+	return entity;
+}
+
+Entity createKnight(RenderSystem *renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	// motion.velocity = {0.f, 0.f};
+	motion.velocity = {50.f, 0.f};
+	motion.scale = mesh.original_size * 300.f;
+	motion.scale.x *= 1.2;
+	motion.bb_scale = {150.f, 130.f};
+	motion.bb_offset = {0.f, 40.f};
+
+	registry.knight.emplace(entity);
+	registry.enemies.emplace(entity);
+
+	auto &bossAnimation = registry.bossAnimations.emplace(entity);
+	// bossAnimation.attack_1 = std::vector<TEXTURE_ASSET_ID>{
+	// TODO: follow chef loading to load all images
+	// };
+
+	bossAnimation.frame_duration = 100.f; // 0.1s per frame
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::KNIGHT, // bossAnimation.attack_1[bossAnimation.current_frame], change when loaded all images
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
@@ -256,19 +363,19 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	motion.bb_offset = {-5.f, 25.f};
 
 	// Initialize the animation component with frames
-	auto &animation = registry.spriteAnimations.emplace(entity);
-	animation.frames = std::vector<TEXTURE_ASSET_ID>{
+	auto &spriteAnimation = registry.spriteAnimations.emplace(entity);
+	spriteAnimation.frames = std::vector<TEXTURE_ASSET_ID>{
 			TEXTURE_ASSET_ID::ENEMY,
 			TEXTURE_ASSET_ID::ENEMY_ATTACK,
 	};
-	animation.frame_duration = 1000.f; // Set duration for each frame (adjust as needed)
+	spriteAnimation.frame_duration = 1000.f; // Set duration for each frame (adjust as needed)
 
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.enemies.emplace(entity);
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
-			{animation.frames[animation.current_frame],
+			{spriteAnimation.frames[spriteAnimation.current_frame],
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 

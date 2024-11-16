@@ -37,6 +37,8 @@ public:
 	ComponentContainer<Attachment> attachments;
 	ComponentContainer<SpriteAnimation> spriteAnimations;
 	ComponentContainer<MoveUI> cameraUI;
+	ComponentContainer<BossAnimation> bossAnimations;
+	ComponentContainer<Knight> knight;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -68,6 +70,8 @@ public:
 		registry_list.push_back(&chef);
 		registry_list.push_back(&spriteAnimations);
 		registry_list.push_back(&cameraUI);
+		registry_list.push_back(&bossAnimations);
+		registry_list.push_back(&knight);
 	}
 
 	void clear_all_components()

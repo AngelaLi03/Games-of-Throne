@@ -58,7 +58,7 @@ struct Attachment
 struct Weapon
 {
 	Entity weapon; // weapon
-	vec2 offset;	 // weapon offset relative to player's position
+	vec2 offset;   // weapon offset relative to player's position
 };
 
 // All data relevant to the shape and motion of entities
@@ -68,8 +68,8 @@ struct Motion
 	float angle = 0;
 	vec2 velocity = {0, 0};
 	vec2 scale = {10, 10};
-	vec2 bb_scale = {10, 10};		// scale used for bounding box
-	vec2 bb_offset = {0, 0};		// offset from motion.position to center of bounding box
+	vec2 bb_scale = {10, 10};	// scale used for bounding box
+	vec2 bb_offset = {0, 0};	// offset from motion.position to center of bounding box
 	vec2 pivot_offset = {0, 0}; // before scaling
 };
 
@@ -89,7 +89,7 @@ struct Interpolation
 {
 	float elapsed_time = 0;
 	float total_time_to_0_ms = 700; // time to observe effect
-	vec2 initial_velocity;					// velocity when button is released
+	vec2 initial_velocity;			// velocity when button is released
 };
 
 struct Bezier
@@ -103,7 +103,7 @@ struct Bezier
 
 struct Flow
 {
-	float flowLevel;		// This could represent the current flow level
+	float flowLevel;	// This could represent the current flow level
 	float maxFlowLevel; // Maximum flow level
 };
 
@@ -220,6 +220,7 @@ enum class ChefState
 	COMBAT = 1,
 	ATTACK = 2,
 };
+
 enum class ChefAttack
 {
 	TOMATO = 0,
@@ -228,6 +229,7 @@ enum class ChefAttack
 	SPIN = 3,
 	ATTACK_COUNT = 4,
 };
+
 struct Chef
 {
 	ChefState state = ChefState::PATROL;
@@ -242,6 +244,10 @@ struct Chef
 	// when chef just entered combat, play a sound and set back to false
 	bool trigger = false;
 	float sound_trigger_timer = 0;
+};
+
+struct Knight
+{
 };
 
 struct MoveUI
@@ -289,7 +295,67 @@ enum class TEXTURE_ASSET_ID
 	CHEF = SPY_CORPSE + 1,
 	TOMATO = CHEF + 1,
 	PAN = TOMATO + 1,
-	TEXTURE_COUNT = PAN + 1
+	KNIGHT = PAN + 1,
+
+	CHEF1_0 = KNIGHT + 1,
+	CHEF1_1 = CHEF1_0 + 1,
+	CHEF1_2 = CHEF1_1 + 1,
+	CHEF1_3 = CHEF1_2 + 1,
+	CHEF1_4 = CHEF1_3 + 1,
+	CHEF1_5 = CHEF1_4 + 1,
+	CHEF1_6 = CHEF1_5 + 1,
+	CHEF1_7 = CHEF1_6 + 1,
+	CHEF1_8 = CHEF1_7 + 1,
+	CHEF1_9 = CHEF1_8 + 1,
+	CHEF1_10 = CHEF1_9 + 1,
+	CHEF1_11 = CHEF1_10 + 1,
+
+	// chef attack 2
+	CHEF2_0 = CHEF1_11 + 1,
+	CHEF2_1 = CHEF2_0 + 1,
+	CHEF2_2 = CHEF2_1 + 1,
+	CHEF2_3 = CHEF2_2 + 1,
+	CHEF2_4 = CHEF2_3 + 1,
+	CHEF2_5 = CHEF2_4 + 1,
+	CHEF2_6 = CHEF2_5 + 1,
+	CHEF2_7 = CHEF2_6 + 1,
+	CHEF2_8 = CHEF2_7 + 1,
+	CHEF2_9 = CHEF2_8 + 1,
+	CHEF2_10 = CHEF2_9 + 1,
+	CHEF2_11 = CHEF2_10 + 1,
+	CHEF2_12 = CHEF2_11 + 1,
+	CHEF2_13 = CHEF2_12 + 1,
+	CHEF2_14 = CHEF2_13 + 1,
+	CHEF2_15 = CHEF2_14 + 1,
+	CHEF2_16 = CHEF2_15 + 1,
+	CHEF2_17 = CHEF2_16 + 1,
+	CHEF2_18 = CHEF2_17 + 1,
+	CHEF2_19 = CHEF2_18 + 1,
+	CHEF2_20 = CHEF2_19 + 1,
+
+	CHEF3_0 = CHEF2_20 + 1,
+	CHEF3_1 = CHEF3_0 + 1,
+	CHEF3_2 = CHEF3_1 + 1,
+	CHEF3_3 = CHEF3_2 + 1,
+	CHEF3_4 = CHEF3_3 + 1,
+	CHEF3_5 = CHEF3_4 + 1,
+	CHEF3_6 = CHEF3_5 + 1,
+	CHEF3_7 = CHEF3_6 + 1,
+	CHEF3_8 = CHEF3_7 + 1,
+	CHEF3_9 = CHEF3_8 + 1,
+	CHEF3_10 = CHEF3_9 + 1,
+	CHEF3_11 = CHEF3_10 + 1,
+	CHEF3_12 = CHEF3_11 + 1,
+	CHEF3_13 = CHEF3_12 + 1,
+	CHEF3_14 = CHEF3_13 + 1,
+	CHEF3_15 = CHEF3_14 + 1,
+	CHEF3_16 = CHEF3_15 + 1,
+	CHEF3_17 = CHEF3_16 + 1,
+	CHEF3_18 = CHEF3_17 + 1,
+	CHEF3_19 = CHEF3_18 + 1,
+	CHEF3_20 = CHEF3_19 + 1,
+
+	TEXTURE_COUNT = CHEF3_20 + 1
 };
 const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
@@ -324,9 +390,25 @@ const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 struct SpriteAnimation
 {
 	std::vector<TEXTURE_ASSET_ID> frames; // Texture IDs for each animation frame
-	int current_frame = 0;								// Index of the current frame
-	float frame_duration = 0.1f;					// Duration for each frame (seconds)
-	float elapsed_time = 0.0f;						// Time since the last frame switch
+	int current_frame = 0;				  // Index of the current frame
+	float frame_duration = 0.1f;		  // Duration for each frame (seconds)
+	float elapsed_time = 0.0f;			  // Time since the last frame switch
+	bool isattacking = false;
+};
+
+struct BossAnimation
+{
+	std::vector<TEXTURE_ASSET_ID> attack_1;	 // Frames for basic attack animation
+	std::vector<TEXTURE_ASSET_ID> attack_2; 
+	std::vector<TEXTURE_ASSET_ID> attack_3;
+	std::vector<TEXTURE_ASSET_ID> attack_4;
+	std::vector<TEXTURE_ASSET_ID> attack_5;
+	
+	int current_frame = 0;		 // Index of the current frame
+	float frame_duration = 0.1f; // Duration for each frame (seconds)
+	float elapsed_time = 0.0f;	 // Time since the last frame switch
+	bool is_attacking = false;
+	int attack_id = -1;
 };
 
 struct RenderRequest

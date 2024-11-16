@@ -61,121 +61,126 @@ void AISystem::perform_chef_attack(ChefAttack attack)
 DecisionNode *AISystem::create_chef_decision_tree()
 {
 	DecisionNode *chef_decision_tree = new DecisionNode(
-			nullptr,
-			[](float)
-			{
-				Chef &chef = registry.chef.components[0];
-				return chef.state == ChefState::PATROL;
-			});
+		nullptr,
+		[](float)
+		{
+			Chef &chef = registry.chef.components[0];
+			return chef.state == ChefState::PATROL;
+		});
 
 	// Patrol logic
 
 	DecisionNode *patrol_node = new DecisionNode(
-			nullptr,
-			[](float)
-			{
-				Entity &entity = registry.chef.entities[0];
-				Motion &motion = registry.motions.get(entity);
+		nullptr,
+		[](float)
+		{
+			Entity &entity = registry.chef.entities[0];
+			Motion &motion = registry.motions.get(entity);
 
-				Motion &player_motion = registry.motions.get(registry.players.entities[0]);
-				vec2 player_position = player_motion.position + player_motion.bb_offset;
-				vec2 chef_position = motion.position + motion.bb_offset;
-				return distance_squared(player_position, chef_position) < 330.f * 330.f;
-			});
+			Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+			vec2 player_position = player_motion.position + player_motion.bb_offset;
+			vec2 chef_position = motion.position + motion.bb_offset;
+			return distance_squared(player_position, chef_position) < 330.f * 330.f;
+		});
 	chef_decision_tree->trueBranch = patrol_node;
 
 	DecisionNode *detected_player = new DecisionNode(
-			[](float)
-			{
-				std::cout << "Chef enters combat" << std::endl;
-				Chef &chef = registry.chef.components[0];
-				Motion &motion = registry.motions.get(registry.chef.entities[0]);
-				chef.state = ChefState::COMBAT;
-				chef.trigger = true;
-				chef.sound_trigger_timer = 1200.f;
-				motion.velocity = {0.f, 0.f};
-			},
-			nullptr);
+		[](float)
+		{
+			std::cout << "Chef enters combat" << std::endl;
+			Chef &chef = registry.chef.components[0];
+			Motion &motion = registry.motions.get(registry.chef.entities[0]);
+			chef.state = ChefState::COMBAT;
+			chef.trigger = true;
+			chef.sound_trigger_timer = 1200.f;
+			motion.velocity = {0.f, 0.f};
+		},
+		nullptr);
 	patrol_node->trueBranch = detected_player;
 
 	DecisionNode *patrol_time = new DecisionNode(
-			[](float elapsed_ms)
-			{
-				Chef &chef = registry.chef.components[0];
-				chef.time_since_last_patrol += elapsed_ms;
-			},
-			[](float)
-			{
-				Chef &chef = registry.chef.components[0];
-				return chef.time_since_last_patrol > 2000.f;
-			});
+		[](float elapsed_ms)
+		{
+			Chef &chef = registry.chef.components[0];
+			chef.time_since_last_patrol += elapsed_ms;
+		},
+		[](float)
+		{
+			Chef &chef = registry.chef.components[0];
+			return chef.time_since_last_patrol > 2000.f;
+		});
 	patrol_node->falseBranch = patrol_time;
 
 	DecisionNode *change_patrol_direction = new DecisionNode(
-			[](float)
-			{
-				// std::cout << "Chef is patrolling" << std::endl;
-				Chef &chef = registry.chef.components[0];
-				Entity &entity = registry.chef.entities[0];
-				Motion &motion = registry.motions.get(entity);
-				motion.velocity.x *= -1;
-				chef.time_since_last_patrol = 0.f;
-			},
-			nullptr);
+		[](float)
+		{
+			// std::cout << "Chef is patrolling" << std::endl;
+			Chef &chef = registry.chef.components[0];
+			Entity &entity = registry.chef.entities[0];
+			Motion &motion = registry.motions.get(entity);
+			motion.velocity.x *= -1;
+			chef.time_since_last_patrol = 0.f;
+		},
+		nullptr);
 	patrol_time->trueBranch = change_patrol_direction;
 
 	// Combat logic
 
 	DecisionNode *combat_state_check = new DecisionNode(
-			nullptr,
-			[](float)
-			{
-				Chef &chef = registry.chef.components[0];
-				return chef.state == ChefState::COMBAT;
-			});
+		nullptr,
+		[](float)
+		{
+			Chef &chef = registry.chef.components[0];
+			return chef.state == ChefState::COMBAT;
+		});
 	chef_decision_tree->falseBranch = combat_state_check;
 
 	DecisionNode *combat_node = new DecisionNode(
-			[](float elapsed_ms)
-			{
-				Chef &chef = registry.chef.components[0];
-				chef.time_since_last_attack += elapsed_ms;
-			},
-			[](float)
-			{
-				Chef &chef = registry.chef.components[0];
-				return chef.time_since_last_attack > 3000.f;
-			});
+		[](float elapsed_ms)
+		{
+			Chef &chef = registry.chef.components[0];
+			chef.time_since_last_attack += elapsed_ms;
+		},
+		[](float)
+		{
+			Chef &chef = registry.chef.components[0];
+			return chef.time_since_last_attack > 3000.f;
+		});
 	combat_state_check->trueBranch = combat_node;
 
 	DecisionNode *initiate_attack = new DecisionNode(
-			[](float)
-			{
-				Chef &chef = registry.chef.components[0];
-				chef.state = ChefState::ATTACK;
-			},
-			nullptr);
+		[](float)
+		{
+			Chef &chef = registry.chef.components[0];
+			chef.state = ChefState::ATTACK;
+		},
+		nullptr);
 	combat_node->trueBranch = initiate_attack;
 
 	DecisionNode *attack_node = new DecisionNode(
-			[this](float)
+		[this](float)
+		{
+			Chef &chef = registry.chef.components[0];
+			std::cout << "Chef attacks " << (int)chef.current_attack << std::endl;
+
+			this->perform_chef_attack(chef.current_attack);
+			// set is attacking to true
+			auto &bossAnimation = registry.bossAnimations.get(registry.chef.entities[0]);
+			bossAnimation.is_attacking = true;
+			bossAnimation.elapsed_time = 0.f;
+			bossAnimation.attack_id = static_cast<int>(chef.current_attack); // Cast to int
+			bossAnimation.current_frame = 1;					
+			// Reset attack and choose next attack
+			chef.time_since_last_attack = 0.f;
+			chef.current_attack = static_cast<ChefAttack>(rand() % static_cast<int>(ChefAttack::ATTACK_COUNT));
+			if (chef.current_attack == ChefAttack::SPIN)
 			{
-				Chef &chef = registry.chef.components[0];
-				std::cout << "Chef attacks " << (int)chef.current_attack << std::endl;
-
-				this->perform_chef_attack(chef.current_attack);
-
-				// Reset attack and choose next attack
-				chef.time_since_last_attack = 0.f;
-				chef.current_attack = static_cast<ChefAttack>(rand() % static_cast<int>(ChefAttack::ATTACK_COUNT));
-				if (chef.current_attack == ChefAttack::SPIN)
-				{
-					// TODO: not implemented yet
-					chef.current_attack = ChefAttack::DASH;
-				}
-				chef.state = ChefState::COMBAT;
-			},
-			nullptr);
+				// TODO: not implemented yet
+				chef.current_attack = ChefAttack::DASH;
+			}
+			chef.state = ChefState::COMBAT;
+		},
+		nullptr);
 	combat_state_check->falseBranch = attack_node;
 
 	return chef_decision_tree;
@@ -268,7 +273,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		Enemy &enemy = enemies.components[i];
 		Entity entity = enemies.entities[i];
 
-		if (registry.chef.has(entity))
+		if (registry.chef.has(entity) || registry.knight.has(entity)) // Skip all bosses
 		{
 			continue;
 		}
@@ -408,5 +413,84 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		{
 			chef_decision_tree->execute(elapsed_ms);
 		}
+		// perform animation if chef is attacking
+		auto &bossAnimation = registry.bossAnimations.get(chef_entity);
+
+		if (bossAnimation.is_attacking)
+		{
+			boss_attack(chef_entity, bossAnimation.attack_id, elapsed_ms);
+		}
+	}
+
+	if (registry.knight.size() > 0)
+	{
+		// special behavior for knight
+		Entity knight_entity = registry.knight.entities[0];
+		Health &knight_health = registry.healths.get(knight_entity);
+		if (!knight_health.is_dead)
+		{
+			//TODO: knight_decision_tree->execute(elapsed_ms);
+		}
+		// perform animation if knight is attacking
+		auto &bossAnimation = registry.bossAnimations.get(knight_entity);
+
+		if (bossAnimation.is_attacking)
+		{
+			printf("knight is attacking\n");
+			// TODO: uncomment when knight enum created and attack implemented 
+			//boss_attack(knight_entity, bossAnimation.attack_id, elapsed_ms);
+		}
+	}
+}
+
+void AISystem::boss_attack(Entity entity, int attack_id, float elapsed_ms)
+{
+	// change to attack animation sprite
+	auto &bossAnimation = registry.bossAnimations.get(entity);
+	auto &render_request = registry.renderRequests.get(entity);
+	bossAnimation.elapsed_time += elapsed_ms;
+
+	std::vector<TEXTURE_ASSET_ID> &frames = bossAnimation.attack_1; 
+	// get motion
+	auto &motion = registry.motions.get(entity);
+
+	switch (attack_id)
+	{
+	case 0:
+		frames = bossAnimation.attack_1;
+		bossAnimation.frame_duration = 100.f;
+		break;
+	case 1:
+		frames = bossAnimation.attack_2;
+		bossAnimation.frame_duration = 70.f;
+		break;
+	case 2:
+		frames = bossAnimation.attack_3;
+		bossAnimation.frame_duration = 100.f;
+		break;
+	case 3:
+		frames = bossAnimation.attack_1;    // modify if have >3 animations, default to attack_1
+		break;
+	case 4:
+		frames = bossAnimation.attack_1;
+		break;
+	}
+
+	if (bossAnimation.elapsed_time >= bossAnimation.frame_duration)
+	{
+		motion.scale.x /= 1.6;
+		// Reset elapsed time for the next frame
+		bossAnimation.elapsed_time = 0.0f;
+
+		// Move to the next frame
+		bossAnimation.current_frame = (bossAnimation.current_frame + 1) % frames.size();
+		render_request.used_texture = frames[bossAnimation.current_frame];
+		motion.scale.x *= 1.6;
+	}
+	if (bossAnimation.current_frame == 0 && bossAnimation.is_attacking)
+	{
+		bossAnimation.is_attacking = false;
+		// change to combat animation sprite
+		render_request.used_texture = frames[0];
 	}
 }
