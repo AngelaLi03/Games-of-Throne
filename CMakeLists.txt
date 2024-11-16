@@ -66,12 +66,16 @@ find_package(glm REQUIRED)
 set(LDTKLOADER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ext/LDtkLoader/include")
 target_include_directories(${PROJECT_NAME} PRIVATE ${LDTKLOADER_INCLUDE_DIR})
 
-# Link LDtkLoader static library (if it exists)
-set(LDTKLOADER_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/ext/LDtkLoader/lib/libLDtkLoader.a")
-if (EXISTS ${LDTKLOADER_LIBRARY})
-    target_link_libraries(${PROJECT_NAME} PRIVATE "${LDTKLOADER_LIBRARY}")
+# Link LDtkLoader static library
+if (IS_OS_WINDOWS)
+    if (NOT DEFINED CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE "Debug")
+    endif()
+    set(LDTKLOADER_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/ext/LDtkLoader/lib/${CMAKE_BUILD_TYPE}/libLDtkLoader.lib")
+else()
+    set(LDTKLOADER_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/ext/LDtkLoader/lib/libLDtkLoader.a")
 endif()
-
+target_link_libraries(${PROJECT_NAME} PRIVATE "${LDTKLOADER_LIBRARY}")
 
 
 if (IS_OS_WINDOWS)

@@ -379,6 +379,8 @@ Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, f
 		damage_area.single_damage = false;
 		damage_area.damage_cooldown = damage_cooldown;
 	}
+
+	return entity;
 }
 
 Entity createEnemy(RenderSystem *renderer, vec2 position)

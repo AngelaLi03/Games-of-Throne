@@ -607,7 +607,7 @@ void WorldSystem::restart_game()
 void WorldSystem::load_level(const std::string &levelName)
 {
 	ldtk::Project ldtk_project;
-	ldtk_project.loadFromFile("data/levels/levels.ldtk");
+	ldtk_project.loadFromFile(data_path() + "/levels/levels.ldtk");
 	const ldtk::World &world = ldtk_project.getWorld();
 	const ldtk::Level &level = world.getLevel(levelName);
 	const std::vector<ldtk::Layer> &layers = level.allLayers();
