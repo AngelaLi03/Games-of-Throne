@@ -36,3 +36,8 @@ Entity createSpinArea(Entity chef_entity);
 Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, float time_until_active, float duration, float damage_cooldown = 0, bool relative_position = false, vec2 offset_from_owner = vec2(0, 0));
 
 Entity createKnight(RenderSystem *renderer, vec2 pos);
+
+Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item);
+
+// Generic function to create a static sprite without collision
+Entity createSprite(RenderSystem *renderer, vec2 pos, vec2 scale, TEXTURE_ASSET_ID texture_id);

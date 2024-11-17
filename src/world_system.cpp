@@ -19,7 +19,7 @@ bool show_help_text = false;
 bool is_right_mouse_button_down = false;
 bool enlarged_player = false;
 float enlarge_countdown = 3000.f;
-float speed = 70.f;
+float speed = 100.f;
 bool dashAvailable = true;
 bool dashInUse = false;
 
@@ -502,6 +502,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			enlarge_countdown = 5000.f;
 		}
 	}
+
 	// Switch to level 1
 	if (registry.chef.size() > 0)
 	{
@@ -512,7 +513,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			registry.remove_all_components_of(chef_entity);
 			while (registry.motions.entities.size() > 0)
 				registry.remove_all_components_of(registry.motions.entities.back());
-			load_level("Level_1");
+			load_level("Level_1", 1);
 		}
 	}
 
@@ -525,7 +526,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// 		registry.remove_all_components_of(knight_entity);
 	// 		while (registry.motions.entities.size() > 0)
 	// 			registry.remove_all_components_of(registry.motions.entities.back());
-	// 		load_level("Level_2");
+	// 		load_level("Level_2", 2);
 	// 	}
 	// }
 
@@ -534,7 +535,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 void WorldSystem::update_camera_view()
 {
-	float THRESHOLD = 0.3f; // will move camera if player is within 30% of the screen edge
+	float THRESHOLD = 0.4f; // will move camera if player is within 40% of the screen edge
 	Motion &player_motion = registry.motions.get(player_spy);
 	vec2 &camera_position = renderer->camera_position;
 	vec2 on_screen_pos = player_motion.position - camera_position;
@@ -625,10 +626,10 @@ void WorldSystem::restart_game()
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 
-	load_level("Level_0");
+	load_level("Level_0", 0);
 }
 
-void WorldSystem::load_level(const std::string &levelName)
+void WorldSystem::load_level(const std::string &levelName, const int levelNumber)
 {
 	ldtk::Project ldtk_project;
 	ldtk_project.loadFromFile(data_path() + "/levels/levels.ldtk");
@@ -669,7 +670,9 @@ void WorldSystem::load_level(const std::string &levelName)
 
 				if (entity_name == "Chest")
 				{
-					// createChest(renderer, position);
+					int itemId = (int)(uniform_dist(rng) * (float)TreasureBoxItem::NONE);
+					// TODO: use levelNumber to determine weapon spawn
+					createTreasureBox(renderer, position, (TreasureBoxItem)itemId);
 				}
 				else if (entity_name == "Fountain")
 				{
@@ -1108,6 +1111,72 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	{
 		show_help_text = !show_help_text;
 		std::cout << "Show Help Text: " << (show_help_text ? "ON" : "OFF") << std::endl;
+	}
+
+	if (key == GLFW_KEY_E && action == GLFW_PRESS)
+	{
+		Motion &player_motion = registry.motions.get(player_spy);
+		// check for treasure box interaction
+		for (unsigned int i = 0; i < registry.treasureBoxes.components.size(); i++)
+		{
+			Entity treasure_box_entity = registry.treasureBoxes.entities[i];
+			Motion &treasure_box_motion = registry.motions.get(treasure_box_entity);
+			float distance_to_player = length(treasure_box_motion.position - player_motion.position);
+			if (distance_to_player < 150.f)
+			{
+				TreasureBox &treasure_box = registry.treasureBoxes.components[i];
+				if (!treasure_box.is_open)
+				{
+					std::cout << "Treasure box opened" << std::endl;
+					treasure_box.is_open = true;
+					// play sound
+					// Mix_PlayChannel(-1, break_sound, 0);
+
+					// create ui frame background
+					createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y - 100.f}, {100.f, 100.f}, TEXTURE_ASSET_ID::UI_FRAME);
+
+					// create box item rendering
+					if (treasure_box.item != TreasureBoxItem::NONE)
+					{
+						TEXTURE_ASSET_ID item_texture_id;
+						if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
+						{
+							item_texture_id = TEXTURE_ASSET_ID::MAX_ENERGY;
+						}
+						else if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
+						{
+							item_texture_id = TEXTURE_ASSET_ID::MAX_HEALTH;
+						}
+						else if (treasure_box.item == TreasureBoxItem::WEAPON)
+						{
+							item_texture_id = TEXTURE_ASSET_ID::WEAPON;
+						}
+						treasure_box.item_entity = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y - 100.f}, {50.f, 50.f}, item_texture_id);
+					}
+
+					RenderRequest &render_request = registry.renderRequests.get(treasure_box_entity);
+					render_request.used_texture = TEXTURE_ASSET_ID::TREASURE_BOX_OPEN;
+				}
+				else
+				{
+					std::cout << "Treasure box already opened" << std::endl;
+					if (treasure_box.item != TreasureBoxItem::NONE && treasure_box.item_entity != 0)
+					{
+						if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
+						{
+							Health &player_health = registry.healths.get(player_spy);
+							player_health.max_health += 30.f;
+						}
+
+						// remove item rendering
+						registry.remove_all_components_of(treasure_box.item_entity);
+
+						treasure_box.item_entity = Entity(0);
+						treasure_box.item = TreasureBoxItem::NONE;
+					}
+				}
+			}
+		}
 	}
 
 	if (action == GLFW_PRESS)

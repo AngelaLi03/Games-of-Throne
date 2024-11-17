@@ -19,6 +19,7 @@ public:
 		id = id_count++;
 		// Note, indices of already deleted entities arent re-used in this simple implementation.
 	}
+	Entity(unsigned int id) : id(id) {}
 	operator unsigned int() { return id; } // this enables automatic casting to int
 	bool operator<(const Entity &other) const
 	{

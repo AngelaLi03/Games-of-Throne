@@ -547,3 +547,58 @@ Entity createSpinArea(Entity chef_entity)
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	return entity;
 }
+
+Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = {mesh.original_size.x * TILE_SCALE, mesh.original_size.x * TILE_SCALE};
+	motion.bb_scale = motion.scale;
+	motion.bb_offset = {0.f, 0.f};
+
+	TreasureBox &treasureBox = registry.treasureBoxes.emplace(entity);
+	treasureBox.is_open = false;
+	treasureBox.item = item;
+
+	registry.physicsBodies.insert(entity, {BodyType::STATIC});
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::TREASURE_BOX,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
+Entity createSprite(RenderSystem *renderer, vec2 pos, vec2 scale, TEXTURE_ASSET_ID texture_id)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = scale;
+
+	registry.renderRequests.insert(
+			entity,
+			{texture_id,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}

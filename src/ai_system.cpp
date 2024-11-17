@@ -327,7 +327,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 				// move towards player
 				vec2 direction = player_position - enemy_position;
 				direction = normalize(direction);
-				motion.velocity = direction * 50.f;
+				motion.velocity = direction * 80.f;
 
 				// int tile_x = std::round(enemy_position.x / TILE_SCALE);
 				// int tile_y = std::round(enemy_position.y / TILE_SCALE);

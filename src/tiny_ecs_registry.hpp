@@ -41,6 +41,7 @@ public:
 	ComponentContainer<DamageArea> damageAreas;
 	ComponentContainer<BossAnimation> bossAnimations;
 	ComponentContainer<Knight> knight;
+	ComponentContainer<TreasureBox> treasureBoxes;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -76,6 +77,7 @@ public:
 		registry_list.push_back(&damageAreas);
 		registry_list.push_back(&bossAnimations);
 		registry_list.push_back(&knight);
+		registry_list.push_back(&treasureBoxes);
 	}
 
 	void clear_all_components()

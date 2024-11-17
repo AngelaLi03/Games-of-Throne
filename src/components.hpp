@@ -289,6 +289,21 @@ struct Knight
 struct MoveUI
 {
 };
+
+enum class TreasureBoxItem
+{
+	MAX_HEALTH = 0,
+	MAX_ENERGY = MAX_HEALTH + 1,
+	WEAPON = MAX_ENERGY + 1, // TODO: later change to different types of weapon
+	NONE = WEAPON + 1,
+};
+struct TreasureBox
+{
+	bool is_open = false;
+	TreasureBoxItem item = TreasureBoxItem::NONE;
+	Entity item_entity = Entity(0);
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -332,8 +347,13 @@ enum class TEXTURE_ASSET_ID
 	TOMATO = CHEF + 1,
 	PAN = TOMATO + 1,
 	KNIGHT = PAN + 1,
+	TREASURE_BOX = KNIGHT + 1,
+	TREASURE_BOX_OPEN = TREASURE_BOX + 1,
+	UI_FRAME = TREASURE_BOX_OPEN + 1,
+	MAX_HEALTH = UI_FRAME + 1,
+	MAX_ENERGY = MAX_HEALTH + 1,
 
-	CHEF1_0 = KNIGHT + 1,
+	CHEF1_0 = MAX_ENERGY + 1,
 	CHEF1_1 = CHEF1_0 + 1,
 	CHEF1_2 = CHEF1_1 + 1,
 	CHEF1_3 = CHEF1_2 + 1,
