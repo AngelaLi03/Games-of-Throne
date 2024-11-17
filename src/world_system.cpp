@@ -283,7 +283,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			motion.velocity = vec2(0.f, 0.f);
 			if (registry.players.has(entity))
 			{
-				Player &player = registry.players.get(entity);
 				if (player.state == PlayerState::DODGING)
 				{
 					player.state = PlayerState::IDLE;
@@ -339,7 +338,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 	for (Entity entity : registry.dashes.entities)
 	{
-		Player &player = registry.players.get(entity);
 		Motion &spy_motion = registry.motions.get(player_spy);
 		dashAvailable = player.state != PlayerState::DASHING && player.dash_cooldown_remaining_ms <= 0.0f;
 		dashInUse = (player.state == PlayerState::DASHING);
@@ -363,7 +361,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	Player &player = registry.players.get(player_spy);
 	if (player.dash_cooldown_remaining_ms > 0.0f)
 	{
 		player.dash_cooldown_remaining_ms -= elapsed_ms_since_last_update;
@@ -380,7 +377,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			// remove collision from player
 			registry.physicsBodies.remove(player_spy);
 		}
-		Player &player = registry.players.get(player_spy);
 		if (player.state != PlayerState::DYING)
 		{
 			player.state = PlayerState::DYING;
@@ -415,7 +411,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 	if (is_right_mouse_button_down && registry.flows.has(flowMeterEntity))
 	{
-		Player &player = registry.players.get(player_spy);
 		if (player.state == PlayerState::IDLE)
 		{
 			std::cout << "Player is charging flow" << std::endl;
