@@ -13,7 +13,8 @@ enum class PlayerState
 	CHARGING_FLOW = DODGING + 1,
 	LIGHT_ATTACK = CHARGING_FLOW + 1,
 	HEAVY_ATTACK = LIGHT_ATTACK + 1,
-	DASHING = HEAVY_ATTACK + 1,
+	DYING = HEAVY_ATTACK + 1,
+	DASHING = DYING + 1,
 };
 struct Player
 {
@@ -21,8 +22,21 @@ struct Player
 	float attack_damage = 20.0f;
 	unsigned int current_attack_id = 0;
 	bool is_heavy_attack_second_half = false;
-	float dash_cooldown_remaining_ms = 0.0f; 
+	float dash_cooldown_remaining_ms = 0.0f;
+	bool damage_prevented = false;
 
+	// must call can_take_damage before dealing damage to player
+	bool can_take_damage(bool will_take_damage = true)
+	{
+		// player does not take damage during dodging or dying
+		if (state == PlayerState::DODGING)
+		{
+			if (will_take_damage)
+				damage_prevented = true;
+			return false;
+		}
+		return state != PlayerState::DYING;
+	}
 };
 
 struct Damage
@@ -74,7 +88,7 @@ struct Attachment
 struct Weapon
 {
 	Entity weapon; // weapon
-	vec2 offset;   // weapon offset relative to player's position
+	vec2 offset;	 // weapon offset relative to player's position
 };
 
 // All data relevant to the shape and motion of entities
@@ -84,8 +98,8 @@ struct Motion
 	float angle = 0;
 	vec2 velocity = {0, 0};
 	vec2 scale = {10, 10};
-	vec2 bb_scale = {10, 10};	// scale used for bounding box
-	vec2 bb_offset = {0, 0};	// offset from motion.position to center of bounding box
+	vec2 bb_scale = {10, 10};		// scale used for bounding box
+	vec2 bb_offset = {0, 0};		// offset from motion.position to center of bounding box
 	vec2 pivot_offset = {0, 0}; // before scaling
 };
 
@@ -105,17 +119,17 @@ struct Interpolation
 {
 	float elapsed_time = 0;
 	float total_time_to_0_ms = 700; // time to observe effect
-	vec2 initial_velocity;			// velocity when button is released
+	vec2 initial_velocity;					// velocity when button is released
 };
 
-//struct Bezier
+// struct Bezier
 //{
 //	glm::vec2 initial_velocity;
 //	glm::vec2 target_position;
 //	glm::vec2 control_point;
 //	float elapsed_time;
 //	float total_time_to_0_ms = 2000;
-//};
+// };
 
 struct Dash
 {
@@ -125,7 +139,7 @@ struct Dash
 
 struct Flow
 {
-	float flowLevel;	// This could represent the current flow level
+	float flowLevel;		// This could represent the current flow level
 	float maxFlowLevel; // Maximum flow level
 };
 
@@ -412,21 +426,21 @@ const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 struct SpriteAnimation
 {
 	std::vector<TEXTURE_ASSET_ID> frames; // Texture IDs for each animation frame
-	int current_frame = 0;				  // Index of the current frame
-	float frame_duration = 0.1f;		  // Duration for each frame (seconds)
-	float elapsed_time = 0.0f;			  // Time since the last frame switch
+	int current_frame = 0;								// Index of the current frame
+	float frame_duration = 0.1f;					// Duration for each frame (seconds)
+	float elapsed_time = 0.0f;						// Time since the last frame switch
 	bool isattacking = false;
 };
 
 struct BossAnimation
 {
-	std::vector<TEXTURE_ASSET_ID> attack_1;	 // Frames for basic attack animation
-	std::vector<TEXTURE_ASSET_ID> attack_2; 
+	std::vector<TEXTURE_ASSET_ID> attack_1; // Frames for basic attack animation
+	std::vector<TEXTURE_ASSET_ID> attack_2;
 	std::vector<TEXTURE_ASSET_ID> attack_3;
 	std::vector<TEXTURE_ASSET_ID> attack_4;
 	std::vector<TEXTURE_ASSET_ID> attack_5;
-	
-	int current_frame = 0;		 // Index of the current frame
+
+	int current_frame = 0;			 // Index of the current frame
 	float frame_duration = 0.1f; // Duration for each frame (seconds)
 	float elapsed_time = 0.0f;	 // Time since the last frame switch
 	bool is_attacking = false;

@@ -186,6 +186,7 @@ void PhysicsSystem::step(float elapsed_ms)
 
 	// Check for collisions between all moving entities
 	Entity player = registry.players.entities[0];
+	Player &player_comp = registry.players.get(player);
 	Weapon &player_weapon = registry.weapons.get(player);
 	Entity weapon = player_weapon.weapon;
 	ComponentContainer<PhysicsBody> &physicsBody_container = registry.physicsBodies;
@@ -259,9 +260,12 @@ void PhysicsSystem::step(float elapsed_ms)
 					// projectiles can only damage players but not other entities
 					if (other_entity == player)
 					{
-						Health &player_health = registry.healths.get(player);
-						Damage &projectile_damage = registry.damages.get(projectile_entity);
-						player_health.take_damage(projectile_damage.damage);
+						if (player_comp.can_take_damage())
+						{
+							Health &player_health = registry.healths.get(player);
+							Damage &projectile_damage = registry.damages.get(projectile_entity);
+							player_health.take_damage(projectile_damage.damage);
+						}
 
 						entities_to_remove.insert(projectile_entity);
 					}

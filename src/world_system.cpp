@@ -363,34 +363,29 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	for (Entity entity : registry.players.entities)
+	Player &player = registry.players.get(player_spy);
+	if (player.dash_cooldown_remaining_ms > 0.0f)
 	{
-		Player &player = registry.players.get(entity);
-		if (player.dash_cooldown_remaining_ms > 0.0f)
-		{
-			player.dash_cooldown_remaining_ms -= elapsed_ms_since_last_update;
-		}
+		player.dash_cooldown_remaining_ms -= elapsed_ms_since_last_update;
 	}
 
-	//// Update positions based on velocities
-	// for (Entity entity : registry.motions.entities)
-	//{
-	// Motion& motion = registry.motions.get(player_spy);
-	//	motion.position += motion.velocity * (elapsed_ms_since_last_update / 1000.0f);
-	////}
-
-	auto &health = registry.healths.get(registry.players.entities[0]);
+	auto &health = registry.healths.get(player_spy);
 	if (health.is_dead)
 	{
-		if (!registry.deathTimers.has(registry.players.entities[0]))
+		if (!registry.deathTimers.has(player_spy))
 		{
 			Mix_PlayChannel(-1, spy_death_sound, 0);
-			registry.deathTimers.emplace(registry.players.entities[0]);
+			registry.deathTimers.emplace(player_spy);
+
+			// remove collision from player
+			registry.physicsBodies.remove(player_spy);
 		}
-		else
+		Player &player = registry.players.get(player_spy);
+		if (player.state != PlayerState::DYING)
 		{
-			registry.motions.get(registry.players.entities[0]).velocity = {0.f, 0.f};
+			player.state = PlayerState::DYING;
 		}
+		registry.motions.get(player_spy).velocity = {0.f, 0.f};
 	}
 
 	// Pan returns to chef logic
@@ -868,7 +863,7 @@ void WorldSystem::handle_collisions()
 
 	// Loop over all collisions detected by the physics system
 	// std::cout << "handle_collisions()" << std::endl;
-	Entity player = registry.players.entities[0];
+	Entity player = player_spy;
 	Weapon &player_weapon_comp = registry.weapons.get(player);
 	Entity player_weapon = player_weapon_comp.weapon;
 	Player &player_comp = registry.players.get(player);
@@ -886,6 +881,16 @@ void WorldSystem::handle_collisions()
 			DamageArea &damage_area = registry.damageAreas.get(entity);
 			if (damage_area.active)
 			{
+				if (!player_comp.can_take_damage())
+				{
+					continue;
+				}
+
+				std::cout << "Damage area hit player" << std::endl;
+				Damage &damage = registry.damages.get(entity);
+				Health &player_health = registry.healths.get(player);
+				player_health.take_damage(damage.damage);
+
 				if (damage_area.single_damage)
 				{
 					damage_area.time_until_inactive = 0; // deactivate damage area asap to avoid another damage
@@ -894,10 +899,6 @@ void WorldSystem::handle_collisions()
 				{
 					// todo multiple damages with cooldown
 				}
-				std::cout << "Damage area hit player" << std::endl;
-				Damage &damage = registry.damages.get(entity);
-				Health &player_health = registry.healths.get(player);
-				player_health.take_damage(damage.damage);
 			}
 		}
 
@@ -946,8 +947,11 @@ void WorldSystem::handle_collisions()
 			if (pan.player_hit == false)
 			{
 				pan.player_hit = true;
-				Health &player_spy_health = registry.healths.get(player_spy);
-				player_spy_health.take_damage(pan.damage);
+				if (player_comp.can_take_damage())
+				{
+					Health &player_spy_health = registry.healths.get(player_spy);
+					player_spy_health.take_damage(pan.damage);
+				}
 			}
 			pan.state = PanState::RETURNING;
 			for (Entity chef_entity : registry.chef.entities)
@@ -981,7 +985,7 @@ void WorldSystem::handle_collisions()
 			Chef &chef = registry.chef.get(entity);
 			Health &player_spy_health = registry.healths.get(player_spy);
 
-			if (!chef.dash_has_damaged)
+			if (!chef.dash_has_damaged && player_comp.can_take_damage())
 			{
 				float damage = 10.f;
 				player_spy_health.take_damage(damage);
@@ -1090,7 +1094,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		current_speed += 0.1f;
 		printf("Current speed = %f\n", current_speed);
 	}
-	Motion &motion = registry.motions.get(registry.players.entities[0]);
+	Motion &motion = registry.motions.get(player_spy);
 	current_speed = fmax(0.f, current_speed);
 	// close when esc key is pressed
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)

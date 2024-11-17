@@ -265,6 +265,31 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 {
 	Entity player = registry.players.entities[0];
 	assert(player);
+
+	Player &player_comp = registry.players.get(player);
+	if (player_comp.state == PlayerState::DYING)
+	{
+		// skip all ai processing if player is dead; also make enemies stop moving/attacking
+		ComponentContainer<Enemy> &enemies = registry.enemies;
+		for (uint i = 0; i < enemies.components.size(); i++)
+		{
+			Enemy &enemy = enemies.components[i];
+			Entity entity = enemies.entities[i];
+			Motion &motion = registry.motions.get(entity);
+			motion.velocity = {0.f, 0.f};
+			if (registry.spriteAnimations.has(entity))
+			{
+				auto &animation = registry.spriteAnimations.get(entity);
+				auto &render_request = registry.renderRequests.get(entity);
+				animation.current_frame = 0;
+				render_request.used_texture = animation.frames[animation.current_frame];
+				registry.spriteAnimations.remove(entity);
+			}
+			enemy.state = EnemyState::IDLE;
+		}
+		return;
+	}
+
 	Motion &player_motion = registry.motions.get(player);
 	vec2 player_position = player_motion.position + player_motion.bb_offset;
 	ComponentContainer<Enemy> &enemies = registry.enemies;
@@ -351,12 +376,6 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 					enemy.time_since_last_attack = 0.f;
 
 					createDamageArea(entity, motion.position, {100.f, 70.f}, 10.f, 200.f, 500.f, 0.f, true, {50.f, 50.f});
-					// float damage = 10.f; // Define the damage value
-					// if (registry.healths.has(player))
-					// {
-					// 	Health &player_health = registry.healths.get(player);
-					// 	player_health.take_damage(damage);
-					// }
 				}
 			}
 		}
