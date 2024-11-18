@@ -47,6 +47,7 @@ public:
 	std::vector<std::vector<int>> levelMap;
 	bool isSGesture();
 
+	void switchWeapon(Entity player, RenderSystem *renderer, WeaponType newType, WeaponLevel newLevel);
 	void trigger_dialogue(std::vector<std::string> dialogue);
 
 	bool is_paused = false;

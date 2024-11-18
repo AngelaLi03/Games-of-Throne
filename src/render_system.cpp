@@ -373,8 +373,8 @@ void RenderSystem::draw()
 			health.is_dead = true;
 			// implementation only consider case with 1 weapon
 			// assertion fails
-			// if(registry.weapons.has(spy)){
-			// Weapon& player_weapon = registry.weapons.get(spy);
+			// if(registry.playerWeapons.has(spy)){
+			// PlayerWeapon &player_weapon = registry.playerWeapons.get(entity);
 			// registry.renderRequests.remove(player_weapon.weapon);
 			// }
 		}

@@ -201,6 +201,40 @@ void RenderSystem::initializeGlGeometryBuffers()
 	textured_meshes[(int)GEOMETRY_BUFFER_ID::WEAPON].vertex_indices = weapon_indices;
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::WEAPON, weapon_vertices, weapon_indices);
 
+	std::vector<TexturedVertex> dagger_vertices = {
+		// lower
+		{{-0.1f, 0.4f, 1.f}, {0.4f, .9f}},    // 0
+		{{0.1f, 0.4f, 1.f}, {0.6f, .9f}},     // 1
+		{{0.1f, 0.1f, 1.f}, {0.6f, 0.6f}},    // 2
+		{{-0.1f, 0.1f, 1.f}, {0.4f, 0.6f}},   // 3
+		// upper
+		{{-0.25f, 0.05f, 1.f}, {0.25f, 0.55f}}, // 4
+		{{0.25f, 0.05f, 1.f}, {0.75f, 0.55f}},  // 5
+		{{0.25f, -0.25f, 1.f}, {0.75f, 0.25f}},  // 6
+		{{-0.25f, -0.25f, 1.f}, {0.25f, 0.25f}}, // 7
+		// tip
+		{{0.f, -0.4f, 1.f}, {0.5f, 0.1f}},     // 8
+		{{-0.25f, -0.25f, 1.f}, {0.25f, 0.25f}}, // 9
+		{{0.25f, -0.25f, 1.f}, {0.75f, 0.25f}},  // 10
+	};
+
+	std::vector<uint16_t> dagger_indices = {
+		// Lower part
+		0, 3, 1,
+		1, 3, 2,
+		// Upper part
+		4, 7, 5,
+		5, 7, 6,
+		// Tip
+		8, 10, 9,
+		3, 4, 5,
+		3, 5, 2
+	};
+
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::DAGGER].vertices = dagger_vertices;
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::DAGGER].vertex_indices = dagger_indices;
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::DAGGER, dagger_vertices, dagger_indices);
+
 	// Initialize progress bar
 	std::vector<ColoredVertex> progress_vertices;
 	std::vector<uint16_t> progress_indices;

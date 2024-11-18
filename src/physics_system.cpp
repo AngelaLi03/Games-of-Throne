@@ -129,27 +129,24 @@ void PhysicsSystem::step(float elapsed_ms)
 	}
 
 	// After movement, before collision checks. Do all relative position calculations here
-	Entity &spy = registry.players.entities[0];
-	Motion &player_motion = registry.motions.get(spy);
-	if (registry.weapons.has(spy))
+	Entity player = registry.players.entities[0];
+	Player &player_comp = registry.players.components[0];
+	Motion &player_motion = registry.motions.get(player);
+	// Set weapon position to correct offset from player
+	Entity weapon = player_comp.weapon;
+	Motion &weapon_motion = registry.motions.get(weapon);
+	vec2 &weapon_offset = player_comp.weapon_offset;
+	if (player_motion.scale.x < 0 && weapon_offset.x < 0)
 	{
-		// Set weapon position to correct offset from player
-		Weapon &player_weapon = registry.weapons.get(spy);
-		Entity weapon = player_weapon.weapon;
-		Motion &weapon_motion = registry.motions.get(weapon);
-		vec2 &weapon_offset = player_weapon.offset;
-		if (player_motion.scale.x < 0 && weapon_offset.x < 0)
-		{
-			weapon_offset.x = abs(weapon_offset.x);
-			weapon_motion.angle = -weapon_motion.angle;
-		}
-		else if (player_motion.scale.x > 0 && weapon_offset.x > 0)
-		{
-			weapon_offset.x = -abs(weapon_offset.x);
-			weapon_motion.angle = -weapon_motion.angle;
-		}
-		weapon_motion.position = player_motion.position + weapon_offset;
+		weapon_offset.x = abs(weapon_offset.x);
+		weapon_motion.angle = -weapon_motion.angle;
 	}
+	else if (player_motion.scale.x > 0 && weapon_offset.x > 0)
+	{
+		weapon_offset.x = -abs(weapon_offset.x);
+		weapon_motion.angle = -weapon_motion.angle;
+	}
+	weapon_motion.position = player_motion.position + weapon_offset;
 
 	// Update damage area status & position
 	for (int i = registry.damageAreas.components.size() - 1; i >= 0; i--)
@@ -183,10 +180,6 @@ void PhysicsSystem::step(float elapsed_ms)
 	}
 
 	// Check for collisions between all moving entities
-	Entity player = registry.players.entities[0];
-	Player &player_comp = registry.players.get(player);
-	Weapon &player_weapon = registry.weapons.get(player);
-	Entity weapon = player_weapon.weapon;
 	ComponentContainer<PhysicsBody> &physicsBody_container = registry.physicsBodies;
 	std::set<Entity> entities_to_remove;
 	for (uint i = 0; i < physicsBody_container.components.size(); i++)

@@ -19,7 +19,7 @@ Entity createSpy(RenderSystem *renderer, vec2 pos);
 
 Entity createEnemy(RenderSystem *renderer, vec2 pos);
 
-Entity createWeapon(RenderSystem *renderer, vec2 pos);
+Entity createWeapon(RenderSystem* renderer, vec2 pos, WeaponType type, WeaponLevel level);
 
 Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, vec3 color = vec3(0.f, 1.f, 0.f));
 

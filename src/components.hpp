@@ -32,6 +32,8 @@ enum class PlayerState
 struct Player
 {
 	PlayerState state = PlayerState::IDLE;
+	Entity weapon;			// current weapon
+	vec2 weapon_offset; // weapon offset relative to player's position
 	float attack_damage = 20.0f;
 	unsigned int current_attack_id = 0;
 	bool is_heavy_attack_second_half = false;
@@ -108,10 +110,25 @@ struct Attachment
 	Attachment(Entity parent_entity) : parent(parent_entity) {}
 };
 
+enum class WeaponType
+{
+	SWORD,
+	DAGGER
+};
+
+enum class WeaponLevel
+{
+	BASIC,
+	RARE,
+	LEGENDARY
+};
+
 struct Weapon
 {
-	Entity weapon; // weapon
-	vec2 offset;	 // weapon offset relative to player's position
+	WeaponType type;
+	WeaponLevel level;
+	float damage = 20.f;
+	float attack_speed = 1.0f;
 };
 
 enum class AnimationName
@@ -379,7 +396,13 @@ enum class TEXTURE_ASSET_ID
 	CHEF = SPY_CORPSE + 1,
 	TOMATO = CHEF + 1,
 	PAN = TOMATO + 1,
-	KNIGHT = PAN + 1,
+	SWORD_BASIC = PAN + 1,
+	SWORD_RARE = SWORD_BASIC + 1,
+	SWORD_LEGENDARY = SWORD_RARE + 1,
+	DAGGER_BASIC = SWORD_LEGENDARY + 1,
+	DAGGER_RARE = DAGGER_BASIC + 1,
+	DAGGER_LEGENDARY = DAGGER_RARE + 1,
+	KNIGHT = DAGGER_LEGENDARY + 1,
 	FOUNTAIN = KNIGHT + 1,
 	STEALTH = FOUNTAIN + 1,
 	TREASURE_BOX = STEALTH + 1,
@@ -472,7 +495,8 @@ enum class GEOMETRY_BUFFER_ID
 	DEBUG_LINE = WEAPON + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
 	PROGRESS_BAR = SCREEN_TRIANGLE + 1,
-	GEOMETRY_COUNT = PROGRESS_BAR + 1,
+	DAGGER = PROGRESS_BAR + 1,
+	GEOMETRY_COUNT = DAGGER + 1,
 	// // Defined FLOOR_TILE geometry.
 	// FLOOR_TILE = GEOMETRY_COUNT + 1
 };

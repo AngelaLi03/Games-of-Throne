@@ -791,13 +791,16 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 			}
 		}
 	}
-	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2});
 
-	vec2 weapon_offset = vec2(45.f, -50.f);
+	// createEnemy(renderer, vec2(window_width_px * 2 + 600, window_height_px * 2));
 
-	Weapon &player_weapon = registry.weapons.emplace(player_spy);
-	player_weapon.weapon = weapon;
-	player_weapon.offset = weapon_offset;
+	// createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
+
+	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2}, WeaponType::DAGGER, WeaponLevel::BASIC);
+
+	Player &player = registry.players.get(player_spy);
+	player.weapon = weapon;
+	player.weapon_offset = vec2(45.f, -50.f);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 }
@@ -806,17 +809,18 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 {
 	if (name == AnimationName::LIGHT_ATTACK)
 	{
-		Weapon &player_weapon = registry.weapons.get(entity);
-		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
+		Player &player = registry.players.get(entity);
+		Weapon &weapon = registry.weapons.get(player.weapon);
+		Motion &weapon_motion = registry.motions.get(player.weapon);
 		float angle = sin(t * M_PI) + M_PI / 6;
 
 		if (t >= 1.0f)
 		{
-			angle = M_PI / 6;
+			angle = weapon.type == WeaponType::SWORD ? M_PI / 6 : 0;
 			player_action_finished();
 		}
 
-		if (player_weapon.offset.x < 0)
+		if (player.weapon_offset.x < 0)
 		{
 			weapon_motion.angle = -angle;
 		}
@@ -828,40 +832,134 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 	}
 	else if (name == AnimationName::HEAVY_ATTACK)
 	{
-		Weapon &player_weapon = registry.weapons.get(entity);
-		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
-		float angle = t * 4 * M_PI + M_PI / 6;
-		while (angle > 2 * M_PI)
-		{
-			angle -= 2 * M_PI;
-		}
+		Player &player = registry.players.get(entity);
+		Weapon &weapon = registry.weapons.get(player.weapon);
+		Motion &weapon_motion = registry.motions.get(player.weapon);
 
-		if (t >= 0.5f)
+		if (weapon.type == WeaponType::SWORD)
 		{
-			Player &player = registry.players.get(entity);
-			if (!player.is_heavy_attack_second_half)
+			float angle = t * 4 * M_PI + M_PI / 6;
+			while (angle > 2 * M_PI)
 			{
-				player.is_heavy_attack_second_half = true;
-				player.current_attack_id = ++attack_id_counter;
-				// std::cout << "Heavy attack second half " << player.current_attack_id << std::endl;
+				angle -= 2 * M_PI;
 			}
-		}
 
-		if (t >= 1.0f)
-		{
-			angle = M_PI / 6;
-			player_action_finished();
-		}
+			if (t >= 0.5f)
+			{
+				if (!player.is_heavy_attack_second_half)
+				{
+					player.is_heavy_attack_second_half = true;
+					player.current_attack_id = ++attack_id_counter;
+					// std::cout << "Heavy attack second half " << player.current_attack_id << std::endl;
+				}
+			}
 
-		if (player_weapon.offset.x < 0)
-		{
-			weapon_motion.angle = -angle;
+			if (t >= 1.0f)
+			{
+				angle = M_PI / 6;
+				player_action_finished();
+			}
+
+			if (player.weapon_offset.x < 0)
+			{
+				weapon_motion.angle = -angle;
+			}
+			else
+			{
+				weapon_motion.angle = angle;
+			}
+			// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 		}
 		else
 		{
+			// Special heavy attack animation for daggers
+			float angle = 0.0f;
+			float originalOffset = 45.f;
+			int faceDir = (player.weapon_offset.x > 0) ? -1 : 1;
+
+			// if (t < 0.01f)
+			//{
+			//	float originalOffset = player.weapon_offset.x;
+			//	printf("Original Weapon offset: %.2f\n", originalOffset);
+			// }
+
+			if (t < 0.5f)
+			{
+				// First half: Rotate and stretch backward
+				angle = -M_PI / 2 * faceDir; // Flat horizontal position
+
+				player.weapon_offset.x -= 10.f * faceDir; // Move back
+
+				// Flip scale for left-facing player to maintain correct orientation
+				if (faceDir > 0)
+				{
+					weapon_motion.scale.y = -abs(weapon_motion.scale.y); // Flip for left-facing
+					player.weapon_offset.y = 60.f;											 // Adjust position for flipped scale
+				}
+				else
+				{
+					weapon_motion.scale.y = abs(weapon_motion.scale.y); // Ensure correct for right-facing
+					player.weapon_offset.y = -50.f;
+				}
+
+				printf("First half - Weapon offset: %.2f, Motion scale.y: %.2f\n", player.weapon_offset.x, weapon_motion.scale.y);
+			}
+			else
+			{
+				// Second half: Stab forward
+				angle = -M_PI / 2 * faceDir; // Keep flat horizontal position
+
+				player.weapon_offset.x += 10.f * faceDir; // Move forward
+
+				// Ensure the scale remains consistent
+				if (faceDir > 0)
+				{
+					weapon_motion.scale.y = -abs(weapon_motion.scale.y); // Flip for left-facing
+					player.weapon_offset.y = 60.f;											 // Adjust position for flipped scale
+				}
+				else
+				{
+					weapon_motion.scale.y = abs(weapon_motion.scale.y); // Ensure correct for right-facing
+					player.weapon_offset.y = -50.f;
+				}
+
+				printf("Second half - Weapon offset: %.2f, Motion scale.y: %.2f\n", player.weapon_offset.x, weapon_motion.scale.y);
+			}
+
 			weapon_motion.angle = angle;
+
+			// Check for second half of the attack
+			if (t >= 0.5f)
+			{
+				Player &player = registry.players.get(entity);
+				if (!player.is_heavy_attack_second_half)
+				{
+					player.is_heavy_attack_second_half = true;
+					player.current_attack_id = ++attack_id_counter;
+				}
+			}
+
+			if (t >= 1.0f)
+			{
+				angle = 0;
+				Player &player = registry.players.get(entity);
+				player.state = PlayerState::IDLE;
+				player.weapon_offset = vec2(45.f, -50.f);
+				weapon_motion.scale.y = abs(weapon_motion.scale.y);
+
+				// Debugging: Print offset when resetting to original
+				// printf("Reset to original offset - Weapon offset: %.2f\n", player.weapon_offset.x);
+			}
+
+			if (player.weapon_offset.x < 0)
+			{
+				weapon_motion.angle = -angle;
+			}
+			else
+			{
+				weapon_motion.angle = angle;
+			}
 		}
-		// std::cout << "Angle = " << weapon_motion.angle / M_PI * 180 << std::endl;
 	}
 }
 
@@ -890,6 +988,11 @@ void WorldSystem::handle_animations(float elapsed_ms)
 // Compute collisions between entities
 void WorldSystem::handle_collisions()
 {
+	Entity player = player_spy;
+	Player &player_comp = registry.players.get(player);
+	Entity player_weapon = player_comp.weapon;
+	Weapon &player_weapon_comp = registry.weapons.get(player_weapon);
+
 	// draw collision bounding boxes (debug lines)
 	if (debugging.in_debug_mode)
 	{
@@ -910,10 +1013,9 @@ void WorldSystem::handle_collisions()
 		}
 
 		// Draw weapon mesh (for debugging)
-		Weapon &player_weapon = registry.weapons.get(player_spy);
-		Motion &weapon_motion = registry.motions.get(player_weapon.weapon);
+		Motion &weapon_motion = registry.motions.get(player_weapon);
 		// createBox(weapon_motion.position + weapon_motion.bb_offset, get_bounding_box(weapon_motion), {1.f, 1.f, 0.f});
-		TexturedMesh &weapon_mesh = renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
+		TexturedMesh &weapon_mesh = player_weapon_comp.type == WeaponType::DAGGER ? renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::DAGGER) : renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
 		glm::mat3 transform = get_transform(weapon_motion);
 		for (uint i = 0; i < weapon_mesh.vertex_indices.size(); i += 3)
 		{
@@ -949,11 +1051,6 @@ void WorldSystem::handle_collisions()
 
 	// Loop over all collisions detected by the physics system
 	// std::cout << "handle_collisions()" << std::endl;
-
-	Entity player = player_spy;
-	Weapon &player_weapon_comp = registry.weapons.get(player);
-	Entity player_weapon = player_weapon_comp.weapon;
-	Player &player_comp = registry.players.get(player);
 	auto &collisionsRegistry = registry.collisions;
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++)
 	{
@@ -1107,7 +1204,13 @@ void WorldSystem::handle_collisions()
 					continue;
 				}
 
-				float damage = (player_comp.state == PlayerState::LIGHT_ATTACK) ? 20.f : 40.f; // Define damage values
+				float damage = (player_comp.state == PlayerState::LIGHT_ATTACK)
+													 ? player_weapon_comp.damage
+													 : player_weapon_comp.damage * 2.5;
+
+				printf("Player attack type: %s, Damage: %.2f\n",
+							 player_comp.state == PlayerState::LIGHT_ATTACK ? "Light" : "Heavy",
+							 damage);
 
 				if (registry.healths.has(entity_other))
 				{
@@ -1468,6 +1571,17 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			std::cout << "Dash on cooldown: " << player.dash_cooldown_remaining_ms << "ms remaining." << std::endl;
 		}
 	}
+
+	if (action == GLFW_RELEASE && key == GLFW_KEY_B) // Trigger weapon switch on "B" key
+	{
+		WeaponType randomType = static_cast<WeaponType>(rand() % 2);
+		WeaponLevel randomLevel = static_cast<WeaponLevel>(rand() % 3);
+
+		std::cout << "Switched to weapon type: " << static_cast<int>(randomType)
+							<< " and level: " << static_cast<int>(randomLevel) << std::endl;
+
+		switchWeapon(player_spy, renderer, randomType, randomLevel);
+	}
 }
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
@@ -1572,10 +1686,14 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 			{
 				registry.animations.remove(player_spy);
 			}
+			float attack_speed = 1.0f; // Default speed
+			Weapon &weapon = registry.weapons.get(player.weapon);
+			attack_speed = weapon.attack_speed;
+
 			Animation animation;
 			animation.name = AnimationName::LIGHT_ATTACK;
 			animation.elapsed_time = 0.f;
-			animation.total_time = 500.f;
+			animation.total_time = 500.f * attack_speed;
 			registry.animations.emplace(player_spy, animation);
 		}
 		// trigger player attack sound
@@ -1632,16 +1750,40 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 						{
 							registry.animations.remove(player_spy);
 						}
+						float attack_speed = 1.0f; // Default speed
+						Weapon &weapon = registry.weapons.get(player.weapon);
+						attack_speed = weapon.attack_speed;
+
 						Animation animation;
 						animation.name = AnimationName::HEAVY_ATTACK;
 						animation.elapsed_time = 0.f;
-						animation.total_time = 1000.f;
+						animation.total_time = 1000.f * attack_speed;
 						registry.animations.emplace(player_spy, animation);
 					}
 				}
 			}
 		}
 	}
+}
+
+void WorldSystem::switchWeapon(Entity player, RenderSystem *renderer, WeaponType newType, WeaponLevel newLevel)
+{
+	// Remove the existing weapon
+	Player &player_comp = registry.players.get(player);
+	registry.remove_all_components_of(player_comp.weapon);
+
+	// Create and attach a new weapon
+	vec2 playerPosition = registry.motions.get(player).position;
+	Entity newWeapon = createWeapon(renderer, playerPosition, newType, newLevel);
+
+	Weapon &newWeaponComp = registry.weapons.get(newWeapon);
+
+	// Attach the new weapon component to the player
+	player_comp.weapon = newWeapon;
+	player_comp.weapon_offset = vec2(45.f, -50.f);
+
+	printf("Switched to new weapon: Type=%d, Level=%d, Damage=%.2f, Attack Speed=%.2f\n",
+				 static_cast<int>(newType), static_cast<int>(newLevel), newWeaponComp.damage, newWeaponComp.attack_speed);
 }
 
 void WorldSystem::player_action_finished()

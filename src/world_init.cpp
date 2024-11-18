@@ -260,20 +260,62 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
-Entity createWeapon(RenderSystem *renderer, vec2 pos)
+void assignWeaponTexture(RenderSystem* renderer, Entity weapon, WeaponType type, WeaponLevel level) {
+	TEXTURE_ASSET_ID texture;
+	switch (type) {
+	case WeaponType::SWORD:
+		switch (level) {
+		case WeaponLevel::BASIC: texture = TEXTURE_ASSET_ID::SWORD_BASIC; break;
+		case WeaponLevel::RARE: texture = TEXTURE_ASSET_ID::SWORD_RARE; break;
+		case WeaponLevel::LEGENDARY: texture = TEXTURE_ASSET_ID::SWORD_LEGENDARY; break;
+		}
+		break;
+	case WeaponType::DAGGER:
+		switch (level) {
+		case WeaponLevel::BASIC: texture = TEXTURE_ASSET_ID::DAGGER_BASIC; break;
+		case WeaponLevel::RARE: texture = TEXTURE_ASSET_ID::DAGGER_RARE; break;
+		case WeaponLevel::LEGENDARY: texture = TEXTURE_ASSET_ID::DAGGER_LEGENDARY; break;
+		}
+		break;
+	}
+
+	registry.renderRequests.insert(
+		weapon,
+		{
+			texture,
+			EFFECT_ASSET_ID::TEXTURED,
+			(type == WeaponType::DAGGER)
+				? GEOMETRY_BUFFER_ID::DAGGER
+				: GEOMETRY_BUFFER_ID::WEAPON
+		}
+	);
+
+	printf("RenderRequest: Geometry Buffer ID = %d\n",
+		(type == WeaponType::DAGGER) ? (int)GEOMETRY_BUFFER_ID::DAGGER : (int)GEOMETRY_BUFFER_ID::WEAPON);
+}
+
+Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLevel level)
 {
 	auto entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object
-	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::WEAPON);
+	Mesh& mesh = (type == WeaponType::DAGGER)
+		? renderer->getMesh(GEOMETRY_BUFFER_ID::DAGGER)
+		: renderer->getMesh(GEOMETRY_BUFFER_ID::WEAPON);
 	registry.meshPtrs.emplace(entity, &mesh);
-	TexturedMesh &weapon_mesh = renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
+
+	TexturedMesh& weapon_mesh = (type == WeaponType::DAGGER)
+		? renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::DAGGER)
+		: renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
 	registry.texturedMeshPtrs.emplace(entity, &weapon_mesh);
+
+	printf("Mesh selected: %s\n",
+		(type == WeaponType::DAGGER) ? "DAGGER" : "SWORD");
 
 	// Setting initial motion values
 	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = M_PI / 6; // 30 degrees
+	motion.angle = type == WeaponType::SWORD? M_PI / 6 : 0; // 30 degrees
 	// motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 100.f;
@@ -286,11 +328,59 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos)
 	registry.physicsBodies.insert(entity, {BodyType::NONE});
 
 	// create an empty Spy component for our character
-	registry.renderRequests.insert(
-			entity,
-			{TEXTURE_ASSET_ID::WEAPON,
-			 EFFECT_ASSET_ID::TEXTURED,
-			 GEOMETRY_BUFFER_ID::WEAPON});
+	assignWeaponTexture(renderer, entity, type, level);
+
+	Weapon& weapon = registry.weapons.emplace(entity);
+	weapon.type = type;
+	weapon.level = level;
+
+	// Assign attack speed and damage based on weapon type and level
+	switch (type)
+	{
+	case WeaponType::SWORD:
+		switch (level)
+		{
+		case WeaponLevel::BASIC:
+			weapon.attack_speed = 1.5f; // seconds per attack
+			weapon.damage = 20.f;
+			break;
+		case WeaponLevel::RARE:
+			weapon.attack_speed = 1.2f;
+			weapon.damage = 35.f;
+			break;
+		case WeaponLevel::LEGENDARY:
+			weapon.attack_speed = 1.0f;
+			weapon.damage = 50.f;
+			break;
+		}
+		break;
+
+	case WeaponType::DAGGER:
+		switch (level)
+		{
+		case WeaponLevel::BASIC:
+			weapon.attack_speed = 0.8f;
+			weapon.damage = 10.f;
+			break;
+		case WeaponLevel::RARE:
+			weapon.attack_speed = 0.6f;
+			weapon.damage = 20.f;
+			break;
+		case WeaponLevel::LEGENDARY:
+			weapon.attack_speed = 0.4f;
+			weapon.damage = 30.f;
+			break;
+		}
+		break;
+
+	default:
+		weapon.attack_speed = 1.0f;
+		weapon.damage = 20.f;
+		break;
+	}
+
+	printf("Weapon created: Type=%d, Level=%d, Damage=%.2f, Attack Speed=%.2f\n",
+		static_cast<int>(type), static_cast<int>(level), weapon.damage, weapon.attack_speed);
 
 	return entity;
 }
