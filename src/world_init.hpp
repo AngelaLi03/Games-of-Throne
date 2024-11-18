@@ -23,6 +23,8 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos);
 
 Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, vec3 color = vec3(0.f, 1.f, 0.f));
 
+Entity createEnergyBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, vec3 color = vec3(0.f, 0.f, 1.f));
+
 Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale);
 
 Entity createChef(RenderSystem *renderer, vec2 pos);

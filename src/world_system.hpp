@@ -57,7 +57,9 @@ private:
 	void update_camera_view();
 	void handle_animations(float elapsed_ms);
 	void process_animation(AnimationName name, float t, Entity entity);
+	void update_energy(float energy_time);
 	void load_level(const std::string &levelName, const int levelNumber);
+	void player_action_finished();
 
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);

@@ -32,6 +32,8 @@ public:
 	ComponentContainer<Weapon> weapons;
 	ComponentContainer<HealthBar> healthbar;
 	ComponentContainer<Health> healths;
+	ComponentContainer<EnergyBar> energybar;
+	ComponentContainer<Energy> energys;
 	ComponentContainer<Flow> flows;
 	ComponentContainer<Chef> chef;
 	ComponentContainer<Pan> pans;
@@ -67,6 +69,8 @@ public:
 		registry_list.push_back(&enemies);
 		registry_list.push_back(&healthbar);
 		registry_list.push_back(&healths);
+		registry_list.push_back(&energybar);
+		registry_list.push_back(&energys);
 		registry_list.push_back(&flows);
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&interpolations);

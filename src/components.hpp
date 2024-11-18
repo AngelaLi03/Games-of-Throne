@@ -15,6 +15,7 @@ enum class PlayerState
 	HEAVY_ATTACK = LIGHT_ATTACK + 1,
 	DYING = HEAVY_ATTACK + 1,
 	DASHING = DYING + 1,
+	SPRINTING = DASHING + 1,
 };
 struct Player
 {
@@ -22,6 +23,8 @@ struct Player
 	float attack_damage = 20.0f;
 	unsigned int current_attack_id = 0;
 	bool is_heavy_attack_second_half = false;
+	bool consumedLightAttackEnergy = false;
+	bool consumedDodgeEnergy = false;
 	float dash_cooldown_remaining_ms = 0.0f;
 	bool damage_prevented = false;
 
@@ -158,6 +161,18 @@ struct Health
 };
 
 struct HealthBar
+{
+	vec2 original_scale;
+};
+
+struct Energy
+{
+	float energy;
+	float max_energy = 100.f;
+	Entity energybar;
+};
+
+struct EnergyBar
 {
 	vec2 original_scale;
 };

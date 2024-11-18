@@ -19,7 +19,9 @@ bool show_help_text = false;
 bool is_right_mouse_button_down = false;
 bool enlarged_player = false;
 float enlarge_countdown = 3000.f;
-float speed = 100.f;
+const float PLAYER_SPEED = 100.f; // original speed
+const float SPRINTING_MULTIPLIER = 3.f;
+bool is_holding_shift = false;
 bool unlocked_stealth_ability = false;
 bool dashAvailable = true;
 bool dashInUse = false;
@@ -270,6 +272,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// reduce window brightness if the salmon is dying
 	screen.darken_screen_factor = 1 - min_counter_ms / 3000;
 
+	Energy &energy = registry.energys.get(player_spy);
 	for (Entity entity : registry.interpolations.entities)
 	{
 
@@ -294,12 +297,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			motion.velocity = vec2(0.f, 0.f);
 			if (registry.players.has(entity))
 			{
-				if (player.state == PlayerState::DODGING)
-				{
-					player.state = PlayerState::IDLE;
-				}
-				std::cout << "Player is not dodging anymore" << std::endl;
-				motion.velocity = player_movement_direction * 60.f;
+				player_action_finished();
 			}
 		}
 
@@ -321,11 +319,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			// TODO: refactor the following lines code by introducing healthbar_offset and put code in renderer.draw()
 			if (owner_entity == player_spy)
 			{
-				if (!registry.cameraUI.has(health_bar_entity))
-				{
-					registry.cameraUI.emplace(health_bar_entity);
-				}
-
 				health_bar_motion.position = vec2(50.f, 50.f);
 			}
 			else if (registry.chef.has(owner_entity))
@@ -347,6 +340,9 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
+	float energy_time = elapsed_ms_since_last_update / 1000.0f;
+	update_energy(energy_time);
+
 	for (Entity entity : registry.dashes.entities)
 	{
 		Motion &spy_motion = registry.motions.get(player_spy);
@@ -359,16 +355,16 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		{
 			float t = dash.elapsed_time / dash.total_time_ms;
 			float scaling_factor = bezzy(t, 1.0f, 2.0f, 1.0f);
-			spy_motion.velocity = player_movement_direction * speed * scaling_factor * 5.f;
+			spy_motion.velocity = player_movement_direction * PLAYER_SPEED * scaling_factor * 5.f;
 			// std::cout << "dash active, velocity is (" << spy_motion.velocity.x << ", " << spy_motion.velocity.y << ")" << std::endl;
 		}
 		else
 		{
-			player.state = PlayerState::IDLE;
+			player_action_finished();
 			dash.elapsed_time = 0;
 			player.dash_cooldown_remaining_ms = dash.total_time_ms;
 			registry.dashes.remove(entity);
-			std::cout << "Dash ended, player back to IDLE" << std::endl;
+			std::cout << "Dash ended" << std::endl;
 		}
 	}
 
@@ -422,15 +418,24 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 	if (is_right_mouse_button_down && registry.flows.has(flowMeterEntity))
 	{
-		if (player.state == PlayerState::IDLE)
+		Player &player = registry.players.get(player_spy);
+		if ((player.state == PlayerState::IDLE || player.state == PlayerState::SPRINTING) && energy.energy > 0)
 		{
 			std::cout << "Player is charging flow" << std::endl;
 			player.state = PlayerState::CHARGING_FLOW;
 		}
 		if (player.state == PlayerState::CHARGING_FLOW)
 		{
-			Flow &flow = registry.flows.get(flowMeterEntity);
-			flow.flowLevel = std::min(flow.flowLevel + FLOW_CHARGE_PER_SECOND * elapsed_ms_since_last_update / 1000.f, flow.maxFlowLevel); // Increase flow up to max
+			if (energy.energy > 0)
+			{
+				Flow &flow = registry.flows.get(flowMeterEntity);
+				flow.flowLevel = std::min(flow.flowLevel + FLOW_CHARGE_PER_SECOND * elapsed_ms_since_last_update / 1000.f, flow.maxFlowLevel); // Increase flow up to max
+			}
+			else
+			{
+				player_action_finished();
+				is_right_mouse_button_down = false; // overwrite the value to false, so the player has to right click again to charge
+			}
 		}
 	}
 
@@ -570,6 +575,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		{
 			is_paused = true;
 		}
+	}
+
+	if (player.state == PlayerState::LIGHT_ATTACK || player.state == PlayerState::HEAVY_ATTACK || player.state == PlayerState::CHARGING_FLOW || player.state == PlayerState::DYING)
+	{
+		spy_motion.velocity = vec2(0.f, 0.f);
 	}
 
 	return true;
@@ -762,8 +772,7 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 		if (t >= 1.0f)
 		{
 			angle = M_PI / 6;
-			Player &player = registry.players.get(entity);
-			player.state = PlayerState::IDLE;
+			player_action_finished();
 		}
 
 		if (player_weapon.offset.x < 0)
@@ -800,8 +809,7 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 		if (t >= 1.0f)
 		{
 			angle = M_PI / 6;
-			Player &player = registry.players.get(entity);
-			player.state = PlayerState::IDLE;
+			player_action_finished();
 		}
 
 		if (player_weapon.offset.x < 0)
@@ -1231,7 +1239,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	// Debugging
-	if (key == GLFW_KEY_D && (mod & GLFW_MOD_SHIFT) && action == GLFW_PRESS)
+	if (key == GLFW_KEY_I && action == GLFW_PRESS)
 	{
 		debugging.in_debug_mode = !debugging.in_debug_mode;
 	}
@@ -1339,28 +1347,54 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 	Player &player = registry.players.get(player_spy);
-	if (player.state == PlayerState::LIGHT_ATTACK || player.state == PlayerState::HEAVY_ATTACK || player.state == PlayerState::CHARGING_FLOW)
+	if (player.state == PlayerState::LIGHT_ATTACK || player.state == PlayerState::HEAVY_ATTACK || player.state == PlayerState::CHARGING_FLOW || player.state == PlayerState::DYING)
 	{
 		motion.velocity = vec2(0.f, 0.f);
 	}
 	else if (player.state != PlayerState::DODGING)
 	{
-		motion.velocity = player_movement_direction * speed;
+		Energy &energy = registry.energys.get(player_spy);
 		// std::cout << "Player moving in " << player_movement_direction.x << "," << player_movement_direction.y << std::endl;
-		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS && motion.velocity != vec2(0.f, 0.f))
+		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS && motion.velocity != vec2(0.f, 0.f) && energy.energy >= 10.0f)
 		{
 			player.state = PlayerState::DODGING;
+			player.consumedDodgeEnergy = true;
 			std::cout << "Dodging" << std::endl;
 
 			Interpolation interpolate;
 			interpolate.elapsed_time = 0.f;
-			interpolate.initial_velocity = motion.velocity * 5.f;
+			interpolate.initial_velocity = player_movement_direction * PLAYER_SPEED * 5.f;
 			if (!registry.interpolations.has(player_spy))
 			{
 				registry.interpolations.emplace(player_spy, interpolate);
 			}
 			Mix_PlayChannel(-1, spy_dash_sound, 0);
 		}
+		else if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT)
+		{
+			if (action == GLFW_PRESS)
+			{
+				is_holding_shift = true;
+				if (energy.energy > 0.f)
+				{
+					player.state = PlayerState::SPRINTING;
+				}
+			}
+			else if (action == GLFW_RELEASE)
+			{
+				is_holding_shift = false;
+				if (player.state == PlayerState::SPRINTING)
+				{
+					player.state = PlayerState::IDLE;
+				}
+			}
+		}
+		float speed_multiplier = 1.f;
+		if (player.state == PlayerState::SPRINTING)
+		{
+			speed_multiplier = SPRINTING_MULTIPLIER;
+		}
+		motion.velocity = player_movement_direction * PLAYER_SPEED * speed_multiplier;
 	}
 
 	if (action == GLFW_PRESS && key == GLFW_KEY_X)
@@ -1373,7 +1407,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			return;
 		}
 
-		if (player.state == PlayerState::IDLE && player.dash_cooldown_remaining_ms <= 0.0f)
+		if ((player.state == PlayerState::IDLE || player.state == PlayerState::SPRINTING) && player.dash_cooldown_remaining_ms <= 0.0f)
 		{
 			player.state = PlayerState::DASHING;
 			std::cout << "DASHING NOW" << std::endl;
@@ -1480,11 +1514,13 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 		isTrackingMouse = true; // tracking mouse gesture if any
 		mousePath.clear();
 		Player &player = registry.players.get(player_spy);
-		if (player.state == PlayerState::IDLE)
+		Energy &energy = registry.energys.get(player_spy);
+		if ((player.state == PlayerState::IDLE || player.state == PlayerState::SPRINTING) && energy.energy >= 10.0f)
 		{
 			std::cout << "Player light attack" << std::endl;
 			player.state = PlayerState::LIGHT_ATTACK;
 			player.current_attack_id = ++attack_id_counter;
+			player.consumedLightAttackEnergy = true;
 
 			if (registry.animations.has(player_spy))
 			{
@@ -1523,18 +1559,23 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 		}
 		else if (action == GLFW_RELEASE)
 		{
+			if (!is_right_mouse_button_down)
+			{
+				// charging flow has been forcifully stopped due to insufficient energy
+				return;
+			}
 			is_right_mouse_button_down = false;
 			Player &player = registry.players.get(player_spy);
 			if (player.state == PlayerState::CHARGING_FLOW)
 			{
-				player.state = PlayerState::IDLE;
+				player_action_finished();
 			}
 			if (registry.flows.has(flowMeterEntity))
 			{
 				Flow &flow = registry.flows.get(flowMeterEntity);
 				if (flow.flowLevel == flow.maxFlowLevel)
 				{
-					if (player.state == PlayerState::IDLE || player.state == PlayerState::CHARGING_FLOW)
+					if (player.state == PlayerState::IDLE || player.state == PlayerState::SPRINTING || player.state == PlayerState::CHARGING_FLOW)
 					{
 						std::cout << "Player heavy attack" << std::endl;
 						Mix_Volume(2, 120);
@@ -1557,6 +1598,106 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 			}
 		}
 	}
+}
+
+void WorldSystem::player_action_finished()
+{
+	Player &player = registry.players.get(player_spy);
+	Energy &energy = registry.energys.get(player_spy);
+	if (is_holding_shift && energy.energy > 0.f)
+	{
+		player.state = PlayerState::SPRINTING;
+	}
+	else
+	{
+		player.state = PlayerState::IDLE;
+	}
+	Motion &player_motion = registry.motions.get(player_spy);
+	player_motion.velocity = player_movement_direction * PLAYER_SPEED * (player.state == PlayerState::SPRINTING ? SPRINTING_MULTIPLIER : 1.f);
+}
+
+void WorldSystem::update_energy(float energy_time)
+{
+	Entity player = registry.players.entities[0];
+	Energy &energy = registry.energys.get(player);
+	Player &playerComp = registry.players.get(player);
+
+	// Energy consumption rates
+	const float sprintEnergyPerSec = 8.0f;
+	const float heavyAttackEnergyPerSec = 20.0f;
+	const float dodgeEnergyCost = 10.0f;
+	const float lightAttackEnergyCost = 5.0f;
+	const float energyRegenRate = 8.0f;
+	bool regenerateEnergy = true;
+
+	// Sprinting
+	if (playerComp.state == PlayerState::SPRINTING)
+	{
+		if (player_movement_direction.x != 0 || player_movement_direction.y != 0)
+		{
+			energy.energy = std::max(0.0f, energy.energy - sprintEnergyPerSec * energy_time);
+			regenerateEnergy = false;
+		}
+		if (energy.energy <= 0.0f)
+		{
+			playerComp.state = PlayerState::IDLE;
+			regenerateEnergy = true;
+		}
+	}
+
+	// Heavy attack charging
+	if (playerComp.state == PlayerState::CHARGING_FLOW && energy.energy > 0)
+	{
+		energy.energy = std::max(0.0f, energy.energy - heavyAttackEnergyPerSec * energy_time);
+	}
+
+	// Light attack
+	if (playerComp.consumedLightAttackEnergy)
+	{
+		if (energy.energy >= lightAttackEnergyCost)
+		{
+			energy.energy -= lightAttackEnergyCost;
+		}
+		else
+		{
+			// Not enough energy, cancel the attack
+			playerComp.state = PlayerState::IDLE;
+		}
+		playerComp.consumedLightAttackEnergy = false; // Reset flag
+	}
+
+	// Dodge
+	if (playerComp.consumedDodgeEnergy)
+	{
+		if (energy.energy >= dodgeEnergyCost)
+		{
+			energy.energy -= dodgeEnergyCost;
+		}
+		else
+		{
+			// Not enough energy, cancel the dodge
+			playerComp.state = PlayerState::IDLE;
+		}
+		playerComp.consumedDodgeEnergy = false; // Reset flag
+	}
+
+	if (playerComp.state == PlayerState::DODGING || playerComp.state == PlayerState::LIGHT_ATTACK || playerComp.state == PlayerState::HEAVY_ATTACK || playerComp.state == PlayerState::CHARGING_FLOW)
+	{
+		// does not regen energy during these actions
+		regenerateEnergy = false;
+	}
+
+	// Energy regeneration
+	if (regenerateEnergy && energy.energy < energy.max_energy)
+	{
+		energy.energy = std::min(energy.max_energy, energy.energy + energyRegenRate * energy_time);
+	}
+
+	// Update energy bar
+	Motion &energyBarMotion = registry.motions.get(energy.energybar);
+	EnergyBar &energyBar = registry.energybar.get(energy.energybar);
+	float energyRatio = energy.energy / energy.max_energy;
+	energyBarMotion.scale.x = energyBar.original_scale.x * energyRatio;
 }
 
 void WorldSystem::trigger_dialogue(std::vector<std::string> dialogue)

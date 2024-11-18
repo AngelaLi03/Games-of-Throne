@@ -304,6 +304,8 @@ void RenderSystem::draw()
 		if (!registry.motions.has(entity))
 			continue;
 
+		
+
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize
 		if (registry.cameraUI.has(entity))

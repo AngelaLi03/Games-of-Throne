@@ -110,6 +110,10 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 
 	Entity healthbar = createHealthBar(renderer, {50.f, 50.f}, entity);
 	registry.healths.insert(entity, {100.f, 100.f, healthbar});
+	registry.cameraUI.emplace(healthbar);
+	Entity energybar = createEnergyBar(renderer, {50.f, 75.f}, entity);
+	registry.energys.insert(entity, {100.f, 100.f, energybar});
+	registry.cameraUI.emplace(energybar);
 
 	return entity;
 }
@@ -312,6 +316,31 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, ve
 			 EFFECT_ASSET_ID::PROGRESS_BAR,
 			 GEOMETRY_BUFFER_ID::PROGRESS_BAR});
 	// Set to green
+	registry.colors.emplace(entity, color);
+
+	return entity;
+}
+
+Entity createEnergyBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, vec3 color)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::PROGRESS_BAR);
+	registry.meshPtrs.emplace(entity, &mesh);
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = {200.f, 20.f};
+
+	registry.energybar.insert(entity, {motion.scale});
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no texture is needed
+			 EFFECT_ASSET_ID::PROGRESS_BAR,
+			 GEOMETRY_BUFFER_ID::PROGRESS_BAR});
 	registry.colors.emplace(entity, color);
 
 	return entity;
