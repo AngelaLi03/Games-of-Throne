@@ -23,12 +23,22 @@ float speed = 100.f;
 bool unlocked_stealth_ability = false;
 bool dashAvailable = true;
 bool dashInUse = false;
+bool dialogue_active = false;	 // Indicates if the dialogue is active
+int current_dialogue_line = 0; // Tracks the current line of dialogue being shown
+std::vector<std::string> dialogue_to_render;
+bool chef_first_damaged = false;
+bool first_dead_minion = false;
 
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
 // Threshold constants for gesture detection
 const float S_THRESHOLD1 = 20.0f;
 const float MIN_S_LENGTH = 100.0f;
+
+const float DIALOGUE_PAUSE_DELAY = 500.f; // ms between showing dialogue and pausing game
+float time_until_dialogue_pause = 0.f;
+
+bool is_in_chef_dialogue = false;
 
 // create the underwater world
 WorldSystem::WorldSystem()
@@ -504,7 +514,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	// handle chef death
+	// Process chef death and first damaged
 	if (registry.chef.size() > 0)
 	{
 		Entity chef_entity = registry.chef.entities[0];
@@ -513,24 +523,32 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		{
 			registry.remove_all_components_of(chef_entity);
 
-			// gain stealth ability
-			unlocked_stealth_ability = true;
+			trigger_dialogue(chef_death_dialogue);
+			is_in_chef_dialogue = true;
+		}
 
-			// TODO: this darkens everything; create a screen mask with opacity so only non-popup elements are darkened
-			// screen.darken_screen_factor = 0.5;
+		if (!chef_first_damaged)
+		{
+			if (chef_health.health < chef_health.max_health)
+			{
+				trigger_dialogue(chef_being_attacked_dialogue);
+				chef_first_damaged = true;
+			}
+		}
+	}
 
-			Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::STEALTH);
-			registry.cameraUI.emplace(ability_sprite);
-
-			// TODO: render text (make it generic so other popups can also render their custom text)
-			// popup_text = "You have gained the stealth ability!";
-
-			active_popup = {[this]()
-											{
-												load_level("Level_1", 1);
-											}};
-			has_popup = true;
-			is_paused = true;
+	// check the first minion death
+	if (registry.enemies.size() > 0 && !first_dead_minion)
+	{
+		for (Entity entity : registry.enemies.entities)
+		{
+			Health &enemy_health = registry.healths.get(entity);
+			if (enemy_health.is_dead && !first_dead_minion)
+			{
+				first_dead_minion = true;
+				trigger_dialogue(minion_death_dialogue);
+				continue;
+			}
 		}
 	}
 
@@ -544,6 +562,15 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// 		load_level("Level_2", 2);
 	// 	}
 	// }
+
+	if (dialogue_active && !is_paused)
+	{
+		time_until_dialogue_pause -= elapsed_ms_since_last_update;
+		if (time_until_dialogue_pause <= 0)
+		{
+			is_paused = true;
+		}
+	}
 
 	return true;
 }
@@ -631,6 +658,8 @@ void WorldSystem::restart_game()
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 
 	load_level("Level_0", 0);
+
+	trigger_dialogue(background_dialogue);
 }
 
 void WorldSystem::load_level(const std::string &levelName, const int levelNumber)
@@ -1074,9 +1103,64 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	// Pausing game
 	if (key == GLFW_KEY_0 && action == GLFW_PRESS)
 	{
-		if (!has_popup)
+		if (!has_popup && !dialogue_active)
 		{
 			is_paused = !is_paused;
+		}
+	}
+
+	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+	{
+		if (has_popup)
+		{
+			// dismiss popup
+			has_popup = false;
+			is_paused = false;
+			if (active_popup.onDismiss != nullptr)
+				active_popup.onDismiss();
+			active_popup = {};
+		}
+
+		if (dialogue_active)
+		{
+			current_dialogue_line++;
+			if (current_dialogue_line >= dialogue_to_render.size())
+			{
+				// End the dialogue when all lines are shown
+				dialogue_active = false;
+				is_paused = false;
+				current_dialogue_line = 0;
+
+				while (registry.popupUI.entities.size() > 0)
+				{
+					registry.remove_all_components_of(registry.popupUI.entities.back());
+				}
+
+				// Process special dialogue end effects
+				if (is_in_chef_dialogue)
+				{
+					is_in_chef_dialogue = false;
+
+					// gain stealth ability
+					unlocked_stealth_ability = true;
+
+					createBackdrop(renderer);
+					createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
+
+					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::STEALTH);
+					registry.cameraUI.emplace(ability_sprite);
+
+					// TODO: render text (make it generic so other popups can also render their custom text)
+					// popup_text = "You have gained the stealth ability!";
+
+					active_popup = {[this]()
+													{
+														load_level("Level_1", 1);
+													}};
+					has_popup = true;
+					is_paused = true;
+				}
+			}
 		}
 	}
 
@@ -1120,7 +1204,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
-	if (is_paused)
+	if (is_paused || dialogue_active)
 	{
 		// skip processing all other types of keys when game is paused
 		return;
@@ -1308,7 +1392,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
 {
-	if (is_paused)
+	if (is_paused || dialogue_active)
 	{
 		// skip processing mouse movement when game is paused
 		return;
@@ -1384,17 +1468,7 @@ bool WorldSystem::isSGesture()
 
 void WorldSystem::on_mouse_button(int button, int action, int mods)
 {
-	if (has_popup && action == GLFW_PRESS)
-	{
-		// dismiss popup
-		has_popup = false;
-		is_paused = false;
-		if (active_popup.onDismiss != nullptr)
-			active_popup.onDismiss();
-		active_popup = {};
-		return;
-	}
-	if (is_paused)
+	if (is_paused || dialogue_active)
 	{
 		// skip processing mouse button events when game is paused
 		return;
@@ -1483,4 +1557,20 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 			}
 		}
 	}
+}
+
+void WorldSystem::trigger_dialogue(std::vector<std::string> dialogue)
+{
+	// Start the dialogue
+	dialogue_to_render = dialogue;
+	dialogue_active = true;
+	current_dialogue_line = 0;
+	createBackdrop(renderer);
+	createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px - 200}, {window_width_px - 100.f, 300.f});
+
+	time_until_dialogue_pause = DIALOGUE_PAUSE_DELAY;
+
+	// const Entity &spy_entity = registry.players.entities[0];
+	// Motion &spy_motion = registry.motions.get(spy_entity);
+	// createDialogueWindow(renderer, {spy_motion.position.x - 250.f, spy_motion.position.y + 60.f});
 }

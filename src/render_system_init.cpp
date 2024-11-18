@@ -118,12 +118,12 @@ void RenderSystem::bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices
 {
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[(uint)gid]);
 	glBufferData(GL_ARRAY_BUFFER,
-							 sizeof(vertices[0]) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+				 sizeof(vertices[0]) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 	gl_has_errors();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffers[(uint)gid]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-							 sizeof(indices[0]) * indices.size(), indices.data(), GL_STATIC_DRAW);
+				 sizeof(indices[0]) * indices.size(), indices.data(), GL_STATIC_DRAW);
 	gl_has_errors();
 }
 
@@ -135,13 +135,13 @@ void RenderSystem::initializeGlMeshes()
 		GEOMETRY_BUFFER_ID geom_index = mesh_paths[i].first;
 		std::string name = mesh_paths[i].second;
 		Mesh::loadFromOBJFile(name,
-													meshes[(int)geom_index].vertices,
-													meshes[(int)geom_index].vertex_indices,
-													meshes[(int)geom_index].original_size);
+							  meshes[(int)geom_index].vertices,
+							  meshes[(int)geom_index].vertex_indices,
+							  meshes[(int)geom_index].original_size);
 
 		bindVBOandIBO(geom_index,
-									meshes[(int)geom_index].vertices,
-									meshes[(int)geom_index].vertex_indices);
+					  meshes[(int)geom_index].vertices,
+					  meshes[(int)geom_index].vertex_indices);
 	}
 }
 
@@ -175,25 +175,25 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// //////////////////////
 	// Initialize Weapon
 	std::vector<TexturedVertex> weapon_vertices = {
-			// lower
-			{{-0.2f, 0.5f, 1.f}, {0.3f, 1.f}},
-			{{0.2f, 0.5f, 1.f}, {0.7f, 1.f}},
-			{{0.2f, 0.2f, 1.f}, {0.7f, 0.7f}},
-			{{-0.2f, 0.2f, 1.f}, {0.3f, 0.7f}},
-			// upper
-			{{-0.35f, 0.15f, 1.f}, {0.15f, 0.65f}},
-			{{0.35f, 0.15f, 1.f}, {0.85f, 0.65f}},
-			{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},
-			{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}},
-			// tip
-			{{0.f, -0.5f, 1.f}, {0.5f, 0.f}},				 // 8
-			{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}}, // 9
-			{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},	 // 10
-			// middle
-			{{-0.5f, 0.2f, 1.f}, {0.f, 0.7f}},	 // 11
-			{{0.5f, 0.2f, 1.f}, {1.f, 0.7f}},		 // 12
-			{{0.5f, 0.15f, 1.f}, {1.f, 0.65f}},	 // 13
-			{{-0.5f, 0.15f, 1.f}, {0.f, 0.65f}}, // 14
+		// lower
+		{{-0.2f, 0.5f, 1.f}, {0.3f, 1.f}},
+		{{0.2f, 0.5f, 1.f}, {0.7f, 1.f}},
+		{{0.2f, 0.2f, 1.f}, {0.7f, 0.7f}},
+		{{-0.2f, 0.2f, 1.f}, {0.3f, 0.7f}},
+		// upper
+		{{-0.35f, 0.15f, 1.f}, {0.15f, 0.65f}},
+		{{0.35f, 0.15f, 1.f}, {0.85f, 0.65f}},
+		{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},
+		{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}},
+		// tip
+		{{0.f, -0.5f, 1.f}, {0.5f, 0.f}},		 // 8
+		{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}}, // 9
+		{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},	 // 10
+		// middle
+		{{-0.5f, 0.2f, 1.f}, {0.f, 0.7f}},	 // 11
+		{{0.5f, 0.2f, 1.f}, {1.f, 0.7f}},	 // 12
+		{{0.5f, 0.15f, 1.f}, {1.f, 0.65f}},	 // 13
+		{{-0.5f, 0.15f, 1.f}, {0.f, 0.65f}}, // 14
 	};
 	std::vector<uint16_t> weapon_indices = {0, 3, 1, 1, 3, 2, 4, 7, 5, 5, 7, 6, 8, 10, 9, 11, 14, 12, 12, 14, 13};
 
@@ -226,10 +226,10 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	// Corner points
 	line_vertices = {
-			{{-0.5, -0.5, depth}, white},
-			{{-0.5, 0.5, depth}, white},
-			{{0.5, 0.5, depth}, white},
-			{{0.5, -0.5, depth}, white},
+		{{-0.5, -0.5, depth}, white},
+		{{-0.5, 0.5, depth}, white},
+		{{0.5, 0.5, depth}, white},
+		{{0.5, -0.5, depth}, white},
 	};
 
 	// Two triangles
@@ -336,7 +336,7 @@ bool gl_compile_shader(GLuint shader)
 }
 
 bool loadEffectFromFile(
-		const std::string &vs_path, const std::string &fs_path, GLuint &out_program)
+	const std::string &vs_path, const std::string &fs_path, GLuint &out_program)
 {
 	// Opening files
 	std::ifstream vs_is(vs_path);

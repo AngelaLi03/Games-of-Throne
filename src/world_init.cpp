@@ -210,7 +210,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
 	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
-	registry.healths.insert(entity, {500.f, 500.f, healthbar});
+	registry.healths.insert(entity, {50.f, 500.f, healthbar});
 
 	return entity;
 }
@@ -246,7 +246,7 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::KNIGHT, // bossAnimation.attack_1[bossAnimation.current_frame], change when loaded all images
+			{TEXTURE_ASSET_ID::CHEF, // TEXTURE_COUNT indicates that no texture is needed
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
@@ -545,6 +545,57 @@ Entity createSpinArea(Entity chef_entity)
 	registry.attachments.emplace(entity, Attachment(chef_entity));
 	registry.spinareas.emplace(entity, SpinArea());
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
+	return entity;
+}
+
+Entity createBackdrop(RenderSystem *renderer)
+{
+	auto entity = Entity();
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = {window_width_px / 2.f, window_height_px / 2.f};
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = {window_width_px, window_height_px};
+
+	registry.cameraUI.emplace(entity);
+	registry.popupUI.emplace(entity);
+	registry.colors.insert(entity, vec3(0.f, 0.f, 0.f));
+	registry.opacities.insert(entity, 0.5f);
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::TEXTURE_COUNT,
+			 EFFECT_ASSET_ID::PROGRESS_BAR,
+			 GEOMETRY_BUFFER_ID::DEBUG_LINE});
+
+	return entity;
+}
+
+Entity createDialogueWindow(RenderSystem *renderer, vec2 position, vec2 scale)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Initialize the position, scale, and physics components
+	auto &motion = registry.motions.emplace(entity);
+	motion.position = position;
+	motion.scale = scale;
+	// motion.scale *= mesh.original_size * 40.f;
+	// motion.scale.x *= 3.3;
+	// motion.scale.y *= 0.7;
+
+	registry.cameraUI.emplace(entity);
+	registry.popupUI.emplace(entity);
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::DIALOGUE_WINDOW,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
 	return entity;
 }
 

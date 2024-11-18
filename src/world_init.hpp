@@ -37,6 +37,10 @@ Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, f
 
 Entity createKnight(RenderSystem *renderer, vec2 pos);
 
+Entity createBackdrop(RenderSystem *renderer);
+
+Entity createDialogueWindow(RenderSystem *renderer, vec2 position, vec2 scale);
+
 Entity createFountain(RenderSystem *renderer, vec2 pos);
 
 Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item);

@@ -12,6 +12,7 @@
 #include <SDL_mixer.h>
 
 #include "render_system.hpp"
+// #include "dialogue_system.hpp"
 
 struct Popup
 {
@@ -46,6 +47,8 @@ public:
 	std::vector<std::vector<int>> levelMap;
 	bool isSGesture();
 
+	void trigger_dialogue(std::vector<std::string> dialogue);
+
 	bool is_paused = false;
 	bool has_popup = false;
 	Popup active_popup = {};
@@ -72,6 +75,30 @@ private:
 	Entity player_salmon;
 	Entity player_spy;
 	Entity flowMeterEntity;
+	std::vector<std::string> background_dialogue = {
+			"Astraeth, 1543",
+			"Palace of the royal throne.",
+			"In the cursed kingdom of Astraeth, the throne is a symbol of cruelty and fear. ",
+			"King Aldred rules with fear, crushing anyone who stands in his way, leaving the public in poverty and despair.",
+			"You play as Alexa, a skilled assassin. ",
+			"You have trained in the shadows, honing your skills to become the deadliest weapon the people have ever known.",
+			"Now, your mission is clear: Overthrow the evil throne and bring hope back to Astraeth.",
+	};
+	std::vector<std::string> chef_being_attacked_dialogue = {
+			"Chef: Who dares to challenge me?",
+			"You: Bring it on, I'm not afraid of you!",
+			"Chef: You will regret this.",
+	};
+	std::vector<std::string> chef_death_dialogue = {
+			"Chef: You may have defeated me, but you will never defeat the king.",
+			"You: Why not?",
+			"Chef: The king... is far crueler than I ever was. Good luck, assassin.",
+	};
+	std::vector<std::string> minion_death_dialogue = {
+			"Minion: How can you... I have been trained for years...",
+			"You: You must have been sleeping during the years.",
+			"Minion: My friends will not let you take over the throne!!!",
+	};
 
 	// universal attack id, to track unique attack instances (to prevent duplicate damage in the same attack)
 	unsigned int attack_id_counter = 0;

@@ -27,6 +27,7 @@ public:
 	ComponentContainer<Damage> damages;
 	ComponentContainer<DebugComponent> debugComponents;
 	ComponentContainer<vec3> colors;
+	ComponentContainer<float> opacities;
 	ComponentContainer<Enemy> enemies;
 	ComponentContainer<Weapon> weapons;
 	ComponentContainer<HealthBar> healthbar;
@@ -41,6 +42,7 @@ public:
 	ComponentContainer<DamageArea> damageAreas;
 	ComponentContainer<BossAnimation> bossAnimations;
 	ComponentContainer<Knight> knight;
+	ComponentContainer<PopupUI> popupUI;
 	ComponentContainer<Fountain> fountains;
 	ComponentContainer<TreasureBox> treasureBoxes;
 
@@ -61,6 +63,7 @@ public:
 		registry_list.push_back(&damages);
 		registry_list.push_back(&debugComponents);
 		registry_list.push_back(&colors);
+		registry_list.push_back(&opacities);
 		registry_list.push_back(&enemies);
 		registry_list.push_back(&healthbar);
 		registry_list.push_back(&healths);
@@ -78,6 +81,7 @@ public:
 		registry_list.push_back(&damageAreas);
 		registry_list.push_back(&bossAnimations);
 		registry_list.push_back(&knight);
+		registry_list.push_back(&popupUI);
 		registry_list.push_back(&fountains);
 		registry_list.push_back(&treasureBoxes);
 	}

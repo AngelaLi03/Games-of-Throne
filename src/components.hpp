@@ -137,6 +137,11 @@ struct Dash
 	float total_time_ms = 10000.f;
 };
 
+struct PopupUI
+{
+	bool active = true;
+};
+
 struct Flow
 {
 	float flowLevel;		// This could represent the current flow level
@@ -353,15 +358,15 @@ enum class TEXTURE_ASSET_ID
 	PAN = TOMATO + 1,
 	KNIGHT = PAN + 1,
 	FOUNTAIN = KNIGHT + 1,
-
 	STEALTH = FOUNTAIN + 1,
 	TREASURE_BOX = STEALTH + 1,
 	TREASURE_BOX_OPEN = TREASURE_BOX + 1,
 	UI_FRAME = TREASURE_BOX_OPEN + 1,
 	MAX_HEALTH = UI_FRAME + 1,
 	MAX_ENERGY = MAX_HEALTH + 1,
+	DIALOGUE_WINDOW = MAX_ENERGY + 1,
 
-	CHEF1_0 = MAX_ENERGY + 1,
+	CHEF1_0 = DIALOGUE_WINDOW + 1,
 	CHEF1_1 = CHEF1_0 + 1,
 	CHEF1_2 = CHEF1_1 + 1,
 	CHEF1_3 = CHEF1_2 + 1,
@@ -425,8 +430,7 @@ const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 
 enum class EFFECT_ASSET_ID
 {
-	COLOURED = 0,
-	DEBUG_LINE = COLOURED + 1,
+	DEBUG_LINE = 0,
 	SALMON = DEBUG_LINE + 1,
 	TEXTURED = SALMON + 1,
 	WATER = TEXTURED + 1,

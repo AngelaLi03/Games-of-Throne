@@ -13,6 +13,9 @@
 extern bool show_fps;
 extern bool show_help_text;
 extern float fps;
+extern bool dialogue_active;
+extern int current_dialogue_line; // Tracks the current line of dialogue being shown
+extern std::vector<std::string> dialogue_to_render;
 // for DASH rendering
 extern bool unlocked_stealth_ability;
 extern bool dashAvailable;
@@ -90,7 +93,7 @@ void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 		gl_has_errors();
 	}
-	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::COLOURED || render_request.used_effect == EFFECT_ASSET_ID::DEBUG_LINE)
+	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::DEBUG_LINE)
 	{
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");
 		GLint in_color_loc = glGetAttribLocation(program, "in_color");
@@ -175,6 +178,11 @@ void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 
 	GLint color_uloc = glGetUniformLocation(program, "fcolor");
 	const vec3 color = registry.colors.has(entity) ? registry.colors.get(entity) : vec3(1);
 	glUniform3fv(color_uloc, 1, (float *)&color);
+	gl_has_errors();
+
+	GLuint opacity_uloc = glGetUniformLocation(program, "opacity");
+	float opacity = registry.opacities.has(entity) ? registry.opacities.get(entity) : 1.f;
+	glUniform1f(opacity_uloc, opacity);
 	gl_has_errors();
 
 	// Get number of indices from index buffer, which has elements uint16_t
@@ -424,6 +432,11 @@ void RenderSystem::draw()
 		vec3 color = vec3(1.0f, 1.0f, 1.0f);
 
 		renderText("X", x, y, scale, color);
+	}
+
+	if (dialogue_active)
+	{
+		renderDialogueLine(dialogue_to_render[current_dialogue_line]);
 	}
 
 	// Truely render to the screen
@@ -690,4 +703,43 @@ void RenderSystem::loadFont(const std::string &fontPath)
 
 	// Unbind texture
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void RenderSystem::renderDialogueLine(const std::string &line)
+{
+	float x = 100.f; // Starting x position for the text
+	float y = 250.f; // Position inside the dialogue window
+	float scale = 1.f;
+	vec3 textColor = vec3(0.2f, 0.2f, 0.2f); // Dark gray text color
+
+	// std::cout << "Render text length: " << line.size() << std::endl;
+	if (line.size() > 100)
+	{
+		// find last "space" before 100
+		int lastSpace = 0;
+		for (int i = 100; i > 0; i--)
+		{
+			if (line[i] == ' ')
+			{
+				lastSpace = i;
+				break;
+			}
+		}
+		if (lastSpace == 0)
+		{
+			// no space found, just render the line
+			renderText(line, x, y, scale, textColor);
+		}
+		else
+		{
+			// render the line up to the last space
+			renderText(line.substr(0, lastSpace), x, y, scale, textColor);
+			// render the rest of the line
+			renderText(line.substr(lastSpace + 1), x, y - 50, scale, textColor);
+		}
+	}
+	else
+	{
+		renderText(line, x, y, scale, textColor);
+	}
 }

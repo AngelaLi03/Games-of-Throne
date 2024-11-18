@@ -68,6 +68,7 @@ class RenderSystem
 			textures_path("ui_frame.png"),
 			textures_path("max_health.png"),
 			textures_path("max_energy.png"),
+			textures_path("dialogue_window.png"),
 
 			textures_path("/boss_animation/chef_1/chef_attack(1)0.png"),
 			textures_path("/boss_animation/chef_1/chef_attack(1)1.png"),
@@ -132,7 +133,6 @@ class RenderSystem
 	std::array<GLuint, effect_count> effects;
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = {
-			shader_path("coloured"),
 			shader_path("debug_line"),
 			shader_path("salmon"),
 			shader_path("textured"),
@@ -177,6 +177,7 @@ public:
 	mat3 createCameraViewMatrix();
 	void initTextRendering();
 	void loadFont(const std::string &fontPath);
+	void renderDialogueLine(const std::string &line);
 
 	vec2 camera_position = {0.f, 0.f};
 
