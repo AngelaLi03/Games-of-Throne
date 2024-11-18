@@ -5,6 +5,18 @@
 #include <unordered_map>
 #include "../ext/stb_image/stb_image.h"
 
+// All data relevant to the shape and motion of entities
+struct Motion
+{
+	vec2 position = {0, 0};
+	float angle = 0;
+	vec2 velocity = {0, 0};
+	vec2 scale = {10, 10};
+	vec2 bb_scale = {10, 10};		// scale used for bounding box
+	vec2 bb_offset = {0, 0};		// offset from motion.position to center of bounding box
+	vec2 pivot_offset = {0, 0}; // before scaling
+};
+
 // Player component
 enum class PlayerState
 {
@@ -26,6 +38,8 @@ struct Player
 	bool consumedLightAttackEnergy = false;
 	bool consumedDodgeEnergy = false;
 	float dash_cooldown_remaining_ms = 0.0f;
+	bool current_dodge_is_perfect = false;
+	Motion current_dodge_original_motion;
 	bool damage_prevented = false;
 
 	// must call can_take_damage before dealing damage to player
@@ -42,6 +56,12 @@ struct Player
 	}
 };
 
+// for perfect dodge mechanic
+struct PlayerRemnant
+{
+	float time_until_destroyed = 500.f;
+};
+
 struct Damage
 {
 	float damage;
@@ -50,7 +70,7 @@ struct Damage
 struct DamageArea
 {
 	float time_until_active;
-	float time_until_inactive;
+	float time_until_destroyed;
 	Entity owner;
 	bool relative_position = false;
 	vec2 offset_from_owner;
@@ -92,18 +112,6 @@ struct Weapon
 {
 	Entity weapon; // weapon
 	vec2 offset;	 // weapon offset relative to player's position
-};
-
-// All data relevant to the shape and motion of entities
-struct Motion
-{
-	vec2 position = {0, 0};
-	float angle = 0;
-	vec2 velocity = {0, 0};
-	vec2 scale = {10, 10};
-	vec2 bb_scale = {10, 10};		// scale used for bounding box
-	vec2 bb_offset = {0, 0};		// offset from motion.position to center of bounding box
-	vec2 pivot_offset = {0, 0}; // before scaling
 };
 
 enum class AnimationName

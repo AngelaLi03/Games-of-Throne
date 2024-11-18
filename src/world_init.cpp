@@ -214,7 +214,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
 	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
-	registry.healths.insert(entity, {50.f, 500.f, healthbar});
+	registry.healths.insert(entity, {500.f, 500.f, healthbar});
 
 	return entity;
 }
@@ -372,7 +372,7 @@ Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale)
 	return entity;
 }
 
-Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, float time_until_active, float duration, float damage_cooldown, bool relative_position, vec2 offset_from_owner)
+Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, float duration, float damage_cooldown, bool relative_position, vec2 offset_from_owner)
 {
 	Entity entity = Entity();
 
@@ -386,16 +386,9 @@ Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, f
 
 	DamageArea &damage_area = registry.damageAreas.emplace(entity);
 	damage_area.owner = owner;
-	damage_area.time_until_active = time_until_active;
-	if (time_until_active == 0.f)
-	{
-		damage_area.active = true;
-	}
-	else
-	{
-		damage_area.active = false;
-	}
-	damage_area.time_until_inactive = duration;
+	damage_area.active = true;
+	damage_area.time_until_active = 0.f;				 // for damage cooldown usage
+	damage_area.time_until_destroyed = duration; // when this is 0, damage area will be removed
 	damage_area.relative_position = relative_position;
 	damage_area.offset_from_owner = offset_from_owner;
 
@@ -683,6 +676,28 @@ Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item)
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::TREASURE_BOX,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
+Entity createPlayerRemnant(RenderSystem *renderer, Motion motion)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion &created_motion = registry.motions.insert(entity, motion);
+	created_motion.velocity = {0.f, 0.f};
+
+	registry.playerRemnants.emplace(entity);
+	registry.opacities.insert(entity, 0.5f);
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::SPY,
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 

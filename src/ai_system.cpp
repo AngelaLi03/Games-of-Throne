@@ -375,7 +375,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 					enemy.time_since_last_attack = 0.f;
 
-					createDamageArea(entity, motion.position, {100.f, 70.f}, 10.f, 200.f, 500.f, 0.f, true, {50.f, 50.f});
+					createDamageArea(entity, motion.position, {100.f, 70.f}, 10.f, 500.f, 0.f, true, {50.f, 50.f});
 				}
 			}
 		}

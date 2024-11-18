@@ -47,6 +47,7 @@ public:
 	ComponentContainer<PopupUI> popupUI;
 	ComponentContainer<Fountain> fountains;
 	ComponentContainer<TreasureBox> treasureBoxes;
+	ComponentContainer<PlayerRemnant> playerRemnants;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -88,6 +89,7 @@ public:
 		registry_list.push_back(&popupUI);
 		registry_list.push_back(&fountains);
 		registry_list.push_back(&treasureBoxes);
+		registry_list.push_back(&playerRemnants);
 	}
 
 	void clear_all_components()

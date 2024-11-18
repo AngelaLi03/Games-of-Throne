@@ -57,8 +57,8 @@ WorldSystem::~WorldSystem()
 		Mix_FreeMusic(background_music);
 	if (salmon_dead_sound != nullptr)
 		Mix_FreeChunk(salmon_dead_sound);
-	if (salmon_eat_sound != nullptr)
-		Mix_FreeChunk(salmon_eat_sound);
+	if (perfect_dodge_sound != nullptr)
+		Mix_FreeChunk(perfect_dodge_sound);
 	if (spy_death_sound != nullptr)
 		Mix_FreeChunk(spy_death_sound);
 	if (spy_dash_sound != nullptr)
@@ -156,16 +156,22 @@ GLFWwindow *WorldSystem::create_window()
 	// background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
 	background_music = Mix_LoadMUS(audio_path("soundtrack_1.wav").c_str());
 	salmon_dead_sound = Mix_LoadWAV(audio_path("death_sound.wav").c_str());
-	salmon_eat_sound = Mix_LoadWAV(audio_path("eat_sound.wav").c_str());
+	perfect_dodge_sound = Mix_LoadWAV(audio_path("perfect_dodge.wav").c_str());
+	Mix_VolumeChunk(perfect_dodge_sound, 70);
 	spy_death_sound = Mix_LoadWAV(audio_path("spy_death.wav").c_str());
 	spy_dash_sound = Mix_LoadWAV(audio_path("spy_dash.wav").c_str());
+	Mix_VolumeChunk(spy_dash_sound, 60);
 	spy_attack_sound = Mix_LoadWAV(audio_path("spy_attack.wav").c_str());
+	Mix_VolumeChunk(spy_attack_sound, 80);
 	break_sound = Mix_LoadWAV(audio_path("break.wav").c_str());
 	chef_trigger_sound = Mix_LoadWAV(audio_path("chef_trigger.wav").c_str());
+	Mix_VolumeChunk(chef_trigger_sound, 20);
 	minion_attack_sound = Mix_LoadWAV(audio_path("minion_attack.wav").c_str());
+	Mix_VolumeChunk(minion_attack_sound, 5);
 	heavy_attack_sound = Mix_LoadWAV(audio_path("heavy_attack.wav").c_str());
+	Mix_VolumeChunk(heavy_attack_sound, 80);
 
-	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
+	if (background_music == nullptr || salmon_dead_sound == nullptr || perfect_dodge_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
 	{
 		fprintf(stderr, "Failed to load sounds: %s\n %s\n %s\n %s\n %s\n %s\n %s\n make sure the data directory is present",
 						audio_path("soundtrack_1.wav").c_str(),
@@ -289,13 +295,24 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		motion.velocity.x = (1.0f - interpolation_factor) * interpolate.initial_velocity.x;
 		motion.velocity.y = (1.0f - interpolation_factor) * interpolate.initial_velocity.y;
 
+		if (interpolation_factor >= 0.5f && entity == player_spy && !player.current_dodge_is_perfect)
+		{
+			// half-way through the dodge, set perfect dodge to true even if no damage prevented
+			// because we want to play the normal dodge sound sooner rather than after the dodge;
+			// this way even if damage is prevented during the later half, the perfect dodge mechanism
+			// will not be triggered
+			player.current_dodge_is_perfect = true;
+			// normal dodge
+			Mix_PlayChannel(-1, spy_dash_sound, 0);
+		}
+
 		// Remove the entity if the interpolation is complete (velocity should be near zero)
 		if (interpolation_factor >= 1.0f)
 		{
 			registry.interpolations.remove(entity);
 			// std::cout << "removed entity from newton/momentum entities" << std::endl;
 			motion.velocity = vec2(0.f, 0.f);
-			if (registry.players.has(entity))
+			if (entity == player_spy)
 			{
 				player_action_finished();
 			}
@@ -473,7 +490,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (enemy.state == EnemyState::ATTACK)
 		{
 			// lower this audio
-			Mix_Volume(-1, 5);
 			Mix_PlayChannel(-1, minion_attack_sound, 0);
 		}
 	}
@@ -486,7 +502,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (chef.trigger == true)
 		{
 			// volume up
-			Mix_Volume(-1, 50);
 			Mix_PlayChannel(-1, chef_trigger_sound, 0);
 			if (chef.sound_trigger_timer >= elapsed_ms_since_last_update)
 			{
@@ -502,6 +517,32 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 	// move camera if necessary
 	update_camera_view();
+
+	// player remnant countdown
+	for (int i = registry.playerRemnants.components.size() - 1; i >= 0; i--)
+	{
+		PlayerRemnant &player_remnant = registry.playerRemnants.components[i];
+		player_remnant.time_until_destroyed -= elapsed_ms_since_last_update;
+		if (player_remnant.time_until_destroyed <= 0)
+		{
+			registry.remove_all_components_of(registry.playerRemnants.entities[i]);
+		}
+	}
+
+	// perfect dodge calculation
+	if (player.state == PlayerState::DODGING && !player.current_dodge_is_perfect && player.damage_prevented)
+	{
+		player.current_dodge_is_perfect = true;
+		std::cout << "PERFECT DODGE!" << std::endl;
+
+		Flow &flow = registry.flows.get(flowMeterEntity);
+		flow.flowLevel = std::min(flow.flowLevel + 25.f, flow.maxFlowLevel); // Increase flow by 25
+
+		// create player remnant
+		createPlayerRemnant(renderer, player.current_dodge_original_motion);
+
+		Mix_PlayChannel(-1, perfect_dodge_sound, 0);
+	}
 
 	// mouse gesture enlarge countdown
 	if (enlarged_player)
@@ -908,6 +949,7 @@ void WorldSystem::handle_collisions()
 
 	// Loop over all collisions detected by the physics system
 	// std::cout << "handle_collisions()" << std::endl;
+
 	Entity player = player_spy;
 	Weapon &player_weapon_comp = registry.weapons.get(player);
 	Entity player_weapon = player_weapon_comp.weapon;
@@ -938,11 +980,12 @@ void WorldSystem::handle_collisions()
 
 				if (damage_area.single_damage)
 				{
-					damage_area.time_until_inactive = 0; // deactivate damage area asap to avoid another damage
+					damage_area.time_until_destroyed = 0.f; // immediately destroy the damage area
 				}
 				else
 				{
-					// todo multiple damages with cooldown
+					damage_area.time_until_active = damage_area.damage_cooldown;
+					damage_area.active = false;
 				}
 			}
 		}
@@ -1361,6 +1404,10 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			player.consumedDodgeEnergy = true;
 			std::cout << "Dodging" << std::endl;
 
+			player.current_dodge_is_perfect = false;
+			player.damage_prevented = false;
+			player.current_dodge_original_motion = motion;
+
 			Interpolation interpolate;
 			interpolate.elapsed_time = 0.f;
 			interpolate.initial_velocity = player_movement_direction * PLAYER_SPEED * 5.f;
@@ -1368,7 +1415,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			{
 				registry.interpolations.emplace(player_spy, interpolate);
 			}
-			Mix_PlayChannel(-1, spy_dash_sound, 0);
 		}
 		else if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT)
 		{
@@ -1534,8 +1580,7 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 		}
 		// trigger player attack sound
 		// volume up
-		Mix_Volume(1, 100);
-		Mix_PlayChannel(1, spy_attack_sound, 0); // TODO: player sound halted (volume decreased) by other playing sound
+		Mix_PlayChannel(1, spy_attack_sound, 0);
 	}
 	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 	{
@@ -1578,7 +1623,6 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 					if (player.state == PlayerState::IDLE || player.state == PlayerState::SPRINTING || player.state == PlayerState::CHARGING_FLOW)
 					{
 						std::cout << "Player heavy attack" << std::endl;
-						Mix_Volume(2, 120);
 						Mix_PlayChannel(2, heavy_attack_sound, 0);
 						player.state = PlayerState::HEAVY_ATTACK;
 						player.current_attack_id = ++attack_id_counter;

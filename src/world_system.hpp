@@ -108,7 +108,7 @@ private:
 	// music references
 	Mix_Music *background_music;
 	Mix_Chunk *salmon_dead_sound;
-	Mix_Chunk *salmon_eat_sound;
+	Mix_Chunk *perfect_dodge_sound;
 	Mix_Chunk *spy_death_sound;
 	Mix_Chunk *spy_dash_sound;
 	Mix_Chunk *spy_attack_sound;

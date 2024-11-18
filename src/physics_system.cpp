@@ -166,15 +166,13 @@ void PhysicsSystem::step(float elapsed_ms)
 			damage_area_motion.position = owner_motion.position + damage_area.offset_from_owner;
 		}
 
-		if (damage_area.active)
+		damage_area.time_until_destroyed -= elapsed_ms;
+		if (damage_area.time_until_destroyed <= 0.f)
 		{
-			damage_area.time_until_inactive -= elapsed_ms;
-			if (damage_area.time_until_inactive <= 0.f)
-			{
-				registry.remove_all_components_of(damage_area_entity);
-			}
+			registry.remove_all_components_of(damage_area_entity);
 		}
-		else
+
+		if (!damage_area.active)
 		{
 			damage_area.time_until_active -= elapsed_ms;
 			if (damage_area.time_until_active <= 0.f)
