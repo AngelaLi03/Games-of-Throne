@@ -61,6 +61,7 @@ class RenderSystem
 			textures_path("tomato.png"),
 			textures_path("pan.png"),
 			textures_path("knight.png"),
+			textures_path("fountain.png"),
 			textures_path("stealth.png"),
 			textures_path("treasure_box.png"),
 			textures_path("treasure_box_open.png"),

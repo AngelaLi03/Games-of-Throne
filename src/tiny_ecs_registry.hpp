@@ -15,7 +15,7 @@ public:
 	ComponentContainer<Motion> motions;
 	ComponentContainer<Animation> animations;
 	ComponentContainer<Interpolation> interpolations;
-	//ComponentContainer<Bezier> beziers;
+	// ComponentContainer<Bezier> beziers;
 	ComponentContainer<Dash> dashes;
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<PhysicsBody> physicsBodies;
@@ -41,6 +41,7 @@ public:
 	ComponentContainer<DamageArea> damageAreas;
 	ComponentContainer<BossAnimation> bossAnimations;
 	ComponentContainer<Knight> knight;
+	ComponentContainer<Fountain> fountains;
 	ComponentContainer<TreasureBox> treasureBoxes;
 
 	// constructor that adds all containers for looping over them
@@ -66,7 +67,7 @@ public:
 		registry_list.push_back(&flows);
 		registry_list.push_back(&weapons);
 		registry_list.push_back(&interpolations);
-		//registry_list.push_back(&beziers);
+		// registry_list.push_back(&beziers);
 		registry_list.push_back(&dashes);
 		registry_list.push_back(&pans);
 		registry_list.push_back(&spinareas);
@@ -77,6 +78,7 @@ public:
 		registry_list.push_back(&damageAreas);
 		registry_list.push_back(&bossAnimations);
 		registry_list.push_back(&knight);
+		registry_list.push_back(&fountains);
 		registry_list.push_back(&treasureBoxes);
 	}
 

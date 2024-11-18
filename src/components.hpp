@@ -157,6 +157,11 @@ struct HealthBar
 	vec2 original_scale;
 };
 
+struct Fountain
+{
+	// bool is_active = false;
+};
+
 enum class BodyType
 {
 	STATIC = 0, // reserved for walls
@@ -347,7 +352,9 @@ enum class TEXTURE_ASSET_ID
 	TOMATO = CHEF + 1,
 	PAN = TOMATO + 1,
 	KNIGHT = PAN + 1,
-	STEALTH = KNIGHT + 1,
+	FOUNTAIN = KNIGHT + 1,
+
+	STEALTH = FOUNTAIN + 1,
 	TREASURE_BOX = STEALTH + 1,
 	TREASURE_BOX_OPEN = TREASURE_BOX + 1,
 	UI_FRAME = TREASURE_BOX_OPEN + 1,

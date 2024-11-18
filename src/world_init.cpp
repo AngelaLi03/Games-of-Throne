@@ -548,6 +548,36 @@ Entity createSpinArea(Entity chef_entity)
 	return entity;
 }
 
+Entity createFountain(RenderSystem *renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = {mesh.original_size.x * TILE_SCALE * 4, mesh.original_size.y * TILE_SCALE * 3};
+	motion.bb_scale = motion.scale;
+	motion.bb_offset = {0.f, 0.f};
+
+	Fountain &fountain = registry.fountains.emplace(entity);
+	// fountain.is_active = false;
+
+	// registry.physicsBodies.insert(entity, {BodyType::STATIC});
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::FOUNTAIN,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
 Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item)
 {
 	auto entity = Entity();

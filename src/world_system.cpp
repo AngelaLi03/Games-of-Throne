@@ -686,7 +686,7 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 				}
 				else if (entity_name == "Fountain")
 				{
-					// createFountain(renderer, position);
+					createFountain(renderer, position);
 				}
 				else if (entity_name == "Minions")
 				{
@@ -1170,6 +1170,23 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
 		Motion &player_motion = registry.motions.get(player_spy);
+
+		// check for fountain interaction
+		for (Entity fountain : registry.fountains.entities)
+		{
+			Motion &fountain_motion = registry.motions.get(fountain);
+
+			float distance = glm::length(player_motion.position - fountain_motion.position);
+			if (distance <= 150.f)
+			{
+				Health &player_health = registry.healths.get(player_spy);
+				player_health.health = player_health.max_health;
+				printf("Player healed to max health: %.2f / %.2f\n",
+							 player_health.health, player_health.max_health);
+				return;
+			}
+		}
+
 		// check for treasure box interaction
 		for (unsigned int i = 0; i < registry.treasureBoxes.components.size(); i++)
 		{
