@@ -20,6 +20,7 @@ bool is_right_mouse_button_down = false;
 bool enlarged_player = false;
 float enlarge_countdown = 3000.f;
 float speed = 100.f;
+bool unlocked_stealth_ability = false;
 bool dashAvailable = true;
 bool dashInUse = false;
 
@@ -503,7 +504,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	// Switch to level 1
+	// handle chef death
 	if (registry.chef.size() > 0)
 	{
 		Entity chef_entity = registry.chef.entities[0];
@@ -511,9 +512,25 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (chef_health.is_dead)
 		{
 			registry.remove_all_components_of(chef_entity);
-			while (registry.motions.entities.size() > 0)
-				registry.remove_all_components_of(registry.motions.entities.back());
-			load_level("Level_1", 1);
+
+			// gain stealth ability
+			unlocked_stealth_ability = true;
+
+			// TODO: this darkens everything; create a screen mask with opacity so only non-popup elements are darkened
+			// screen.darken_screen_factor = 0.5;
+
+			Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::STEALTH);
+			registry.cameraUI.emplace(ability_sprite);
+
+			// TODO: render text (make it generic so other popups can also render their custom text)
+			// popup_text = "You have gained the stealth ability!";
+
+			active_popup = {[this]()
+											{
+												load_level("Level_1", 1);
+											}};
+			has_popup = true;
+			is_paused = true;
 		}
 	}
 
@@ -524,8 +541,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// 	if (knight_health.is_dead)
 	// 	{
 	// 		registry.remove_all_components_of(knight_entity);
-	// 		while (registry.motions.entities.size() > 0)
-	// 			registry.remove_all_components_of(registry.motions.entities.back());
 	// 		load_level("Level_2", 2);
 	// 	}
 	// }
@@ -612,17 +627,6 @@ void WorldSystem::restart_game()
 	registry.list_all_components();
 	printf("Restarting\n");
 
-	// Reset the game speed
-	current_speed = 1.f;
-
-	// Remove all entities that we created
-	// All that have a motion, we could also iterate over all fish, eels, ... but that would be more cumbersome
-	while (registry.motions.entities.size() > 0)
-		registry.remove_all_components_of(registry.motions.entities.back());
-
-	// Debugging for memory/component leaks
-	registry.list_all_components();
-
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 
@@ -631,6 +635,12 @@ void WorldSystem::restart_game()
 
 void WorldSystem::load_level(const std::string &levelName, const int levelNumber)
 {
+	while (registry.motions.entities.size() > 0)
+		registry.remove_all_components_of(registry.motions.entities.back());
+
+	// Debugging for memory/component leaks
+	registry.list_all_components();
+
 	ldtk::Project ldtk_project;
 	ldtk_project.loadFromFile(data_path() + "/levels/levels.ldtk");
 	const ldtk::World &world = ldtk_project.getWorld();
@@ -1055,6 +1065,67 @@ bool WorldSystem::is_over() const
 // On key callback
 void WorldSystem::on_key(int key, int, int action, int mod)
 {
+	// close when esc key is pressed
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(window, true);
+	}
+
+	// Pausing game
+	if (key == GLFW_KEY_0 && action == GLFW_PRESS)
+	{
+		if (!has_popup)
+		{
+			is_paused = !is_paused;
+		}
+	}
+
+	// track player movement direction (needs to happen when paused as well)
+	if (action == GLFW_PRESS)
+	{
+		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
+		{
+			player_movement_direction.x += 1.f;
+		}
+		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
+		{
+			player_movement_direction.x -= 1.f;
+		}
+		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
+		{
+			player_movement_direction.y -= 1.f;
+		}
+		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
+		{
+			player_movement_direction.y += 1.f;
+		}
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
+		{
+			player_movement_direction.x -= 1.f;
+		}
+		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
+		{
+			player_movement_direction.x += 1.f;
+		}
+		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
+		{
+			player_movement_direction.y += 1.f;
+		}
+		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
+		{
+			player_movement_direction.y -= 1.f;
+		}
+	}
+
+	if (is_paused)
+	{
+		// skip processing all other types of keys when game is paused
+		return;
+	}
+
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R)
 	{
@@ -1081,25 +1152,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		debugging.in_debug_mode = !debugging.in_debug_mode;
 	}
 
-	// Control the current speed with `<` `>`
-	if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT) && key == GLFW_KEY_COMMA)
-	{
-		current_speed -= 0.1f;
-		printf("Current speed = %f\n", current_speed);
-	}
-	if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT) && key == GLFW_KEY_PERIOD)
-	{
-		current_speed += 0.1f;
-		printf("Current speed = %f\n", current_speed);
-	}
-	Motion &motion = registry.motions.get(player_spy);
-	current_speed = fmax(0.f, current_speed);
-	// close when esc key is pressed
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-	{
-		glfwSetWindowShouldClose(window, true);
-	}
-
 	// FPS toggle
 	if (key == GLFW_KEY_P && action == GLFW_PRESS)
 	{
@@ -1112,6 +1164,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		show_help_text = !show_help_text;
 		std::cout << "Show Help Text: " << (show_help_text ? "ON" : "OFF") << std::endl;
 	}
+
+	Motion &motion = registry.motions.get(player_spy);
 
 	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
@@ -1151,6 +1205,11 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 						{
 							item_texture_id = TEXTURE_ASSET_ID::WEAPON;
 						}
+						else
+						{
+							std::cout << "Invalid item type" << std::endl;
+							continue;
+						}
 						treasure_box.item_entity = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y - 100.f}, {50.f, 50.f}, item_texture_id);
 					}
 
@@ -1178,59 +1237,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			}
 		}
 	}
-
-	if (action == GLFW_PRESS)
-	{
-		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
-		{
-			// motion.velocity.x += speed;
-			player_movement_direction.x += 1.f;
-		}
-		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
-		{
-			// motion.velocity.x -= speed;
-			player_movement_direction.x -= 1.f;
-		}
-		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
-		{
-			// motion.velocity.y -= speed;
-			player_movement_direction.y -= 1.f;
-		}
-		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
-		{
-			// motion.velocity.y += speed;
-			player_movement_direction.y += 1.f;
-		}
-		// if (registry.interpolations.has(player_spy))
-		// {
-		// 	registry.interpolations.remove(player_spy);
-		// 	std::cout << "Momentum removed due to active movement" << std::endl;
-		// }
-	}
-	else if (action == GLFW_RELEASE)
-	{
-		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
-		{
-			// motion.velocity.x -= speed;
-			player_movement_direction.x -= 1.f;
-		}
-		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
-		{
-			// motion.velocity.x += speed;
-			player_movement_direction.x += 1.f;
-		}
-		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
-		{
-			// motion.velocity.y += speed;
-			player_movement_direction.y += 1.f;
-		}
-		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
-		{
-			// motion.velocity.y -= speed;
-			player_movement_direction.y -= 1.f;
-		}
-	}
-
 	Player &player = registry.players.get(player_spy);
 	if (player.state == PlayerState::LIGHT_ATTACK || player.state == PlayerState::HEAVY_ATTACK || player.state == PlayerState::CHARGING_FLOW)
 	{
@@ -1260,6 +1266,12 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	{
 		Player &player = registry.players.get(player_spy);
 
+		if (!unlocked_stealth_ability)
+		{
+			std::cout << "Stealth ability not unlocked" << std::endl;
+			return;
+		}
+
 		if (player.state == PlayerState::IDLE && player.dash_cooldown_remaining_ms <= 0.0f)
 		{
 			player.state = PlayerState::DASHING;
@@ -1279,6 +1291,12 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
 {
+	if (is_paused)
+	{
+		// skip processing mouse movement when game is paused
+		return;
+	}
+
 	curr_mouse_position = mouse_position;
 	Motion &spy_motion = registry.motions.get(player_spy);
 
@@ -1349,6 +1367,22 @@ bool WorldSystem::isSGesture()
 
 void WorldSystem::on_mouse_button(int button, int action, int mods)
 {
+	if (has_popup && action == GLFW_PRESS)
+	{
+		// dismiss popup
+		has_popup = false;
+		is_paused = false;
+		if (active_popup.onDismiss != nullptr)
+			active_popup.onDismiss();
+		active_popup = {};
+		return;
+	}
+	if (is_paused)
+	{
+		// skip processing mouse button events when game is paused
+		return;
+	}
+
 	// std::cout << "Mouse button " << button << " " << action << " " << mods << std::endl;
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{

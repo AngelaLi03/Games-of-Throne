@@ -13,7 +13,8 @@
 extern bool show_fps;
 extern bool show_help_text;
 extern float fps;
-// for DASH rendering 
+// for DASH rendering
+extern bool unlocked_stealth_ability;
 extern bool dashAvailable;
 extern bool dashInUse;
 
@@ -398,30 +399,32 @@ void RenderSystem::draw()
 	}
 
 	bool renderD = false;
-
-	if (dashAvailable)
+	Player &player = registry.players.get(spy);
+	if (unlocked_stealth_ability)
 	{
-		renderD = true;
-	}
-	else if (dashInUse)
-	{
-		float time = static_cast<float>(glfwGetTime());
-		if (fmod(time, 1.0f) < 0.5f)
+		if (dashAvailable)
 		{
 			renderD = true;
+		}
+		else if (dashInUse)
+		{
+			float time = static_cast<float>(glfwGetTime());
+			if (fmod(time, 1.0f) < 0.5f)
+			{
+				renderD = true;
+			}
 		}
 	}
 
 	if (renderD)
 	{
-		float x = window_width_px - 220.0f; 
-		float y = 75.0f;                   
+		float x = window_width_px - 220.0f;
+		float y = 75.0f;
 		float scale = 3.0f;
-		vec3 color = vec3(1.0f, 1.0f, 1.0f); 
+		vec3 color = vec3(1.0f, 1.0f, 1.0f);
 
 		renderText("X", x, y, scale, color);
 	}
-
 
 	// Truely render to the screen
 	drawToScreen();
