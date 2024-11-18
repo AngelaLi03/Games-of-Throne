@@ -307,6 +307,15 @@ enum class ChefState
 	ATTACK = 2,
 };
 
+enum class KnightState
+{
+	PATROL = 0,
+	COMBAT = 1,
+	ATTACK = 2,
+	MULTI_DASH = 3,
+	SHIELD = 4,
+};
+
 enum class ChefAttack
 {
 	TOMATO = 0,
@@ -314,6 +323,14 @@ enum class ChefAttack
 	DASH = 2,
 	SPIN = 3,
 	ATTACK_COUNT = 4,
+};
+
+enum class KnightAttack
+{
+	DASH_ATTACK = 0,
+	SHIELD_HOLD = 1,
+	MULTI_DASH = 2,
+	ATTACK_COUNT = 3,
 };
 
 struct Chef
@@ -334,6 +351,17 @@ struct Chef
 
 struct Knight
 {
+	KnightState state = KnightState::PATROL;
+	KnightAttack current_attack = KnightAttack::DASH_ATTACK;
+
+	float time_since_last_attack = 0.f;
+	float time_since_last_patrol = 0.f;
+	float attack_duration = 0.f;
+	int dash_count = 0;
+	bool shield_active = false;
+	bool shield_broken = false;
+	float shield_duration = 0.f;
+	bool dash_has_damaged = false;
 };
 
 struct MoveUI

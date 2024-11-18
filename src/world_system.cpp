@@ -598,16 +598,16 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
-	// if (registry.knight.size() > 0)
-	// {
-	// 	Entity knight_entity = registry.knight.entities[0];
-	// 	Health &knight_health = registry.healths.get(knight_entity);
-	// 	if (knight_health.is_dead)
-	// 	{
-	// 		registry.remove_all_components_of(knight_entity);
-	// 		load_level("Level_2", 2);
-	// 	}
-	// }
+	if (registry.knight.size() > 0)
+	{
+		Entity knight_entity = registry.knight.entities[0];
+		Health &knight_health = registry.healths.get(knight_entity);
+		if (knight_health.is_dead)
+		{
+			registry.remove_all_components_of(knight_entity);
+			load_level("Level_2", 2);
+		}
+	}
 
 	if (dialogue_active && !is_paused)
 	{
@@ -778,7 +778,7 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 				}
 				else if (entity_name == "Knight")
 				{
-					// createKnight (renderer, position);
+					createKnight(renderer, position);
 				}
 				else if (entity_name == "Prince")
 				{
@@ -1226,7 +1226,47 @@ void WorldSystem::handle_collisions()
 					// std::cout << "Enemy health: " << enemy_health.health << ", damage: " << damage << std::endl;
 				}
 			}
-		} // The entity and its collider
+		}
+
+		if (entity == player_weapon && registry.knight.has(entity_other))
+		{
+			Knight &knight = registry.knight.get(entity_other);
+			Player &player = registry.players.get(player_spy);
+
+			if (knight.shield_active)
+			{
+				knight.shield_broken = true;
+				knight.shield_active = false;
+
+				Health &player_health = registry.healths.get(player_spy);
+				player_health.take_damage(player.attack_damage * 1.5f);
+			}
+		}
+
+		if (registry.knight.has(entity) && entity_other == player_spy)
+		{
+			Knight &knight = registry.knight.get(entity);
+			Player &player = registry.players.get(player_spy);
+
+			if (!knight.dash_has_damaged && player.can_take_damage())
+			{
+				float damage_multiplier = 1.0f;
+
+				if (knight.state == KnightState::ATTACK)
+				{
+					damage_multiplier = 1.0f;
+				}
+				else if (knight.state == KnightState::MULTI_DASH)
+				{
+					damage_multiplier = 2.0f;
+				}
+
+				Health &player_health = registry.healths.get(player_spy);
+				player_health.take_damage(15.f * damage_multiplier);
+				knight.dash_has_damaged = true;
+			}
+		}
+		// The entity and its collider
 		// Entity entity = collisionsRegistry.entities[i];
 		// Entity entity_other = collisionsRegistry.components[i].other;
 

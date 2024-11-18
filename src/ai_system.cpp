@@ -58,6 +58,51 @@ void AISystem::perform_chef_attack(ChefAttack attack)
 	}
 }
 
+void AISystem::perform_knight_attack(KnightAttack attack)
+{
+	if (registry.knight.size() == 0 || registry.players.size() == 0)
+		return;
+
+	Knight &knight = registry.knight.components[0];
+	Entity knight_entity = registry.knight.entities[0];
+
+	if (!registry.motions.has(knight_entity))
+		return;
+
+	Motion &knight_motion = registry.motions.get(knight_entity);
+	Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+	vec2 player_position = player_motion.position + player_motion.bb_offset;
+	vec2 knight_position = knight_motion.position + knight_motion.bb_offset;
+	vec2 direction = normalize(player_position - knight_position);
+
+	switch (attack)
+	{
+	case KnightAttack::DASH_ATTACK:
+		knight.state = KnightState::ATTACK;
+		knight.attack_duration = 10000.f;
+		knight.time_since_last_attack = 0.f;
+		knight.dash_has_damaged = false;
+		break;
+
+	case KnightAttack::SHIELD_HOLD:
+		knight.shield_active = true;
+		knight.shield_broken = false;
+		knight.shield_duration = 3000.f;
+		knight_motion.velocity = {0.f, 0.f};
+		break;
+
+	case KnightAttack::MULTI_DASH:
+		knight.state = KnightState::MULTI_DASH;
+		knight.dash_count = 0;
+		knight.time_since_last_attack = 0.f;
+		knight.dash_has_damaged = false;
+		break;
+
+	default:
+		break;
+	}
+}
+
 DecisionNode *AISystem::create_chef_decision_tree()
 {
 	DecisionNode *chef_decision_tree = new DecisionNode(
@@ -186,14 +231,115 @@ DecisionNode *AISystem::create_chef_decision_tree()
 	return chef_decision_tree;
 }
 
+DecisionNode *AISystem::create_knight_decision_tree()
+{
+	DecisionNode *knight_decision_tree = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				if (registry.knight.size() == 0)
+					return false;
+
+				Knight &knight = registry.knight.components[0];
+				return knight.state == KnightState::PATROL;
+			});
+
+	// PATROL logic
+	DecisionNode *patrol_node = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				Entity &entity = registry.knight.entities[0];
+				Motion &motion = registry.motions.get(entity);
+
+				Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+				vec2 player_position = player_motion.position + player_motion.bb_offset;
+				vec2 knight_position = motion.position + motion.bb_offset;
+				return distance_squared(player_position, knight_position) < detection_radius_squared;
+			});
+	knight_decision_tree->trueBranch = patrol_node;
+
+	DecisionNode *detected_player = new DecisionNode(
+			[](float)
+			{
+				std::cout << "Knight enters combat" << std::endl;
+				Knight &knight = registry.knight.components[0];
+				Motion &motion = registry.motions.get(registry.knight.entities[0]);
+				knight.state = KnightState::COMBAT;
+				motion.velocity = {0.f, 0.f};
+			},
+			nullptr);
+	patrol_node->trueBranch = detected_player;
+
+	DecisionNode *patrol_time = new DecisionNode(
+			[](float elapsed_ms)
+			{
+				Knight &knight = registry.knight.components[0];
+				knight.time_since_last_patrol += elapsed_ms;
+			},
+			[](float)
+			{
+				Knight &knight = registry.knight.components[0];
+				return knight.time_since_last_patrol > 2000.f;
+			});
+	patrol_node->falseBranch = patrol_time;
+
+	DecisionNode *change_patrol_direction = new DecisionNode(
+			[](float)
+			{
+				Knight &knight = registry.knight.components[0];
+				Entity &entity = registry.knight.entities[0];
+				Motion &motion = registry.motions.get(entity);
+				if (motion.velocity.x == 0)
+				{
+					motion.velocity.x = 50.f; // Set initial patrol speed
+				}
+				else
+				{
+					motion.velocity.x *= -1; // Change direction
+				}
+				knight.time_since_last_patrol = 0.f;
+			},
+			nullptr);
+	patrol_time->trueBranch = change_patrol_direction;
+
+	// COMBAT logic
+	DecisionNode *combat_state_check = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				Knight &knight = registry.knight.components[0];
+				return knight.state == KnightState::COMBAT;
+			});
+	knight_decision_tree->falseBranch = combat_state_check;
+
+	DecisionNode *attack_selection = new DecisionNode(
+			[this](float)
+			{
+				Knight &knight = registry.knight.components[0];
+
+				// Randomly select an attack
+				int random_attack = rand() % 3;
+				knight.current_attack = static_cast<KnightAttack>(random_attack);
+				this->perform_knight_attack(knight.current_attack);
+			},
+			nullptr);
+
+	combat_state_check->trueBranch = attack_selection;
+
+	return knight_decision_tree;
+}
+
 AISystem::AISystem()
 {
 	chef_decision_tree = create_chef_decision_tree();
+	knight_decision_tree = create_knight_decision_tree();
 }
 
 AISystem::~AISystem()
 {
 	delete chef_decision_tree;
+	delete knight_decision_tree;
 }
 
 void AISystem::init(RenderSystem *renderer)
@@ -425,21 +571,96 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 	if (registry.knight.size() > 0)
 	{
-		// special behavior for knight
 		Entity knight_entity = registry.knight.entities[0];
 		Health &knight_health = registry.healths.get(knight_entity);
 		if (!knight_health.is_dead)
 		{
-			// TODO: knight_decision_tree->execute(elapsed_ms);
+			knight_decision_tree->execute(elapsed_ms);
+			Knight &knight = registry.knight.get(knight_entity);
+
+			Motion &knight_motion = registry.motions.get(knight_entity);
+			Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+			vec2 player_position = player_motion.position + player_motion.bb_offset;
+			vec2 knight_position = knight_motion.position + knight_motion.bb_offset;
+
+			if (knight.state == KnightState::PATROL)
+			{
+				// Patrol movement is handled in the decision tree
+			}
+			else if (knight.state == KnightState::COMBAT)
+			{
+				// Move towards player
+				vec2 direction = normalize(player_position - knight_position);
+				knight_motion.velocity = direction * 100.f; // Adjust speed as needed
+			}
+			else if (knight.state == KnightState::SHIELD)
+			{
+				knight.shield_duration -= elapsed_ms;
+				if (knight.shield_duration <= 0.f || knight.shield_broken)
+				{
+					knight.shield_active = false;
+					knight.state = KnightState::COMBAT;
+				}
+				knight_motion.velocity = {0.f, 0.f}; // Stay stationary during shield
+			}
+			else if (knight.state == KnightState::ATTACK)
+			{
+				knight.attack_duration -= elapsed_ms;
+				knight.time_since_last_attack += elapsed_ms;
+
+				if (knight.attack_duration <= 0.f)
+				{
+					knight.state = KnightState::COMBAT;
+					knight_motion.velocity = {0.f, 0.f};
+				}
+				else if (knight.time_since_last_attack >= 2000.f)
+				{
+					vec2 direction = normalize(player_position - knight_position);
+					knight_motion.velocity = direction * 300.f;
+					knight.dash_has_damaged = false;
+					knight.time_since_last_attack = 0.f;
+
+					// Start attack animation
+					auto &bossAnimation = registry.bossAnimations.get(knight_entity);
+					bossAnimation.is_attacking = true;
+					bossAnimation.elapsed_time = 0.f;
+					bossAnimation.attack_id = static_cast<int>(KnightAttack::DASH_ATTACK);
+					bossAnimation.current_frame = 0;
+				}
+			}
+			else if (knight.state == KnightState::MULTI_DASH)
+			{
+				knight.time_since_last_attack += elapsed_ms;
+
+				if (knight.dash_count >= 3)
+				{
+					create_damage_field(knight_entity);
+					knight.state = KnightState::COMBAT;
+					knight_motion.velocity = {0.f, 0.f};
+				}
+				else if (knight.time_since_last_attack >= 1500.f)
+				{
+					vec2 direction = normalize(player_position - knight_position);
+					knight_motion.velocity = direction * 400.f;
+					knight.dash_has_damaged = false;
+					knight.time_since_last_attack = 0.f;
+					knight.dash_count++;
+
+					// Start attack animation
+					auto &bossAnimation = registry.bossAnimations.get(knight_entity);
+					bossAnimation.is_attacking = true;
+					bossAnimation.elapsed_time = 0.f;
+					bossAnimation.attack_id = static_cast<int>(KnightAttack::MULTI_DASH);
+					bossAnimation.current_frame = 0;
+				}
+			}
 		}
-		// perform animation if knight is attacking
+
 		auto &bossAnimation = registry.bossAnimations.get(knight_entity);
 
 		if (bossAnimation.is_attacking)
 		{
-			printf("knight is attacking\n");
-			// TODO: uncomment when knight enum created and attack implemented
-			// boss_attack(knight_entity, bossAnimation.attack_id, elapsed_ms);
+			boss_attack(knight_entity, bossAnimation.attack_id, elapsed_ms);
 		}
 	}
 }
@@ -477,6 +698,13 @@ void AISystem::boss_attack(Entity entity, int attack_id, float elapsed_ms)
 		break;
 	}
 
+	if (frames.empty())
+	{
+		std::cerr << "Error: No frames available for Knight's attack animation (attack_id: " << attack_id << ")." << std::endl;
+		bossAnimation.is_attacking = false;
+		return;
+	}
+
 	if (bossAnimation.elapsed_time >= bossAnimation.frame_duration)
 	{
 		motion.scale.x /= 1.6;
@@ -494,4 +722,13 @@ void AISystem::boss_attack(Entity entity, int attack_id, float elapsed_ms)
 		// change to combat animation sprite
 		render_request.used_texture = frames[0];
 	}
+}
+
+void AISystem::create_damage_field(Entity knight_entity)
+{
+	Motion &knight_motion = registry.motions.get(knight_entity);
+
+	Entity damage_field = createDamageArea(knight_entity, knight_motion.position, vec2(200.f, 200.f), 3.0f * 50.f, 1000.f);
+
+	registry.deathTimers.emplace(damage_field, DeathTimer{2000.f}); // 2 seconds duration
 }

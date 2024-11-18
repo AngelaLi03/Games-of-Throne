@@ -215,6 +215,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 
 	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
 	registry.healths.insert(entity, {500.f, 500.f, healthbar});
+	// registry.healths.insert(entity, {5.f, 5.f, healthbar});
 
 	return entity;
 }
@@ -255,43 +256,57 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
 	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
-	registry.healths.insert(entity, {500.f, 500.f, healthbar});
+	registry.healths.insert(entity, {1000.f, 1000.f, healthbar});
+	// std::cout << registry.healths.get(entity).health << std::endl;
 
 	return entity;
 }
 
-void assignWeaponTexture(RenderSystem* renderer, Entity weapon, WeaponType type, WeaponLevel level) {
+void assignWeaponTexture(RenderSystem *renderer, Entity weapon, WeaponType type, WeaponLevel level)
+{
 	TEXTURE_ASSET_ID texture;
-	switch (type) {
+	switch (type)
+	{
 	case WeaponType::SWORD:
-		switch (level) {
-		case WeaponLevel::BASIC: texture = TEXTURE_ASSET_ID::SWORD_BASIC; break;
-		case WeaponLevel::RARE: texture = TEXTURE_ASSET_ID::SWORD_RARE; break;
-		case WeaponLevel::LEGENDARY: texture = TEXTURE_ASSET_ID::SWORD_LEGENDARY; break;
+		switch (level)
+		{
+		case WeaponLevel::BASIC:
+			texture = TEXTURE_ASSET_ID::SWORD_BASIC;
+			break;
+		case WeaponLevel::RARE:
+			texture = TEXTURE_ASSET_ID::SWORD_RARE;
+			break;
+		case WeaponLevel::LEGENDARY:
+			texture = TEXTURE_ASSET_ID::SWORD_LEGENDARY;
+			break;
 		}
 		break;
 	case WeaponType::DAGGER:
-		switch (level) {
-		case WeaponLevel::BASIC: texture = TEXTURE_ASSET_ID::DAGGER_BASIC; break;
-		case WeaponLevel::RARE: texture = TEXTURE_ASSET_ID::DAGGER_RARE; break;
-		case WeaponLevel::LEGENDARY: texture = TEXTURE_ASSET_ID::DAGGER_LEGENDARY; break;
+		switch (level)
+		{
+		case WeaponLevel::BASIC:
+			texture = TEXTURE_ASSET_ID::DAGGER_BASIC;
+			break;
+		case WeaponLevel::RARE:
+			texture = TEXTURE_ASSET_ID::DAGGER_RARE;
+			break;
+		case WeaponLevel::LEGENDARY:
+			texture = TEXTURE_ASSET_ID::DAGGER_LEGENDARY;
+			break;
 		}
 		break;
 	}
 
 	registry.renderRequests.insert(
-		weapon,
-		{
-			texture,
-			EFFECT_ASSET_ID::TEXTURED,
-			(type == WeaponType::DAGGER)
-				? GEOMETRY_BUFFER_ID::DAGGER
-				: GEOMETRY_BUFFER_ID::WEAPON
-		}
-	);
+			weapon,
+			{texture,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 (type == WeaponType::DAGGER)
+					 ? GEOMETRY_BUFFER_ID::DAGGER
+					 : GEOMETRY_BUFFER_ID::WEAPON});
 
 	printf("RenderRequest: Geometry Buffer ID = %d\n",
-		(type == WeaponType::DAGGER) ? (int)GEOMETRY_BUFFER_ID::DAGGER : (int)GEOMETRY_BUFFER_ID::WEAPON);
+				 (type == WeaponType::DAGGER) ? (int)GEOMETRY_BUFFER_ID::DAGGER : (int)GEOMETRY_BUFFER_ID::WEAPON);
 }
 
 Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLevel level)
@@ -299,23 +314,23 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLev
 	auto entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object
-	Mesh& mesh = (type == WeaponType::DAGGER)
-		? renderer->getMesh(GEOMETRY_BUFFER_ID::DAGGER)
-		: renderer->getMesh(GEOMETRY_BUFFER_ID::WEAPON);
+	Mesh &mesh = (type == WeaponType::DAGGER)
+									 ? renderer->getMesh(GEOMETRY_BUFFER_ID::DAGGER)
+									 : renderer->getMesh(GEOMETRY_BUFFER_ID::WEAPON);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	TexturedMesh& weapon_mesh = (type == WeaponType::DAGGER)
-		? renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::DAGGER)
-		: renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
+	TexturedMesh &weapon_mesh = (type == WeaponType::DAGGER)
+																	? renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::DAGGER)
+																	: renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
 	registry.texturedMeshPtrs.emplace(entity, &weapon_mesh);
 
 	printf("Mesh selected: %s\n",
-		(type == WeaponType::DAGGER) ? "DAGGER" : "SWORD");
+				 (type == WeaponType::DAGGER) ? "DAGGER" : "SWORD");
 
 	// Setting initial motion values
 	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = type == WeaponType::SWORD? M_PI / 6 : 0; // 30 degrees
+	motion.angle = type == WeaponType::SWORD ? M_PI / 6 : 0; // 30 degrees
 	// motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = mesh.original_size * 100.f;
@@ -330,7 +345,7 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLev
 	// create an empty Spy component for our character
 	assignWeaponTexture(renderer, entity, type, level);
 
-	Weapon& weapon = registry.weapons.emplace(entity);
+	Weapon &weapon = registry.weapons.emplace(entity);
 	weapon.type = type;
 	weapon.level = level;
 
@@ -380,7 +395,7 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLev
 	}
 
 	printf("Weapon created: Type=%d, Level=%d, Damage=%.2f, Attack Speed=%.2f\n",
-		static_cast<int>(type), static_cast<int>(level), weapon.damage, weapon.attack_speed);
+				 static_cast<int>(type), static_cast<int>(level), weapon.damage, weapon.attack_speed);
 
 	return entity;
 }
