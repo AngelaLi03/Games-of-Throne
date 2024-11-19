@@ -53,12 +53,23 @@ void AISystem::perform_chef_attack(ChefAttack attack)
 	}
 	else if (attack == ChefAttack::DASH)
 	{
-		float dash_speed = 600.f;
-		chef.dash_has_damaged = false;
+		float dash_speed = 500.f;
 
 		vec2 direction = normalize(player_position - chef_position);
 		chef_motion.velocity = direction * dash_speed;
 	}
+}
+
+void AISystem::play_knight_animation(std::vector<BoneKeyframe> &keyframes)
+{
+	Entity knight_entity = registry.knight.entities[0];
+
+	if (registry.boneAnimations.has(knight_entity))
+	{
+		registry.boneAnimations.remove(knight_entity);
+	}
+	BoneAnimation &bone_animation = registry.boneAnimations.emplace(knight_entity);
+	bone_animation.keyframes = keyframes;
 }
 
 void AISystem::perform_knight_attack(KnightAttack attack)
@@ -81,25 +92,47 @@ void AISystem::perform_knight_attack(KnightAttack attack)
 	switch (attack)
 	{
 	case KnightAttack::DASH_ATTACK:
+	{
+		std::cout << "Knight dash attack" << std::endl;
+
 		knight.state = KnightState::ATTACK;
 		knight.attack_duration = 10000.f;
-		knight.time_since_last_attack = 0.f;
-		knight.dash_has_damaged = false;
+		knight.time_since_last_attack = 20000.f; // immediately trigger first dash
+		knight.dash_has_started = true;
+		knight.dash_has_ended = true;
 		break;
+	}
 
 	case KnightAttack::SHIELD_HOLD:
+	{
+		std::cout << "Knight shield" << std::endl;
+
+		knight.state = KnightState::SHIELD;
 		knight.shield_active = true;
 		knight.shield_broken = false;
 		knight.shield_duration = 3000.f;
 		knight_motion.velocity = {0.f, 0.f};
+
+		std::vector<BoneKeyframe> keyframes = {
+				{0.0f, 500.f, {{}, {}, {}, {}}},
+				{500.f, 2000.f, {{}, {{0.1f, 0.f}, 0.f, {1.1f, 1.1f}}, {}, {}}},
+				{2500.f, 500.f, {{}, {{0.1f, 0.f}, 0.f, {1.1f, 1.1f}}, {}, {}}},
+				{3000.f, 0.f, {{}, {}, {}, {}}}};
+		play_knight_animation(keyframes);
 		break;
+	}
 
 	case KnightAttack::MULTI_DASH:
+	{
+		std::cout << "Knight multi dash" << std::endl;
+
 		knight.state = KnightState::MULTI_DASH;
 		knight.dash_count = 0;
-		knight.time_since_last_attack = 0.f;
-		knight.dash_has_damaged = false;
+		knight.time_since_last_attack = 10000.f; // immediately trigger first dash
+		knight.dash_has_started = true;					 // prevent triggering 0th dash
+		knight.dash_has_ended = true;
 		break;
+	}
 
 	default:
 		break;
@@ -188,6 +221,11 @@ DecisionNode *AISystem::create_chef_decision_tree()
 			{
 				Chef &chef = registry.chef.components[0];
 				chef.time_since_last_attack += elapsed_ms;
+				if (chef.time_since_last_attack > 1500.f)
+				{
+					Motion &motion = registry.motions.get(registry.chef.entities[0]);
+					motion.velocity = {0.f, 0.f};
+				}
 			},
 			[](float)
 			{
@@ -316,6 +354,19 @@ DecisionNode *AISystem::create_knight_decision_tree()
 			});
 	knight_decision_tree->falseBranch = combat_state_check;
 
+	DecisionNode *combat_cooldown = new DecisionNode(
+			[](float elapsed_ms)
+			{
+				Knight &knight = registry.knight.components[0];
+				knight.combat_cooldown -= elapsed_ms;
+			},
+			[](float)
+			{
+				Knight &knight = registry.knight.components[0];
+				return knight.combat_cooldown <= 0.f;
+			});
+	combat_state_check->trueBranch = combat_cooldown;
+
 	DecisionNode *attack_selection = new DecisionNode(
 			[this](float)
 			{
@@ -324,13 +375,19 @@ DecisionNode *AISystem::create_knight_decision_tree()
 				// Randomly select an attack
 				int random_attack = rand() % 3;
 				knight.current_attack = static_cast<KnightAttack>(random_attack);
+				// knight.current_attack = KnightAttack::DASH_ATTACK;
 				this->perform_knight_attack(knight.current_attack);
 			},
 			nullptr);
-
-	combat_state_check->trueBranch = attack_selection;
+	combat_cooldown->trueBranch = attack_selection;
 
 	return knight_decision_tree;
+}
+
+void knight_attack_finished(Knight &knight)
+{
+	knight.state = KnightState::COMBAT;
+	knight.combat_cooldown = 5000.f;
 }
 
 AISystem::AISystem()
@@ -551,23 +608,13 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			vec2 player_position = player_motion.position + player_motion.bb_offset;
 			vec2 knight_position = knight_motion.position + knight_motion.bb_offset;
 
-			if (knight.state == KnightState::PATROL)
-			{
-				// Patrol movement is handled in the decision tree
-			}
-			else if (knight.state == KnightState::COMBAT)
-			{
-				// Move towards player
-				vec2 direction = normalize(player_position - knight_position);
-				knight_motion.velocity = direction * 100.f; // Adjust speed as needed
-			}
-			else if (knight.state == KnightState::SHIELD)
+			if (knight.state == KnightState::SHIELD)
 			{
 				knight.shield_duration -= elapsed_ms;
-				if (knight.shield_duration <= 0.f || knight.shield_broken)
+				if (knight.shield_duration <= 0.f)
 				{
 					knight.shield_active = false;
-					knight.state = KnightState::COMBAT;
+					knight_attack_finished(knight);
 				}
 				knight_motion.velocity = {0.f, 0.f}; // Stay stationary during shield
 			}
@@ -578,57 +625,127 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 				if (knight.attack_duration <= 0.f)
 				{
-					knight.state = KnightState::COMBAT;
+					knight_attack_finished(knight);
 					knight_motion.velocity = {0.f, 0.f};
 				}
-				else if (knight.time_since_last_attack >= 2000.f)
+				else if (knight.time_since_last_attack >= 2500.f) // so 10s we can do 4 attacks
 				{
+					// Dash to player (no damage)
 					vec2 direction = normalize(player_position - knight_position);
 					knight_motion.velocity = direction * 300.f;
-					knight.dash_has_damaged = false;
 					knight.time_since_last_attack = 0.f;
+					knight.dash_has_ended = false;
+
+					float angle_to_player = atan2(player_position.y - knight_position.y, player_position.x - knight_position.x);
+
+					std::cout << "angle to player: " << angle_to_player << std::endl;
+
+					// limit head tilt to +- 45 degrees
+					if (angle_to_player > 45.f / 180.f * M_PI)
+					{
+						angle_to_player = 45.f / 180.f * M_PI;
+					}
+					else if (angle_to_player < -45.f / 180.f * M_PI)
+					{
+						angle_to_player = -45.f / 180.f * M_PI;
+					}
+
+					// Start dash animation
+					std::vector<BoneKeyframe> keyframes = {
+							{0.0f, 250.f, {{}, {}, {}, {}}},
+							{250.f, 500.f, {{}, {}, {{0.f, 0.f}, angle_to_player, {1.f, 1.f}}, {}}},
+							{750.f, 250.f, {{}, {}, {{0.f, 0.f}, angle_to_player, {1.f, 1.f}}, {}}},
+							{1000.f, 0.f, {{}, {}, {}, {}}}};
+					play_knight_animation(keyframes);
+				}
+				else if (!knight.dash_has_ended && knight.time_since_last_attack >= 1000.f)
+				{
+					knight.dash_has_ended = true;
+					knight_motion.velocity = {0.f, 0.f};
 
 					// Start attack animation
-					auto &bossAnimation = registry.bossAnimations.get(knight_entity);
-					bossAnimation.is_attacking = true;
-					bossAnimation.elapsed_time = 0.f;
-					bossAnimation.attack_id = static_cast<int>(KnightAttack::DASH_ATTACK);
-					bossAnimation.current_frame = 0;
+					std::vector<BoneKeyframe> keyframes = {
+							{0.0f, 500.f, {{}, {}, {}, {}}},
+							{500.f, 500.f, {{}, {}, {}, {{-0.08f, 0.1f}, -45.f / 180.f * M_PI, {1.f, 1.f}}}},
+							{1000.f, 0.f, {{}, {}, {}, {}}}};
+					play_knight_animation(keyframes);
+
+					// immediately start damage area (no delay)
+					createDamageArea(knight_entity, knight_position, knight_motion.bb_scale * 2.2f, 12.f, 1000.f, 0.f);
 				}
 			}
 			else if (knight.state == KnightState::MULTI_DASH)
 			{
 				knight.time_since_last_attack += elapsed_ms;
 
-				if (knight.dash_count >= 3)
+				// dash animation takes 1500; then there is a 1s gap
+				if (knight.time_since_last_attack >= 2500.f)
 				{
-					create_damage_field(knight_entity);
-					knight.state = KnightState::COMBAT;
+					if (knight.dash_count >= 3)
+					{
+						// Start damage field after 3 dashes
+						knight_motion.velocity = {0.f, 0.f};
+						knight.state = KnightState::DAMAGE_FIELD;
+						knight.time_since_damage_field = 0.f;
+						knight.damage_field_active = false;
+
+						// Start damage field animation
+						std::vector<BoneKeyframe> keyframes = {
+								{0.0f, 500.f, {{}, {}, {}, {}}},
+								{500.f, 3000.f, {{}, {}, {}, {{0.f, 0.2f}, 0.f, {1.f, 1.1f}}}},
+								{3500.f, 500.f, {{}, {}, {}, {{0.f, 0.2f}, 0.f, {1.f, 1.1f}}}},
+								{4000.f, 0.f, {{}, {}, {}, {}}}};
+						play_knight_animation(keyframes);
+					}
+					else
+					{
+						knight.dash_has_started = false;
+						knight.dash_has_ended = false;
+						knight.time_since_last_attack = 0.f;
+						knight.dash_count++;
+
+						// Start dash-attack animation
+						std::vector<BoneKeyframe> keyframes = {
+								{0.0f, 750.f, {{}, {}, {}, {}}},
+								{750.f, 750.f, {{}, {}, {}, {{-0.12f, -0.14f}, 45.f / 180.f * M_PI, {1.f, 1.f}}}},
+								{1500.f, 0.f, {{}, {}, {}, {}}}};
+						play_knight_animation(keyframes);
+					}
+				}
+				else if (!knight.dash_has_ended && knight.time_since_last_attack >= 1500.f)
+				{
+					knight.dash_has_ended = true;
+
 					knight_motion.velocity = {0.f, 0.f};
 				}
-				else if (knight.time_since_last_attack >= 1500.f)
+				else if (!knight.dash_has_started && knight.time_since_last_attack >= 500.f)
 				{
+					knight.dash_has_started = true;
+
 					vec2 direction = normalize(player_position - knight_position);
 					knight_motion.velocity = direction * 400.f;
-					knight.dash_has_damaged = false;
-					knight.time_since_last_attack = 0.f;
-					knight.dash_count++;
-
-					// Start attack animation
-					auto &bossAnimation = registry.bossAnimations.get(knight_entity);
-					bossAnimation.is_attacking = true;
-					bossAnimation.elapsed_time = 0.f;
-					bossAnimation.attack_id = static_cast<int>(KnightAttack::MULTI_DASH);
-					bossAnimation.current_frame = 0;
+					createDamageArea(knight_entity, knight_position, knight_motion.bb_scale * 1.8f, 20.f, 1000.f, 0.f, true, knight_motion.bb_offset);
 				}
 			}
-		}
+			else if (knight.state == KnightState::DAMAGE_FIELD)
+			{
+				knight.time_since_damage_field += elapsed_ms;
 
-		auto &bossAnimation = registry.bossAnimations.get(knight_entity);
+				// only start actual damage after 500ms to allow animation to play first
+				if (!knight.damage_field_active && knight.time_since_damage_field >= 500.f)
+				{
+					// actual damage area lasts 3000ms, 500ms before and after is for animation
+					// can repeatly damage every 1000ms
+					createDamageArea(knight_entity, knight_position, vec2(400.f, 400.f), 25.f, 3000.f, 1000.f);
+					knight.damage_field_active = true;
+				}
 
-		if (bossAnimation.is_attacking)
-		{
-			boss_attack(knight_entity, bossAnimation.attack_id, elapsed_ms);
+				// 4000.f matches total animation time
+				if (knight.time_since_damage_field >= 4000.f)
+				{
+					knight_attack_finished(knight);
+				}
+			}
 		}
 	}
 }
@@ -837,12 +954,3 @@ std::vector<vec2> AISystem::findPathAStar(vec2 startPos, vec2 goalPos)
 // sources for A*:
 // https://www.youtube.com/watch?v=-L-WgKMFuhE
 // https://www.youtube.com/watch?v=NJOf_MYGrYs&t=876s
-
-void AISystem::create_damage_field(Entity knight_entity)
-{
-	Motion &knight_motion = registry.motions.get(knight_entity);
-
-	Entity damage_field = createDamageArea(knight_entity, knight_motion.position, vec2(200.f, 200.f), 3.0f * 50.f, 1000.f);
-
-	registry.deathTimers.emplace(damage_field, DeathTimer{2000.f}); // 2 seconds duration
-}

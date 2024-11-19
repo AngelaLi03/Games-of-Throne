@@ -140,7 +140,7 @@ class RenderSystem
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = {
 			shader_path("debug_line"),
-			shader_path("salmon"),
+			shader_path("skinned"),
 			shader_path("textured"),
 			shader_path("water"),
 			shader_path("progress_bar"),
@@ -151,8 +151,12 @@ class RenderSystem
 	std::array<GLuint, geometry_count> index_buffers;
 	std::array<Mesh, geometry_count> meshes;
 	std::array<TexturedMesh, geometry_count> textured_meshes;
+	std::array<GLuint, geometry_count> bone_weights_vbo;
+	std::array<GLuint, geometry_count> bone_indices_vbo;
 
 public:
+	std::array<SkinnedMesh, geometry_count> skinned_meshes;
+
 	// Initialize the window
 	bool init(GLFWwindow *window);
 

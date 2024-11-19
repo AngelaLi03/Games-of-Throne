@@ -214,7 +214,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
 	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
-	registry.healths.insert(entity, {500.f, 500.f, healthbar});
+	registry.healths.insert(entity, {350.f, 350.f, healthbar});
 	// registry.healths.insert(entity, {5.f, 5.f, healthbar});
 
 	return entity;
@@ -225,15 +225,20 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	auto entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object
-	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::KNIGHT);
 	registry.meshPtrs.emplace(entity, &mesh);
+	TexturedMesh &knight_mesh = renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::KNIGHT);
+	registry.texturedMeshPtrs.emplace(entity, &knight_mesh);
 
 	// Setting initial motion values
 	Motion &motion = registry.motions.emplace(entity);
+
 	motion.position = pos;
+	// motion.position = {pos.x - 2000.f, pos.y};
+
 	motion.angle = 0.f;
-	// motion.velocity = {0.f, 0.f};
-	motion.velocity = {50.f, 0.f};
+	motion.velocity = {0.f, 0.f};
+	// motion.velocity = {50.f, 0.f};
 	motion.scale = mesh.original_size * 300.f;
 	motion.scale.x *= 1.2;
 	motion.bb_scale = {150.f, 130.f};
@@ -248,16 +253,27 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	// };
 
 	bossAnimation.frame_duration = 100.f; // 0.1s per frame
+
+	// std::vector<BoneKeyframe> keyframes = {
+	// 		{0.0f, 3000.f, {{}, {}, {}}},
+	// 		{3000.f, 3000.f, {{}, {}, {{0.f, -0.2f}, 0.f, {1.5f, 1.5f}}}},
+	// 		{6000.f, 3000.f, {{}, {}, {}}}};
+
+	// BoneAnimation &bone_animation = registry.boneAnimations.emplace(entity);
+	// bone_animation.keyframes = keyframes;
+
+	registry.meshBones.insert(entity, {renderer->skinned_meshes[(int)GEOMETRY_BUFFER_ID::KNIGHT].bones});
+
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::CHEF, // TEXTURE_COUNT indicates that no texture is needed
-			 EFFECT_ASSET_ID::TEXTURED,
-			 GEOMETRY_BUFFER_ID::SPRITE});
+			{TEXTURE_ASSET_ID::KNIGHT, // bossAnimation.attack_1[bossAnimation.current_frame], change when loaded all images
+			 EFFECT_ASSET_ID::SKINNED,
+			 GEOMETRY_BUFFER_ID::KNIGHT});
 
 	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
-	registry.healths.insert(entity, {1000.f, 1000.f, healthbar});
-	// std::cout << registry.healths.get(entity).health << std::endl;
+	// registry.healths.insert(entity, {0.5f, 500.f, healthbar});
+	registry.healths.insert(entity, {750.f, 750.f, healthbar});
 
 	return entity;
 }
@@ -537,8 +553,9 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	};
 	spriteAnimation.frame_duration = 1000.f; // Set duration for each frame (adjust as needed)
 
-	// Create an (empty) Bug component to be able to refer to all bug
-	registry.enemies.emplace(entity);
+	Enemy &enemy = registry.enemies.emplace(entity);
+	enemy.is_minion = true;
+
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,

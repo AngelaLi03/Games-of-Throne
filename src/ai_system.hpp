@@ -84,7 +84,7 @@ private:
     DecisionNode *create_knight_decision_tree();
     void perform_chef_attack(ChefAttack attack);
     void perform_knight_attack(KnightAttack attack);
-    void create_damage_field(Entity knight_entity);
+    void play_knight_animation(std::vector<BoneKeyframe> &keyframes);
 
     // bool isWalkable(int x, int y, const std::vector<std::vector<int>>& grid);
     // std::vector<Node> findPathBFS(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>>& grid);

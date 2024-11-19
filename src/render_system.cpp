@@ -35,6 +35,15 @@ glm::mat3 get_transform(const Motion &motion)
 	return transform.mat;
 }
 
+BoneTransform interpolate_bone_transform(const BoneTransform &a, const BoneTransform &b, float t)
+{
+	BoneTransform result;
+	result.position = a.position * (1.f - t) + b.position * t;
+	result.angle = a.angle * (1.f - t) + b.angle * t;
+	result.scale = a.scale * (1.f - t) + b.scale * t;
+	return result;
+}
+
 void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 &projection)
 {
 	Motion &motion = registry.motions.get(entity);
@@ -64,7 +73,7 @@ void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 
 	gl_has_errors();
 
 	// Input data location as in the vertex buffer
-	if (render_request.used_effect == EFFECT_ASSET_ID::TEXTURED)
+	if (render_request.used_effect == EFFECT_ASSET_ID::TEXTURED || render_request.used_effect == EFFECT_ASSET_ID::SKINNED)
 	{
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");
 		GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
@@ -92,8 +101,49 @@ void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 
 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 		gl_has_errors();
+
+		if (render_request.used_effect == EFFECT_ASSET_ID::SKINNED)
+		{
+			// use bone buffers
+			const GLuint indices_vbo = bone_indices_vbo[(GLuint)render_request.used_geometry];
+			const GLuint weights_vbo = bone_weights_vbo[(GLuint)render_request.used_geometry];
+
+			// Set bones
+			GLuint in_bone_indices_loc = glGetAttribLocation(program, "in_bone_indices");
+			GLuint in_bone_weights_loc = glGetAttribLocation(program, "in_bone_weights");
+			gl_has_errors();
+
+			glBindBuffer(GL_ARRAY_BUFFER, indices_vbo);
+			glEnableVertexAttribArray(in_bone_indices_loc);
+			glVertexAttribPointer(in_bone_indices_loc, 4, GL_INT, GL_FALSE, sizeof(glm::ivec4), (void *)0);
+			gl_has_errors();
+
+			glBindBuffer(GL_ARRAY_BUFFER, weights_vbo);
+			glEnableVertexAttribArray(in_bone_weights_loc);
+			glVertexAttribPointer(in_bone_weights_loc, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void *)0);
+			gl_has_errors();
+
+			// Set bone matrices
+			std::vector<glm::mat3> bone_matrices;
+			// std::vector<MeshBone> &bones = skinned_meshes[(int)render_request.used_geometry].bones;
+			std::vector<MeshBone> &bones = registry.meshBones.get(entity).bones;
+			for (MeshBone &bone : bones)
+			{
+				glm::mat3 bone_matrix = bone.local_transform;
+				int parent_index = bone.parent_index;
+				if (parent_index != -1 && parent_index < bone_matrices.size())
+				{
+					bone_matrix = bone_matrices[parent_index] * bone_matrix;
+				}
+				bone_matrices.push_back(bone_matrix);
+			}
+
+			GLuint bone_matrices_uloc = glGetUniformLocation(program, "bone_matrices");
+			glUniformMatrix3fv(bone_matrices_uloc, bone_matrices.size(), GL_FALSE, glm::value_ptr(bone_matrices[0]));
+			gl_has_errors();
+		}
 	}
-	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::DEBUG_LINE)
+	else if (render_request.used_effect == EFFECT_ASSET_ID::DEBUG_LINE)
 	{
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");
 		GLint in_color_loc = glGetAttribLocation(program, "in_color");
@@ -303,8 +353,6 @@ void RenderSystem::draw()
 	{
 		if (!registry.motions.has(entity))
 			continue;
-
-		
 
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize

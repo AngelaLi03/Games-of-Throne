@@ -590,8 +590,9 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	{
 		for (Entity entity : registry.enemies.entities)
 		{
+			Enemy &enemy = registry.enemies.get(entity);
 			Health &enemy_health = registry.healths.get(entity);
-			if (enemy_health.is_dead && !first_dead_minion)
+			if (enemy.is_minion && enemy_health.is_dead && !first_dead_minion)
 			{
 				first_dead_minion = true;
 				trigger_dialogue(minion_death_dialogue);
@@ -607,7 +608,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (knight_health.is_dead)
 		{
 			registry.remove_all_components_of(knight_entity);
-			load_level("Level_2", 2);
+			// load_level("Level_2", 2);
 		}
 	}
 
@@ -1001,6 +1002,82 @@ void WorldSystem::handle_animations(float elapsed_ms)
 			registry.animations.remove(entity);
 		}
 	}
+
+	// bone animations
+	for (int i = registry.boneAnimations.size() - 1; i >= 0; i--)
+	{
+		BoneAnimation &bone_animation = registry.boneAnimations.components[i];
+		Entity entity = registry.boneAnimations.entities[i];
+		MeshBones &mesh_bones = registry.meshBones.get(entity);
+
+		bone_animation.elapsed_time += elapsed_ms;
+		float time_in_animation = bone_animation.elapsed_time;
+
+		BoneKeyframe &keyframe = bone_animation.keyframes[bone_animation.current_keyframe];
+
+		bool animation_ends = false;
+		float t = (time_in_animation - keyframe.start_time) / keyframe.duration;
+		if (t >= 1.0f)
+		{
+			// must have another keyframe after next
+			if (bone_animation.current_keyframe + 2 < bone_animation.keyframes.size())
+			{
+				bone_animation.current_keyframe++;
+				keyframe = bone_animation.keyframes[bone_animation.current_keyframe];
+				t = 0.0f;
+			}
+			else
+			{
+				t = 1.0f;
+				animation_ends = true;
+			}
+		}
+
+		// Interpolate between the two keyframes
+		for (int i = 0; i < keyframe.bone_transforms.size(); i++)
+		{
+			BoneTransform &transform = keyframe.bone_transforms[i];
+			BoneTransform &next_transform = bone_animation.keyframes[bone_animation.current_keyframe + 1].bone_transforms[i];
+
+			BoneTransform interpolated;
+			interpolated.position = glm::mix(transform.position, next_transform.position, t);
+			interpolated.angle = glm::mix(transform.angle, next_transform.angle, t);
+			interpolated.scale = glm::mix(transform.scale, next_transform.scale, t);
+			Transform tr;
+			tr.translate(interpolated.position);
+			tr.rotate(interpolated.angle);
+			tr.scale(interpolated.scale);
+			mesh_bones.bones[i].local_transform = tr.mat;
+		}
+
+		if (animation_ends)
+		{
+			registry.boneAnimations.remove(entity);
+		}
+	}
+}
+
+void WorldSystem::draw_mesh_debug(Entity mesh_entity)
+{
+	Motion &mesh_motion = registry.motions.get(mesh_entity);
+	// createBox(mesh_motion.position + mesh_motion.bb_offset, get_bounding_box(mesh_motion), {1.f, 1.f, 0.f});
+
+	TexturedMesh *mesh = registry.texturedMeshPtrs.get(mesh_entity);
+	auto &mesh_vertices = mesh->vertices;
+	auto &mesh_indices = mesh->vertex_indices;
+	glm::mat3 transform = get_transform(mesh_motion);
+	for (uint i = 0; i < mesh_indices.size(); i += 3)
+	{
+		vec2 p1 = xy(transform * mesh_vertices[mesh_indices[i]].position);
+		vec2 p2 = xy(transform * mesh_vertices[mesh_indices[i + 1]].position);
+		vec2 p3 = xy(transform * mesh_vertices[mesh_indices[i + 2]].position);
+
+		// draw line from p1 to p2, where createLine is function createLine(vec2 position, vec2 scale, vec3 color, float angle)
+
+		createLine((p1 + p2) / 2.f, {glm::length(p2 - p1), 3.f}, {1.f, 1.f, 0.f}, atan2(p2.y - p1.y, p2.x - p1.x));
+		createLine((p2 + p3) / 2.f, {glm::length(p3 - p2), 3.f}, {1.f, 1.f, 0.f}, atan2(p3.y - p2.y, p3.x - p2.x));
+		createLine((p3 + p1) / 2.f, {glm::length(p1 - p3), 3.f}, {1.f, 1.f, 0.f}, atan2(p1.y - p3.y, p1.x - p3.x));
+	}
 }
 
 // Compute collisions between entities
@@ -1031,26 +1108,15 @@ void WorldSystem::handle_collisions()
 		}
 
 		// Draw weapon mesh (for debugging)
-		Motion &weapon_motion = registry.motions.get(player_weapon);
-		// createBox(weapon_motion.position + weapon_motion.bb_offset, get_bounding_box(weapon_motion), {1.f, 1.f, 0.f});
-		TexturedMesh &weapon_mesh = player_weapon_comp.type == WeaponType::DAGGER ? renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::DAGGER) : renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::WEAPON);
-		glm::mat3 transform = get_transform(weapon_motion);
-		for (uint i = 0; i < weapon_mesh.vertex_indices.size(); i += 3)
-		{
-			vec2 p1 = xy(transform * weapon_mesh.vertices[weapon_mesh.vertex_indices[i]].position);
-			vec2 p2 = xy(transform * weapon_mesh.vertices[weapon_mesh.vertex_indices[i + 1]].position);
-			vec2 p3 = xy(transform * weapon_mesh.vertices[weapon_mesh.vertex_indices[i + 2]].position);
-			// std::cout << "p1 = " << p1.x << "," << p1.y << std::endl;
-			// std::cout << "p2 = " << p2.x << "," << p2.y << std::endl;
-			// std::cout << "p3 = " << p3.x << "," << p3.y << std::endl;
-			// std::cout << weapon_motion.scale.x << "," << weapon_motion.scale.y << std::endl;
+		// Weapon &player_weapon = registry.weapons.get(player_spy);
+		// draw_mesh_debug(player_weapon.weapon);
 
-			// draw line from p1 to p2, where createLine is function createLine(vec2 position, vec2 scale, vec3 color, float angle)
-
-			createLine((p1 + p2) / 2.f, {glm::length(p2 - p1), 3.f}, {1.f, 1.f, 0.f}, atan2(p2.y - p1.y, p2.x - p1.x));
-			createLine((p2 + p3) / 2.f, {glm::length(p3 - p2), 3.f}, {1.f, 1.f, 0.f}, atan2(p3.y - p2.y, p3.x - p2.x));
-			createLine((p3 + p1) / 2.f, {glm::length(p1 - p3), 3.f}, {1.f, 1.f, 0.f}, atan2(p1.y - p3.y, p1.x - p3.x));
-		}
+		// Draw knight mesh
+		// if (registry.knight.size() > 0)
+		// {
+		// 	Entity knight_entity = registry.knight.entities[0];
+		// 	draw_mesh_debug(knight_entity);
+		// }
 
 		// Draw damage areas
 		for (uint i = 0; i < registry.damageAreas.components.size(); i++)
@@ -1083,15 +1149,18 @@ void WorldSystem::handle_collisions()
 			DamageArea &damage_area = registry.damageAreas.get(entity);
 			if (damage_area.active)
 			{
-				if (!player_comp.can_take_damage())
+				if (player_comp.can_take_damage())
 				{
-					continue;
+					Damage &damage = registry.damages.get(entity);
+					Health &player_health = registry.healths.get(player);
+					player_health.take_damage(damage.damage);
+					std::cout << "Damage area hit player for " << damage.damage << " damage" << std::endl;
 				}
-
-				std::cout << "Damage area hit player" << std::endl;
-				Damage &damage = registry.damages.get(entity);
-				Health &player_health = registry.healths.get(player);
-				player_health.take_damage(damage.damage);
+				else
+				{
+					Damage &damage = registry.damages.get(entity);
+					std::cout << "Player prevented " << damage.damage << " damage by dodging" << std::endl;
+				}
 
 				if (damage_area.single_damage)
 				{
@@ -1256,34 +1325,24 @@ void WorldSystem::handle_collisions()
 				knight.shield_broken = true;
 				knight.shield_active = false;
 
+				std::cout << "Shield broken by player, player takes " << (player.attack_damage * 1.5f) << " damage" << std::endl;
+
 				Health &player_health = registry.healths.get(player_spy);
 				player_health.take_damage(player.attack_damage * 1.5f);
+
+				if (registry.boneAnimations.has(entity_other))
+				{
+					BoneAnimation &bone_animation = registry.boneAnimations.get(entity_other);
+					if (bone_animation.elapsed_time < 2500.f)
+					{
+						// play shield back to original position animation
+						bone_animation.elapsed_time = 2500.f;
+						bone_animation.current_keyframe = 2;
+					}
+				}
 			}
 		}
 
-		if (registry.knight.has(entity) && entity_other == player_spy)
-		{
-			Knight &knight = registry.knight.get(entity);
-			Player &player = registry.players.get(player_spy);
-
-			if (!knight.dash_has_damaged && player.can_take_damage())
-			{
-				float damage_multiplier = 1.0f;
-
-				if (knight.state == KnightState::ATTACK)
-				{
-					damage_multiplier = 1.0f;
-				}
-				else if (knight.state == KnightState::MULTI_DASH)
-				{
-					damage_multiplier = 2.0f;
-				}
-
-				Health &player_health = registry.healths.get(player_spy);
-				player_health.take_damage(15.f * damage_multiplier);
-				knight.dash_has_damaged = true;
-			}
-		}
 		// The entity and its collider
 		// Entity entity = collisionsRegistry.entities[i];
 		// Entity entity_other = collisionsRegistry.components[i].other;
@@ -1639,6 +1698,21 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 							<< " and level: " << static_cast<int>(randomLevel) << std::endl;
 
 		switchWeapon(player_spy, renderer, randomType, randomLevel);
+	}
+
+	if (action == GLFW_PRESS && key == GLFW_KEY_H)
+	{
+		// Kill the current boss
+		if (registry.chef.size() > 0)
+		{
+			Health &chef_health = registry.healths.get(registry.chef.entities[0]);
+			chef_health.take_damage(chef_health.health);
+		}
+		else if (registry.knight.size() > 0)
+		{
+			Health &knight_health = registry.healths.get(registry.knight.entities[0]);
+			knight_health.take_damage(knight_health.health);
+		}
 	}
 }
 

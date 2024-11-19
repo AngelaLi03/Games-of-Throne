@@ -47,6 +47,8 @@ public:
 	ComponentContainer<PopupUI> popupUI;
 	ComponentContainer<Fountain> fountains;
 	ComponentContainer<TreasureBox> treasureBoxes;
+	ComponentContainer<BoneAnimation> boneAnimations;
+	ComponentContainer<MeshBones> meshBones;
 	ComponentContainer<PlayerRemnant> playerRemnants;
 
 	// constructor that adds all containers for looping over them
@@ -89,6 +91,8 @@ public:
 		registry_list.push_back(&popupUI);
 		registry_list.push_back(&fountains);
 		registry_list.push_back(&treasureBoxes);
+		registry_list.push_back(&boneAnimations);
+		registry_list.push_back(&meshBones);
 		registry_list.push_back(&playerRemnants);
 	}
 

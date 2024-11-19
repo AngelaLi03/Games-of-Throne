@@ -96,6 +96,7 @@ struct Enemy
 	float attack_countdown = 500;
 	float attack_damage = 10.0f;
 	unsigned int last_hit_attack_id = 0;
+	bool is_minion = false;
 	std::vector<vec2> path;
 	size_t current_path_index;
 	int pathfinding_counter;
@@ -251,8 +252,8 @@ struct Pan
 // Data structure for toggling debug mode
 struct Debug
 {
-	bool in_debug_mode = 0;
-	bool in_freeze_mode = 0;
+	bool in_debug_mode = false;
+	bool in_freeze_mode = false;
 };
 extern Debug debugging;
 
@@ -274,7 +275,7 @@ struct DeathTimer
 	float counter_ms = 3000;
 };
 
-// Single Vertex Buffer element for non-textured meshes (coloured.vs.glsl & salmon.vs.glsl)
+// Single Vertex Buffer element for non-textured meshes
 struct ColoredVertex
 {
 	vec3 position;
@@ -303,20 +304,51 @@ struct TexturedMesh
 	std::vector<uint16_t> vertex_indices;
 };
 
+struct MeshBone
+{
+	int parent_index = -1;
+	glm::mat3 local_transform = glm::mat3(1.f);
+};
+
+struct SkinnedMesh
+{
+	std::vector<glm::vec4> bone_weights;
+	std::vector<glm::ivec4> bone_indices;
+	std::vector<MeshBone> bones;
+};
+
+struct MeshBones
+{
+	std::vector<MeshBone> bones;
+};
+
+struct BoneTransform
+{
+	glm::vec2 position = {0, 0};
+	float angle = 0.f; // in radians
+	glm::vec2 scale = {1, 1};
+};
+
+struct BoneKeyframe
+{
+	float start_time;
+	float duration;
+	std::vector<BoneTransform> bone_transforms;
+};
+
+struct BoneAnimation
+{
+	std::vector<BoneKeyframe> keyframes;
+	int current_keyframe = 0;
+	bool loop = false;
+	float elapsed_time = 0.f;
+};
+
 enum class ChefState
 {
 	PATROL = 0,
 	COMBAT = 1,
 	ATTACK = 2,
-};
-
-enum class KnightState
-{
-	PATROL = 0,
-	COMBAT = 1,
-	ATTACK = 2,
-	MULTI_DASH = 3,
-	SHIELD = 4,
 };
 
 enum class ChefAttack
@@ -326,14 +358,6 @@ enum class ChefAttack
 	DASH = 2,
 	SPIN = 3,
 	ATTACK_COUNT = 4,
-};
-
-enum class KnightAttack
-{
-	DASH_ATTACK = 0,
-	SHIELD_HOLD = 1,
-	MULTI_DASH = 2,
-	ATTACK_COUNT = 3,
 };
 
 struct Chef
@@ -352,19 +376,40 @@ struct Chef
 	float sound_trigger_timer = 0;
 };
 
+enum class KnightState
+{
+	PATROL = 0,
+	COMBAT = 1,
+	ATTACK = 2,
+	MULTI_DASH = 3,
+	SHIELD = 4,
+	DAMAGE_FIELD = 5,
+};
+enum class KnightAttack
+{
+	DASH_ATTACK = 0,
+	SHIELD_HOLD = 1,
+	MULTI_DASH = 2,
+	ATTACK_COUNT = 3,
+};
 struct Knight
 {
 	KnightState state = KnightState::PATROL;
 	KnightAttack current_attack = KnightAttack::DASH_ATTACK;
 
+	float combat_cooldown = 0.f; // ms until the next attack is chosen
 	float time_since_last_attack = 0.f;
 	float time_since_last_patrol = 0.f;
+	float time_since_damage_field = 0.f;
+	bool damage_field_active = false;
 	float attack_duration = 0.f;
 	int dash_count = 0;
 	bool shield_active = false;
 	bool shield_broken = false;
 	float shield_duration = 0.f;
 	bool dash_has_damaged = false;
+	bool dash_has_started = false;
+	bool dash_has_ended = false;
 };
 
 struct MoveUI
@@ -508,8 +553,8 @@ const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
 enum class EFFECT_ASSET_ID
 {
 	DEBUG_LINE = 0,
-	SALMON = DEBUG_LINE + 1,
-	TEXTURED = SALMON + 1,
+	SKINNED = DEBUG_LINE + 1,
+	TEXTURED = SKINNED + 1,
 	WATER = TEXTURED + 1,
 	PROGRESS_BAR = WATER + 1,
 	LIQUID_FILL = PROGRESS_BAR + 1,
@@ -526,7 +571,8 @@ enum class GEOMETRY_BUFFER_ID
 	DEBUG_LINE = WEAPON + 1,
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
 	PROGRESS_BAR = SCREEN_TRIANGLE + 1,
-	DAGGER = PROGRESS_BAR + 1,
+	KNIGHT = PROGRESS_BAR + 1,
+	DAGGER = KNIGHT + 1,
 	GEOMETRY_COUNT = DAGGER + 1,
 	// // Defined FLOOR_TILE geometry.
 	// FLOOR_TILE = GEOMETRY_COUNT + 1

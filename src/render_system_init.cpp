@@ -118,12 +118,12 @@ void RenderSystem::bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices
 {
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[(uint)gid]);
 	glBufferData(GL_ARRAY_BUFFER,
-				 sizeof(vertices[0]) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+							 sizeof(vertices[0]) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 	gl_has_errors();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffers[(uint)gid]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-				 sizeof(indices[0]) * indices.size(), indices.data(), GL_STATIC_DRAW);
+							 sizeof(indices[0]) * indices.size(), indices.data(), GL_STATIC_DRAW);
 	gl_has_errors();
 }
 
@@ -135,13 +135,13 @@ void RenderSystem::initializeGlMeshes()
 		GEOMETRY_BUFFER_ID geom_index = mesh_paths[i].first;
 		std::string name = mesh_paths[i].second;
 		Mesh::loadFromOBJFile(name,
-							  meshes[(int)geom_index].vertices,
-							  meshes[(int)geom_index].vertex_indices,
-							  meshes[(int)geom_index].original_size);
+													meshes[(int)geom_index].vertices,
+													meshes[(int)geom_index].vertex_indices,
+													meshes[(int)geom_index].original_size);
 
 		bindVBOandIBO(geom_index,
-					  meshes[(int)geom_index].vertices,
-					  meshes[(int)geom_index].vertex_indices);
+									meshes[(int)geom_index].vertices,
+									meshes[(int)geom_index].vertex_indices);
 	}
 }
 
@@ -151,6 +151,9 @@ void RenderSystem::initializeGlGeometryBuffers()
 	glGenBuffers((GLsizei)vertex_buffers.size(), vertex_buffers.data());
 	// Index Buffer creation.
 	glGenBuffers((GLsizei)index_buffers.size(), index_buffers.data());
+
+	glGenBuffers((GLsizei)bone_weights_vbo.size(), bone_weights_vbo.data());
+	glGenBuffers((GLsizei)bone_indices_vbo.size(), bone_indices_vbo.data());
 
 	// Index and Vertex buffer data initialization.
 	initializeGlMeshes();
@@ -175,25 +178,25 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// //////////////////////
 	// Initialize Weapon
 	std::vector<TexturedVertex> weapon_vertices = {
-		// lower
-		{{-0.2f, 0.5f, 1.f}, {0.3f, 1.f}},
-		{{0.2f, 0.5f, 1.f}, {0.7f, 1.f}},
-		{{0.2f, 0.2f, 1.f}, {0.7f, 0.7f}},
-		{{-0.2f, 0.2f, 1.f}, {0.3f, 0.7f}},
-		// upper
-		{{-0.35f, 0.15f, 1.f}, {0.15f, 0.65f}},
-		{{0.35f, 0.15f, 1.f}, {0.85f, 0.65f}},
-		{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},
-		{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}},
-		// tip
-		{{0.f, -0.5f, 1.f}, {0.5f, 0.f}},		 // 8
-		{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}}, // 9
-		{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},	 // 10
-		// middle
-		{{-0.5f, 0.2f, 1.f}, {0.f, 0.7f}},	 // 11
-		{{0.5f, 0.2f, 1.f}, {1.f, 0.7f}},	 // 12
-		{{0.5f, 0.15f, 1.f}, {1.f, 0.65f}},	 // 13
-		{{-0.5f, 0.15f, 1.f}, {0.f, 0.65f}}, // 14
+			// lower
+			{{-0.2f, 0.5f, 1.f}, {0.3f, 1.f}},
+			{{0.2f, 0.5f, 1.f}, {0.7f, 1.f}},
+			{{0.2f, 0.2f, 1.f}, {0.7f, 0.7f}},
+			{{-0.2f, 0.2f, 1.f}, {0.3f, 0.7f}},
+			// upper
+			{{-0.35f, 0.15f, 1.f}, {0.15f, 0.65f}},
+			{{0.35f, 0.15f, 1.f}, {0.85f, 0.65f}},
+			{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},
+			{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}},
+			// tip
+			{{0.f, -0.5f, 1.f}, {0.5f, 0.f}},				 // 8
+			{{-0.35f, -0.35f, 1.f}, {0.15f, 0.15f}}, // 9
+			{{0.35f, -0.35f, 1.f}, {0.85f, 0.15f}},	 // 10
+			// middle
+			{{-0.5f, 0.2f, 1.f}, {0.f, 0.7f}},	 // 11
+			{{0.5f, 0.2f, 1.f}, {1.f, 0.7f}},		 // 12
+			{{0.5f, 0.15f, 1.f}, {1.f, 0.65f}},	 // 13
+			{{-0.5f, 0.15f, 1.f}, {0.f, 0.65f}}, // 14
 	};
 	std::vector<uint16_t> weapon_indices = {0, 3, 1, 1, 3, 2, 4, 7, 5, 5, 7, 6, 8, 10, 9, 11, 14, 12, 12, 14, 13};
 
@@ -202,34 +205,33 @@ void RenderSystem::initializeGlGeometryBuffers()
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::WEAPON, weapon_vertices, weapon_indices);
 
 	std::vector<TexturedVertex> dagger_vertices = {
-		// lower
-		{{-0.1f, 0.4f, 1.f}, {0.4f, .9f}},    // 0
-		{{0.1f, 0.4f, 1.f}, {0.6f, .9f}},     // 1
-		{{0.1f, 0.1f, 1.f}, {0.6f, 0.6f}},    // 2
-		{{-0.1f, 0.1f, 1.f}, {0.4f, 0.6f}},   // 3
-		// upper
-		{{-0.25f, 0.05f, 1.f}, {0.25f, 0.55f}}, // 4
-		{{0.25f, 0.05f, 1.f}, {0.75f, 0.55f}},  // 5
-		{{0.25f, -0.25f, 1.f}, {0.75f, 0.25f}},  // 6
-		{{-0.25f, -0.25f, 1.f}, {0.25f, 0.25f}}, // 7
-		// tip
-		{{0.f, -0.4f, 1.f}, {0.5f, 0.1f}},     // 8
-		{{-0.25f, -0.25f, 1.f}, {0.25f, 0.25f}}, // 9
-		{{0.25f, -0.25f, 1.f}, {0.75f, 0.25f}},  // 10
+			// lower
+			{{-0.1f, 0.4f, 1.f}, {0.4f, .9f}},	// 0
+			{{0.1f, 0.4f, 1.f}, {0.6f, .9f}},		// 1
+			{{0.1f, 0.1f, 1.f}, {0.6f, 0.6f}},	// 2
+			{{-0.1f, 0.1f, 1.f}, {0.4f, 0.6f}}, // 3
+			// upper
+			{{-0.25f, 0.05f, 1.f}, {0.25f, 0.55f}},	 // 4
+			{{0.25f, 0.05f, 1.f}, {0.75f, 0.55f}},	 // 5
+			{{0.25f, -0.25f, 1.f}, {0.75f, 0.25f}},	 // 6
+			{{-0.25f, -0.25f, 1.f}, {0.25f, 0.25f}}, // 7
+			// tip
+			{{0.f, -0.4f, 1.f}, {0.5f, 0.1f}},			 // 8
+			{{-0.25f, -0.25f, 1.f}, {0.25f, 0.25f}}, // 9
+			{{0.25f, -0.25f, 1.f}, {0.75f, 0.25f}},	 // 10
 	};
 
 	std::vector<uint16_t> dagger_indices = {
-		// Lower part
-		0, 3, 1,
-		1, 3, 2,
-		// Upper part
-		4, 7, 5,
-		5, 7, 6,
-		// Tip
-		8, 10, 9,
-		3, 4, 5,
-		3, 5, 2
-	};
+			// Lower part
+			0, 3, 1,
+			1, 3, 2,
+			// Upper part
+			4, 7, 5,
+			5, 7, 6,
+			// Tip
+			8, 10, 9,
+			3, 4, 5,
+			3, 5, 2};
 
 	textured_meshes[(int)GEOMETRY_BUFFER_ID::DAGGER].vertices = dagger_vertices;
 	textured_meshes[(int)GEOMETRY_BUFFER_ID::DAGGER].vertex_indices = dagger_indices;
@@ -260,10 +262,10 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	// Corner points
 	line_vertices = {
-		{{-0.5, -0.5, depth}, white},
-		{{-0.5, 0.5, depth}, white},
-		{{0.5, 0.5, depth}, white},
-		{{0.5, -0.5, depth}, white},
+			{{-0.5, -0.5, depth}, white},
+			{{-0.5, 0.5, depth}, white},
+			{{0.5, 0.5, depth}, white},
+			{{0.5, -0.5, depth}, white},
 	};
 
 	// Two triangles
@@ -273,6 +275,224 @@ void RenderSystem::initializeGlGeometryBuffers()
 	meshes[geom_index].vertices = line_vertices;
 	meshes[geom_index].vertex_indices = line_indices;
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::DEBUG_LINE, line_vertices, line_indices);
+
+	///////////////////////////
+	// Initialize knight
+	std::vector<TexturedVertex> knight_vertices = {
+			// shield
+			{{-0.33f, 0.1f, 1.f}, {0.17f, 0.6f}},		 // 0 center
+			{{-0.5f, -0.07f, 1.f}, {0.f, 0.43f}},		 // 1 top left
+			{{-0.5f, 0.17f, 1.f}, {0.f, 0.67f}},		 // 2 middle left
+			{{-0.33f, 0.43f, 1.f}, {0.17f, 0.93f}},	 // 3 bottom
+			{{-0.16f, -0.07f, 1.f}, {0.34f, 0.43f}}, // 4 top right
+			{{-0.16f, 0.15f, 1.f}, {0.34f, 0.65f}},	 // 5 middle right
+			{{-0.33f, -0.12f, 1.f}, {0.17f, 0.38f}}, // 6 top
+			// head
+			{{-0.01f, -0.35f, 1.f}, {0.49f, 0.15f}}, // 7 center
+			{{-0.25f, -0.3f, 1.f}, {0.25f, 0.2f}},	 // 8 middle left
+			{{-0.18f, -0.13f, 1.f}, {0.32f, 0.37f}}, // 9 bottom left
+			{{-0.01f, -0.01f, 1.f}, {0.49f, 0.49f}}, // 10 bottom
+			{{0.16f, -0.13f, 1.f}, {0.66f, 0.37f}},	 // 11 bottom right
+			{{0.2f, -0.3f, 1.f}, {0.7f, 0.2f}},			 // 12 middle right
+			{{-0.01f, -0.5f, 1.f}, {0.49f, 0.f}},		 // 13 top
+			{{-0.2f, -0.5f, 1.f}, {0.3f, 0.f}},			 // 14 top left
+			{{0.15f, -0.5f, 1.f}, {0.65f, 0.f}},		 // 15 top right
+			// body
+			{{0.f, 0.2f, 1.f}, {0.5f, 0.7f}},				 // 16 center
+			{{-0.25f, -0.22f, 1.f}, {0.25f, 0.28f}}, // 17 arm left top
+			{{-0.33f, -0.12f, 1.f}, {0.17f, 0.38f}}, // 18 = 6 top
+			{{-0.16f, -0.07f, 1.f}, {0.34f, 0.43f}}, // 19 = 4 top right
+			{{-0.16f, 0.15f, 1.f}, {0.34f, 0.65f}},	 // 20 = 5 middle right
+			{{-0.26f, 0.32f, 1.f}, {0.24f, 0.82f}},	 // 21 bottom left
+			{{-0.18f, -0.13f, 1.f}, {0.32f, 0.37f}}, // 22 = 9 bottom left
+			{{-0.01f, -0.01f, 1.f}, {0.49f, 0.49f}}, // 23 = 10 bottom
+			{{-0.1f, 0.4f, 1.f}, {0.4f, 0.9f}},			 // 24 bottom middle left
+			{{0.f, 0.48f, 1.f}, {0.5f, 0.98f}},			 // 25 bottom
+			{{0.1f, 0.4f, 1.f}, {0.6f, 0.9f}},			 // 26 bottom middle right
+			{{0.26f, 0.33f, 1.f}, {0.76f, 0.82f}},	 // 27 bottom right
+			{{0.31f, 0.f, 1.f}, {0.81f, 0.5f}},			 // 28 middle right
+			{{0.29f, -0.1f, 1.f}, {0.79f, 0.4f}},		 // 29 middle right upper
+			{{0.18f, -0.19f, 1.f}, {0.68f, 0.31f}},	 // 30 arm right top
+			{{0.16f, -0.13f, 1.f}, {0.66f, 0.37f}},	 // 31 = 11 bottom right
+			// sword
+			{{0.3f, -0.48f, 1.f}, {0.8f, 0.02f}},		// 32 handle top left
+			{{0.4f, -0.48f, 1.f}, {0.9f, 0.02f}},		// 33 handle top right
+			{{0.3f, -0.24f, 1.f}, {0.8f, 0.26f}},		// 34 handle bottom left
+			{{0.4f, -0.24f, 1.f}, {0.9f, 0.26f}},		// 35 handle bottom right
+			{{0.2f, -0.24f, 1.f}, {0.7f, 0.26f}},		// 36 bar top left
+			{{0.5f, -0.24f, 1.f}, {1.0f, 0.26f}},		// 37 bar top right
+			{{0.22f, -0.15f, 1.f}, {0.72f, 0.35f}}, // 38 bar bottom left
+			{{0.5f, -0.15f, 1.f}, {1.0f, 0.35f}},		// 39 bar bottom right
+			{{0.3f, -0.15f, 1.f}, {0.8f, 0.35f}},		// 40 blade top left
+			{{0.4f, -0.15f, 1.f}, {0.9f, 0.35f}},		// 41 blade top right
+			{{0.3f, 0.45f, 1.f}, {0.8f, 0.95f}},		// 42 blade bottom left
+			{{0.4f, 0.45f, 1.f}, {0.9f, 0.95f}},		// 43 blade bottom right
+
+	};
+	std::vector<uint16_t> knight_indices = {
+			// head
+			9, 8, 7,
+			10, 9, 7,
+			10, 7, 11,
+			11, 7, 12,
+			12, 7, 15,
+			15, 7, 13,
+			7, 14, 13,
+			7, 8, 14,
+			// body
+			22, 18, 17,
+			19, 18, 22,
+			19, 22, 23,
+			20, 19, 23,
+			16, 20, 23,
+			16, 21, 20,
+			24, 21, 16,
+			25, 24, 16,
+			26, 25, 16,
+			27, 26, 16,
+			28, 27, 16,
+			28, 16, 29,
+			29, 31, 30,
+			29, 16, 31,
+			31, 16, 23,
+			// shield
+			2, 1, 0,
+			3, 2, 0,
+			3, 0, 5,
+			5, 0, 4,
+			0, 1, 6,
+			0, 6, 4,
+			// sword
+			35, 34, 32,
+			35, 32, 33,
+			39, 38, 36,
+			39, 36, 37,
+			43, 42, 40,
+			43, 40, 41};
+
+	// Transform knight_transform;
+	// // knight_transform.rotate(2.f);
+	// knight_transform.scale({1.5f, 1.5f});
+
+	std::vector<MeshBone> knight_bones = {
+			{-1}, // 0 body
+			{0},	// 1 shield
+			{0},	// 2 head
+			{0},	// 3 sword
+	};
+
+	std::vector<glm::ivec4> knight_bone_indices = {
+			// shield
+			{1, 0, 0, 0}, // 0
+			{1, 0, 0, 0}, // 1
+			{1, 0, 0, 0}, // 2
+			{1, 0, 0, 0}, // 3
+			{1, 0, 0, 0}, // 4
+			{1, 0, 0, 0}, // 5
+			{1, 0, 0, 0}, // 6
+			{2, 0, 0, 0}, // 7
+			{2, 0, 0, 0}, // 8
+			{2, 0, 0, 0}, // 9
+			{2, 0, 0, 0}, // 10
+			{2, 0, 0, 0}, // 11
+			{2, 0, 0, 0}, // 12
+			{2, 0, 0, 0}, // 13
+			{2, 0, 0, 0}, // 14
+			{2, 0, 0, 0}, // 15
+			{2, 0, 0, 0}, // 16
+			{2, 0, 0, 0}, //
+			{2, 0, 0, 0}, //
+			{2, 0, 0, 0}, //
+			{2, 0, 0, 0}, //
+			{2, 0, 0, 0}, //
+			{2, 0, 0, 0}, //
+			{2, 0, 0, 0}, //
+			{0, 0, 0, 0}, // 17
+			{0, 0, 0, 0}, // 18
+			{0, 0, 0, 0}, // 19
+			{0, 0, 0, 0}, // 20
+			{0, 0, 0, 0}, // 21
+			{0, 0, 0, 0}, // 22
+			{0, 0, 0, 0}, // 23
+			{0, 0, 0, 0}, // 31
+			{3, 0, 0, 0}, // 32
+			{3, 0, 0, 0}, // 33
+			{3, 0, 0, 0}, // 34
+			{3, 0, 0, 0}, // 35
+			{3, 0, 0, 0}, // 36
+			{3, 0, 0, 0}, // 37
+			{3, 0, 0, 0}, // 38
+			{3, 0, 0, 0}, // 39
+			{3, 0, 0, 0}, // 40
+			{3, 0, 0, 0}, // 41
+			{3, 0, 0, 0}, // 42
+			{3, 0, 0, 0}, // 43
+	};
+
+	std::vector<glm::vec4> knight_bone_weights = {
+			{1.f, 0.f, 0.f, 0.f}, // 0
+			{1.f, 0.f, 0.f, 0.f}, // 1
+			{1.f, 0.f, 0.f, 0.f}, // 2
+			{1.f, 0.f, 0.f, 0.f}, // 3
+			{1.f, 0.f, 0.f, 0.f}, // 4
+			{1.f, 0.f, 0.f, 0.f}, // 5
+			{1.f, 0.f, 0.f, 0.f}, // 6
+			{1.f, 0.f, 0.f, 0.f}, // 7
+			{1.f, 0.f, 0.f, 0.f}, // 8
+			{1.f, 0.f, 0.f, 0.f}, // 9
+			{1.f, 0.f, 0.f, 0.f}, // 10
+			{1.f, 0.f, 0.f, 0.f}, // 11
+			{1.f, 0.f, 0.f, 0.f}, // 12
+			{1.f, 0.f, 0.f, 0.f}, // 13
+			{1.f, 0.f, 0.f, 0.f}, // 14
+			{1.f, 0.f, 0.f, 0.f}, // 15
+			{1.f, 0.f, 0.f, 0.f}, // 16
+			{1.f, 0.f, 0.f, 0.f}, // 17
+			{1.f, 0.f, 0.f, 0.f}, // 18
+			{1.f, 0.f, 0.f, 0.f}, // 19
+			{1.f, 0.f, 0.f, 0.f}, // 20
+			{1.f, 0.f, 0.f, 0.f}, // 21
+			{1.f, 0.f, 0.f, 0.f}, // 22
+			{1.f, 0.f, 0.f, 0.f}, // 23
+			{1.f, 0.f, 0.f, 0.f}, // 24
+			{1.f, 0.f, 0.f, 0.f}, // 25
+			{1.f, 0.f, 0.f, 0.f}, // 26
+			{1.f, 0.f, 0.f, 0.f}, // 27
+			{1.f, 0.f, 0.f, 0.f}, // 28
+			{1.f, 0.f, 0.f, 0.f}, // 29
+			{1.f, 0.f, 0.f, 0.f}, // 30
+			{1.f, 0.f, 0.f, 0.f}, // 31
+			{1.f, 0.f, 0.f, 0.f}, // 32
+			{1.f, 0.f, 0.f, 0.f}, // 33
+			{1.f, 0.f, 0.f, 0.f}, // 34
+			{1.f, 0.f, 0.f, 0.f}, // 35
+			{1.f, 0.f, 0.f, 0.f}, // 36
+			{1.f, 0.f, 0.f, 0.f}, // 37
+			{1.f, 0.f, 0.f, 0.f}, // 38
+			{1.f, 0.f, 0.f, 0.f}, // 39
+			{1.f, 0.f, 0.f, 0.f}, // 40
+			{1.f, 0.f, 0.f, 0.f}, // 41
+			{1.f, 0.f, 0.f, 0.f}, // 42
+			{1.f, 0.f, 0.f, 0.f}, // 43
+	};
+
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::KNIGHT].vertices = knight_vertices;
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::KNIGHT].vertex_indices = knight_indices;
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::KNIGHT, knight_vertices, knight_indices);
+
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::KNIGHT].bones = knight_bones;
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::KNIGHT].bone_indices = knight_bone_indices;
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::KNIGHT].bone_weights = knight_bone_weights;
+
+	glBindBuffer(GL_ARRAY_BUFFER, bone_weights_vbo[(uint)GEOMETRY_BUFFER_ID::KNIGHT]);
+	glBufferData(GL_ARRAY_BUFFER,
+							 sizeof(knight_bone_weights[0]) * knight_bone_weights.size(), knight_bone_weights.data(), GL_STATIC_DRAW);
+	gl_has_errors();
+
+	glBindBuffer(GL_ARRAY_BUFFER, bone_indices_vbo[(uint)GEOMETRY_BUFFER_ID::KNIGHT]);
+	glBufferData(GL_ARRAY_BUFFER,
+							 sizeof(knight_bone_indices[0]) * knight_bone_indices.size(), knight_bone_indices.data(), GL_STATIC_DRAW);
+	gl_has_errors();
 
 	///////////////////////////////////////////////////////
 	// Initialize screen triangle (yes, triangle, not quad; its more efficient).
@@ -292,6 +512,8 @@ RenderSystem::~RenderSystem()
 	// but it's polite to clean after yourself.
 	glDeleteBuffers((GLsizei)vertex_buffers.size(), vertex_buffers.data());
 	glDeleteBuffers((GLsizei)index_buffers.size(), index_buffers.data());
+	glDeleteBuffers((GLsizei)bone_weights_vbo.size(), bone_weights_vbo.data());
+	glDeleteBuffers((GLsizei)bone_indices_vbo.size(), bone_indices_vbo.data());
 	glDeleteTextures((GLsizei)texture_gl_handles.size(), texture_gl_handles.data());
 	glDeleteTextures(1, &off_screen_render_buffer_color);
 	glDeleteRenderbuffers(1, &off_screen_render_buffer_depth);
@@ -370,7 +592,7 @@ bool gl_compile_shader(GLuint shader)
 }
 
 bool loadEffectFromFile(
-	const std::string &vs_path, const std::string &fs_path, GLuint &out_program)
+		const std::string &vs_path, const std::string &fs_path, GLuint &out_program)
 {
 	// Opening files
 	std::ifstream vs_is(vs_path);
