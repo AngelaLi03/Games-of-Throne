@@ -212,20 +212,23 @@ private:
 	Entity screen_state_entity;
 	std::map<char, Character> characters;
 	std::vector<std::string> gameInstructions = {
-			"Controls:",
-			"W / Up Arrow: Move Up",
-			"A / Left Arrow: Move Left",
-			"S / Down Arrow: Move Down",
-			"D / Right Arrow: Move Right",
-			"X: Stealth Travel (Point mouse and press X)",
-			"Space Bar: Dash (when already moving)",
-			"Escape: Exit Game",
-			"Press 'P' to see FPS",
-			"Press 'O' to toggle instructions",
-			"Left mouse click for light attack",
-			"Right mouse click for heavy attack (when flow meter is full)",
-			"Draw S with mouse with left mouse button pressed - Animation"
-
+		"Controls:",
+		"W / Up Arrow: Move Up",
+		"A / Left Arrow: Move Left",
+		"S / Down Arrow: Move Down",
+		"D / Right Arrow: Move Right",
+		"Shift (Hold): Sprint",
+		"X: Stealth Dash (Unlocked after defeating the chef)",
+		"Space Bar: Dodge (Requires energy)",
+		"E: Interact (e.g., heal at fountain, open treasure box)",
+		"Escape: Exit Game",
+		"P: Toggle FPS Display",
+		"O: Toggle Help Instructions",
+		"B: Switch Weapon",
+		"Left Mouse Click: Light Attack (Requires energy)",
+		"Right Mouse Click (Hold): Charge Flow (Hold to charge)",
+		"Right Mouse Click (Release with full flow): Heavy Attack",
+		"Draw 'S' with Mouse: Enlarge Player (Temporary)",
 	};
 };
 

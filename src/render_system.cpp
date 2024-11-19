@@ -447,7 +447,7 @@ void RenderSystem::draw()
 		float y = window_height_px - 100.0f; // Starting y position (from top)
 		float lineSpacing = 25.0f;
 		float scale = 0.8f;
-		vec3 textColor = vec3(0.2f, 1.0f, 0.1f);
+		vec3 textColor = vec3(1.0f, 1.0f, 1.0f);
 
 		for (const std::string &line : gameInstructions)
 		{
