@@ -96,7 +96,10 @@ struct Enemy
 	float attack_countdown = 500;
 	float attack_damage = 10.0f;
 	unsigned int last_hit_attack_id = 0;
-	// std::vector<Node> path;			// The path to the player
+	std::vector<vec2> path;
+	size_t current_path_index;
+	int pathfinding_counter;
+	vec2 last_tile_position = {0, 0};
 	// int current_path_index = 0; // Index of the next node to follow
 };
 

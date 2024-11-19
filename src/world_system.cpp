@@ -37,6 +37,8 @@ bool isTrackingMouse = false;
 const float S_THRESHOLD1 = 20.0f;
 const float MIN_S_LENGTH = 100.0f;
 
+std::vector<std::vector<int>> level_grid;
+
 const float DIALOGUE_PAUSE_DELAY = 500.f; // ms between showing dialogue and pausing game
 float time_until_dialogue_pause = 0.f;
 
@@ -726,6 +728,16 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 	const ldtk::World &world = ldtk_project.getWorld();
 	const ldtk::Level &level = world.getLevel(levelName);
 	const std::vector<ldtk::Layer> &layers = level.allLayers();
+
+	const int TILE_SIZE = 60; // set to match tile scale in common.hpp atm
+	const float HALF_TILE_SIZE = static_cast<float>(TILE_SIZE) / 2.f;
+
+	int gridWidth = level.size.x / TILE_SIZE;
+	int gridHeight = level.size.y / TILE_SIZE;
+
+	level_grid.clear();
+	level_grid.resize(gridWidth, std::vector<int>(gridHeight, 0)); // 0 for walkable
+
 	for (const auto &layer : level.allLayers())
 	{
 		if (layer.getType() == ldtk::LayerType::Tiles)
@@ -735,18 +747,24 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 				// Get tile position in pixels
 				int px = tile.getPosition().x;
 				int py = tile.getPosition().y;
-				vec2 position = {static_cast<float>(px), static_cast<float>(py)};
+				int gridX = px / TILE_SIZE;
+				int gridY = py / TILE_SIZE;
+				vec2 position = {static_cast<float>(px) + HALF_TILE_SIZE, static_cast<float>(py) + HALF_TILE_SIZE};
+				// vec2 position = {static_cast<float>(px), static_cast<float>(py)};
 				if (layer.getName() == "Floor_Tiles")
 				{
+					level_grid[gridX][gridY] = 1; // walkable
 					createFloorTile(renderer, position);
 				}
 				else if (layer.getName() == "Wall_Tiles")
 				{
+					level_grid[gridX][gridY] = 0;
 					createWall(renderer, position);
 				}
 			}
 		}
 	}
+
 	for (const auto &layer : level.allLayers())
 	{
 		if (layer.getType() == ldtk::LayerType::Entities)

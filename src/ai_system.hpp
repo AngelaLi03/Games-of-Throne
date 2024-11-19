@@ -18,7 +18,6 @@ public:
     std::function<bool(float)> condition;
     DecisionNode *trueBranch;
     DecisionNode *falseBranch;
-
     DecisionNode(std::function<void(float)> act, std::function<bool(float)> cond) : action(act), condition(cond), trueBranch(nullptr), falseBranch(nullptr) {}
     ~DecisionNode()
     {
@@ -74,6 +73,8 @@ public:
     // 	}
     // };
 
+    std::vector<vec2> findPathAStar(vec2 start, vec2 goal);
+
 private:
     RenderSystem *renderer;
 
@@ -87,4 +88,16 @@ private:
 
     // bool isWalkable(int x, int y, const std::vector<std::vector<int>>& grid);
     // std::vector<Node> findPathBFS(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>>& grid);
+};
+
+struct AStarNode
+{
+    int x, y;
+    float gCost, hCost, fCost;
+    AStarNode *parent;
+
+    bool operator>(const AStarNode &other) const
+    {
+        return fCost > other.fCost;
+    }
 };

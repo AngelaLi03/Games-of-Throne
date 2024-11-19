@@ -7,8 +7,11 @@
 #include <SDL_mixer.h>
 #include <queue>
 #include <unordered_map>
-
+#include "world_system.hpp"
 #include "world_init.hpp"
+
+extern std::vector<std::vector<int>> level_grid;
+float MINION_SPEED = 80.f;
 
 float distance_squared(vec2 a, vec2 b)
 {
@@ -347,66 +350,6 @@ void AISystem::init(RenderSystem *renderer)
 	this->renderer = renderer;
 }
 
-// // Check if a position is within the grid bounds and walkable
-// bool AISystem::isWalkable(int x, int y, const std::vector<std::vector<int>>& grid) {
-//     return (x >= 0 && y >= 0 && x < grid.size() && y < grid[0].size() && grid[x][y] == 0);
-// }
-
-// // Breadth-First Search to find the shortest path in an unweighted grid
-// std::vector<Node> AISystem::findPathBFS(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>>& grid) {
-//     std::queue<Node> openSet;  // Queue for BFS
-//     std::unordered_map<int, Node> allNodes;  // To keep track of all visited nodes
-
-//     // Helper lambda for generating a unique key based on coordinates
-//     auto nodeKey = [&](int x, int y) { return y * grid[0].size() + x; };
-
-//     // Initialize the start node
-//     Node startNode = {startX, startY, 0, 0, 0, nullptr};
-//     openSet.push(startNode);
-//     allNodes[nodeKey(startX, startY)] = startNode;
-
-//     // Possible movement directions (up, right, down, left)
-//     std::vector<std::pair<int, int>> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
-
-//     while (!openSet.empty()) {
-//         Node current = openSet.front();
-//         openSet.pop();
-
-//         // Check if we reached the target
-//         if (current.x == targetX && current.y == targetY) {
-//             // Reconstruct path by tracing back from the target node
-//             std::vector<Node> path;
-//             Node* pathNode = &current;
-//             while (pathNode) {
-//                 path.push_back(*pathNode);
-//                 pathNode = pathNode->parent;
-//             }
-//             std::reverse(path.begin(), path.end());  // Path is constructed backward
-//             return path;
-//         }
-
-//         // Explore neighbors
-//         for (const auto& dir : directions) {
-//             int newX = current.x + dir.first;
-//             int newY = current.y + dir.second;
-
-//             if (isWalkable(newX, newY, grid)) {
-//                 int key = nodeKey(newX, newY);
-
-//                 // Only add the neighbor if it hasn’t been visited before
-//                 if (allNodes.find(key) == allNodes.end()) {
-//                     Node neighbor = {newX, newY, 0, 0, 0, &allNodes[nodeKey(current.x, current.y)]};
-//                     openSet.push(neighbor);
-//                     allNodes[key] = neighbor;
-//                 }
-//             }
-//         }
-//     }
-
-//     // Return an empty path if no path is found
-//     return {};
-// }
-
 void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 {
 	Entity player = registry.players.entities[0];
@@ -451,6 +394,16 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 		Motion &motion = registry.motions.get(entity);
 		vec2 enemy_position = motion.position + motion.bb_offset;
+
+		vec2 adjusted_position = enemy_position;
+
+		// consider enemy as still on the last tile if it has not fully moved onto a new tile
+		// -- this solves the issue of turning corners
+		if (glm::length(enemy_position - enemy.last_tile_position) < TILE_SCALE)
+		{
+			adjusted_position = enemy.last_tile_position;
+		}
+
 		float distance_to_player = distance_squared(player_position, enemy_position);
 		if (enemy.state == EnemyState::IDLE)
 		{
@@ -466,65 +419,80 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			{
 				enemy.state = EnemyState::IDLE;
 				motion.velocity = {0.f, 0.f};
-				std::cout << "Enemy " << i << " enters idle" << std::endl;
-			}
-			else if (distance_to_player > attack_radius_squared)
-			{
-				// move towards player
-				vec2 direction = player_position - enemy_position;
-				direction = normalize(direction);
-				motion.velocity = direction * 80.f;
-
-				// int tile_x = std::round(enemy_position.x / TILE_SCALE);
-				// int tile_y = std::round(enemy_position.y / TILE_SCALE);
-				// std::cout << "At tile " << tile_x << ", " << tile_y << "; " << levelMap[tile_x][tile_y - 1] << "; " << levelMap[tile_x][tile_y] << "; " << levelMap[tile_x][tile_y + 1] << "; " << levelMap[tile_x][tile_y + 2] << std::endl;
-
-				// // find path to player
-				// enemy.path = findPathBFS(motion.position.x, motion.position.y, player_motion.position.x, player_motion.position.y, levelMap);
-				// if (enemy.path.size() > 0)
-				// {
-				// 	printf("path found\n");
-				// 	// move towards player
-				// 	vec2 direction = {enemy.path[enemy.current_path_index].x, enemy.path[enemy.current_path_index].y};
-				// 	direction = normalize(direction);
-				// 	motion.velocity = direction * 50.f;
-				// 	// if enemy is at the current path node, move to the next node
-				// 	if (distance_squared(motion.position, glm::vec2(enemy.path[enemy.current_path_index].x, enemy.path[enemy.current_path_index].y)) < 10.f)
-				// 	{
-				// 		enemy.current_path_index++;
-				// 		if (enemy.current_path_index >= enemy.path.size())
-				// 		{
-				// 			enemy.current_path_index = 0;
-				// 		}
-				// 	}
-				// }
+				std::cout << "Enemy " << i << " returns to idle" << std::endl;
 			}
 			else
 			{
-				motion.velocity = {0.f, 0.f};
-				enemy.time_since_last_attack += elapsed_ms;
-				if (enemy.time_since_last_attack > 2000.f)
+
+				// std::cout << "Level Grid:" << std::endl;
+				// for (int y = 0; y < level_grid[0].size(); ++y)
+				// {
+				// 	for (int x = 0; x < level_grid.size(); ++x)
+				// 	{
+				// 		std::cout << level_grid[x][y] << " ";
+				// 	}
+				// 	std::cout << std::endl;
+				// }
+				// return;
+
+				std::vector<vec2> path = findPathAStar(adjusted_position, player_position);
+
+				if (debugging.in_debug_mode)
 				{
-					// attack player
-					// std::cout << "Enemy " << i << " attacks player" << std::endl;
-					// change to attack animation sprite
-					enemy.state = EnemyState::ATTACK;
-					auto &animation = registry.spriteAnimations.get(entity);
-					auto &render_request = registry.renderRequests.get(entity);
+					for (int i = 0; i < path.size(); i++)
+					{
+						vec2 path_point = path[i];
+						createLine(path_point, {10.f, 10.f}, {1.f, 0.f, 0.f}, 0.f);
+					}
+				}
 
-					animation.current_frame = 1;
-					render_request.used_texture = animation.frames[animation.current_frame];
+				if (path.size() >= 1)
+				{
+					// stagger update last_tile_position only when enemy is fully on the next tile
+					if (glm::length(enemy_position - enemy.last_tile_position) > TILE_SCALE)
+					{
+						// std::cout << "LAST TILE POS UPDATED" << std::endl;
+						enemy.last_tile_position = path[0];
+					}
+				}
 
-					// get motion of the enemy
-					auto &enemy_motion = registry.motions.get(entity);
-					enemy_motion.scale.x *= 1.1;
+				if (path.size() >= 2)
+				{
+					// Move towards the next point in the path
+					vec2 target_position = path[1]; // The next node in the path
+					vec2 direction = normalize(target_position - enemy_position);
+					motion.velocity = direction * MINION_SPEED;
+					// std::cout << "enemy_position: " << enemy_position.x << ", " << enemy_position.y << "; adjusted_position: " << adjusted_position.x << ", " << adjusted_position.y << "; direction: " << direction.x << ", " << direction.y << std::endl;
 
-					enemy.time_since_last_attack = 0.f;
+					enemy.path = path;
+				}
+				else
+				{
+					// No path found or already at the goal
+					motion.velocity = {0.f, 0.f};
+				}
 
-					createDamageArea(entity, motion.position, {100.f, 70.f}, 10.f, 500.f, 0.f, true, {50.f, 50.f});
+				if (distance_to_player <= attack_radius_squared)
+				{
+					motion.velocity = {0.f, 0.f};
+					enemy.time_since_last_attack += elapsed_ms;
+					if (enemy.time_since_last_attack > 2000.f)
+					{
+						// Attack logic
+						enemy.state = EnemyState::ATTACK;
+
+						// get motion of the enemy
+						auto &enemy_motion = registry.motions.get(entity);
+						enemy_motion.scale.x *= 1.1;
+
+						enemy.time_since_last_attack = 0.f;
+
+						createDamageArea(entity, motion.position, {100.f, 70.f}, 10.f, 500.f, 0.f, true, {50.f, 50.f});
+					}
 				}
 			}
 		}
+
 		// reset state to combat after attack
 		else if (enemy.state == EnemyState::ATTACK)
 		{
@@ -723,6 +691,152 @@ void AISystem::boss_attack(Entity entity, int attack_id, float elapsed_ms)
 		render_request.used_texture = frames[0];
 	}
 }
+
+float heuristic(int x1, int y1, int x2, int y2)
+{
+	return static_cast<float>(std::abs(x1 - x2) + std::abs(y1 - y2)); // Manhattan distance
+}
+
+bool isWalkable(int x, int y)
+{
+	if (x >= 0 && y >= 0 && x < level_grid.size() && y < level_grid[x].size())
+	{
+		return level_grid[x][y] == 1;
+	}
+	return false;
+}
+
+int nodeKey(int x, int y, int maxHeight)
+{
+	return x * maxHeight + y;
+}
+
+std::vector<vec2> AISystem::findPathAStar(vec2 startPos, vec2 goalPos)
+{
+	const int TILE_SIZE = 60;
+	int startX = static_cast<int>(startPos.x / TILE_SIZE);
+	int startY = static_cast<int>(startPos.y / TILE_SIZE);
+	int goalX = static_cast<int>(goalPos.x / TILE_SIZE);
+	int goalY = static_cast<int>(goalPos.y / TILE_SIZE);
+
+	// std::cout << "===========================" << std::endl;
+
+	// for (int dy = -2; dy <= 2; dy++)
+	// {
+	// 	for (int dx = -2; dx <= 2; dx++)
+	// 	{
+	// 		std::cout << isWalkable(goalX + dx, goalY + dy) << " ";
+	// 	}
+	// 	std::cout << std::endl;
+	// }
+	// std::cout << "===========================" << std::endl;
+
+	int maxHeight = level_grid[0].size();
+
+	// Comparator for priority queue
+	struct CompareAStarNode
+	{
+		bool operator()(AStarNode *a, AStarNode *b)
+		{
+			return a->fCost > b->fCost;
+		}
+	};
+
+	std::priority_queue<AStarNode *, std::vector<AStarNode *>, CompareAStarNode> openSet;
+	std::unordered_map<int, AStarNode *> allNodes;
+
+	int key = nodeKey(startX, startY, maxHeight);
+	AStarNode *startNode = new AStarNode{startX, startY, 0, heuristic(startX, startY, goalX, goalY), 0, nullptr};
+	startNode->fCost = startNode->gCost + startNode->hCost;
+	openSet.push(startNode);
+	allNodes[key] = startNode;
+
+	std::vector<std::pair<int, int>> directions = {
+			{0, -1},	// Up
+			{1, 0},		// Right
+			{0, 1},		// Down
+			{-1, 0},	// Left
+			{-1, -1}, // Up-Left
+			{1, -1},	// Up-Right
+			{1, 1},		// Down-Right
+			{-1, 1}		// Down-Left
+	};
+
+	while (!openSet.empty())
+	{
+		// Get the node with the lowest fCost
+		AStarNode *current = openSet.top();
+		openSet.pop();
+
+		// If we've reached the goal, reconstruct and return the path
+		if (current->x == goalX && current->y == goalY)
+		{
+			// Reconstruct path
+			std::vector<vec2> path;
+			AStarNode *node = current;
+			while (node != nullptr)
+			{
+				path.push_back(vec2{node->x * TILE_SIZE + TILE_SIZE / 2.0f,
+														node->y * TILE_SIZE + TILE_SIZE / 2.0f});
+				node = node->parent;
+			}
+			std::reverse(path.begin(), path.end());
+
+			// Clean up all dynamically allocated nodes
+			for (auto &pair : allNodes)
+			{
+				delete pair.second;
+			}
+			return path;
+		}
+
+		// Explore all valid neighbors of the current node
+		for (const auto &dir : directions)
+		{
+			int nx = current->x + dir.first;	// Neighbor x-coordinate
+			int ny = current->y + dir.second; // Neighbor y-coordinate
+
+			if (dir.first != 0 && dir.second != 0)
+			{ // Diagonal movement
+				if (!isWalkable(current->x + dir.first, current->y) ||
+						!isWalkable(current->x, current->y + dir.second))
+				{
+					continue;
+				}
+			}
+
+			if (isWalkable(nx, ny))
+			{
+				int neighborKey = nodeKey(nx, ny, maxHeight); // Generate unique key for the neighbor
+				// float gCost = current->gCost + ((dir.first != 0 && dir.second != 0) ? 1.4f : 1.0f); // Diagonal cost is ~?2 (1.4)
+				float baseCost = (dir.first != 0 && dir.second != 0) ? 1.4f : 1.0f;
+				float gCost = current->gCost + baseCost;
+				float hCost = heuristic(nx, ny, goalX, goalY); // Calculate heuristic cost (Manhattan distance)
+				float fCost = gCost + hCost;									 // Total cost = gCost + hCost
+
+				if (allNodes.find(neighborKey) == allNodes.end() || gCost < allNodes[neighborKey]->gCost)
+				{
+					// Create or update the neighbor node
+					AStarNode *neighbor = new AStarNode{nx, ny, gCost, hCost, fCost, current};
+					openSet.push(neighbor);						// Add to the open set
+					allNodes[neighborKey] = neighbor; // Update the allNodes map
+				}
+			}
+		}
+	}
+
+	// No path found; clean up dynamically allocated nodes
+	for (auto &pair : allNodes)
+	{
+		delete pair.second;
+	}
+
+	return {};
+}
+
+// sources for A*:
+// https://www.youtube.com/watch?v=-L-WgKMFuhE
+// https://www.youtube.com/watch?v=NJOf_MYGrYs&t=876s
 
 void AISystem::create_damage_field(Entity knight_entity)
 {
