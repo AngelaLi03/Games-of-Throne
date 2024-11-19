@@ -30,6 +30,8 @@ int current_dialogue_line = 0; // Tracks the current line of dialogue being show
 std::vector<std::string> dialogue_to_render;
 bool chef_first_damaged = false;
 bool first_dead_minion = false;
+float player_max_health = 100.f;
+float player_max_energy = 100.f;
 
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
@@ -41,6 +43,9 @@ std::vector<std::vector<int>> level_grid;
 
 const float DIALOGUE_PAUSE_DELAY = 500.f; // ms between showing dialogue and pausing game
 float time_until_dialogue_pause = 0.f;
+
+bool has_popup = false;
+Popup active_popup = {};
 
 bool is_in_chef_dialogue = false;
 
@@ -294,8 +299,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 
 		float interpolation_factor = t * t * (3.0f - 2.0f * t); // basically 3t^2 - 2t^3 -> cubic
 
-		motion.velocity.x = (1.0f - interpolation_factor) * interpolate.initial_velocity.x;
-		motion.velocity.y = (1.0f - interpolation_factor) * interpolate.initial_velocity.y;
+		motion.velocity.x = (1.0f - interpolation_factor + 1.f) * interpolate.initial_velocity.x;
+		motion.velocity.y = (1.0f - interpolation_factor + 1.f) * interpolate.initial_velocity.y;
 
 		if (interpolation_factor >= 0.5f && entity == player_spy && !player.current_dodge_is_perfect)
 		{
@@ -728,7 +733,6 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 	ldtk_project.loadFromFile(data_path() + "/levels/levels.ldtk");
 	const ldtk::World &world = ldtk_project.getWorld();
 	const ldtk::Level &level = world.getLevel(levelName);
-	const std::vector<ldtk::Layer> &layers = level.allLayers();
 
 	const int TILE_SIZE = 60; // set to match tile scale in common.hpp atm
 	const float HALF_TILE_SIZE = static_cast<float>(TILE_SIZE) / 2.f;
@@ -779,9 +783,56 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 
 				if (entity_name == "Chest")
 				{
-					int itemId = (int)(uniform_dist(rng) * (float)TreasureBoxItem::NONE);
-					// TODO: use levelNumber to determine weapon spawn
-					createTreasureBox(renderer, position, (TreasureBoxItem)itemId);
+					// Determine content of treasure box
+					float type_roll = uniform_dist(rng);
+					if (type_roll < 0.25f)
+					{
+						std::cout << "Creating treasure box with max health" << std::endl;
+						createTreasureBox(renderer, position, TreasureBoxItem::MAX_HEALTH);
+					}
+					else if (type_roll < 0.5f)
+					{
+						std::cout << "Creating treasure box with max energy" << std::endl;
+						createTreasureBox(renderer, position, TreasureBoxItem::MAX_ENERGY);
+					}
+					else
+					{
+						type_roll = (type_roll - 0.5f) * 2.f;
+
+						std::vector<std::vector<float>> chance_tables = {
+								{0.7, 0.25, 0.05}, // level 0
+								{0.5, 0.4, 0.1},	 // level 1
+								{0.3, 0.5, 0.2},	 // etc
+								{0.1, 0.5, 0.4},
+						};
+						std::vector<float> &chance_table = chance_tables[levelNumber];
+						int rarity = 0;
+						for (int i = 0; i < chance_table.size(); i++)
+						{
+							if (type_roll < chance_table[i])
+							{
+								rarity = i;
+								break;
+							}
+							type_roll -= chance_table[i];
+						}
+						// roll for weapon type
+						float weapon_type_roll = uniform_dist(rng);
+						WeaponType weapon_type = WeaponType::SWORD;
+						if (weapon_type_roll < 0.5f)
+						{
+							weapon_type = WeaponType::SWORD;
+						}
+						else
+						{
+							weapon_type = WeaponType::DAGGER;
+						}
+
+						WeaponLevel wepaon_level = static_cast<WeaponLevel>(rarity);
+
+						std::cout << "Creating treasure box with weapon type " << (int)weapon_type << " and rarity " << (int)wepaon_level << std::endl;
+						createTreasureBox(renderer, position, TreasureBoxItem::WEAPON, weapon_type, wepaon_level);
+					}
 				}
 				else if (entity_name == "Fountain")
 				{
@@ -815,7 +866,7 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 
 	// createEnemy(renderer, vec2(window_width_px * 2 + 200, window_height_px * 2 - 200));
 
-	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2}, WeaponType::DAGGER, WeaponLevel::BASIC);
+	Entity weapon = createWeapon(renderer, {window_width_px * 2 + 200, window_height_px * 2}, WeaponType::SWORD, WeaponLevel::BASIC);
 
 	Player &player = registry.players.get(player_spy);
 	player.weapon = weapon;
@@ -893,14 +944,7 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 		{
 			// Special heavy attack animation for daggers
 			float angle = 0.0f;
-			float originalOffset = 45.f;
 			int faceDir = (player.weapon_offset.x > 0) ? -1 : 1;
-
-			// if (t < 0.01f)
-			//{
-			//	float originalOffset = player.weapon_offset.x;
-			//	printf("Original Weapon offset: %.2f\n", originalOffset);
-			// }
 
 			if (t < 0.5f)
 			{
@@ -1362,6 +1406,36 @@ bool WorldSystem::is_over() const
 	return bool(glfwWindowShouldClose(window));
 }
 
+std::string get_weapon_name(WeaponType type, WeaponLevel level)
+{
+	switch (type)
+	{
+	case WeaponType::SWORD:
+		switch (level)
+		{
+		case WeaponLevel::BASIC:
+			return "Basic Sword";
+		case WeaponLevel::RARE:
+			return "Rare Sword";
+		case WeaponLevel::LEGENDARY:
+			return "Legendary Sword";
+		}
+		break;
+	case WeaponType::DAGGER:
+		switch (level)
+		{
+		case WeaponLevel::BASIC:
+			return "Basic Dagger";
+		case WeaponLevel::RARE:
+			return "Rare Dagger";
+		case WeaponLevel::LEGENDARY:
+			return "Legendary Dagger";
+		}
+		break;
+	}
+	return "";
+}
+
 // On key callback
 void WorldSystem::on_key(int key, int, int action, int mod)
 {
@@ -1421,13 +1495,9 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::STEALTH);
 					registry.cameraUI.emplace(ability_sprite);
 
-					// TODO: render text (make it generic so other popups can also render their custom text)
-					// popup_text = "You have gained the stealth ability!";
-
-					active_popup = {[this]()
-													{
-														load_level("Level_1", 1);
-													}};
+					// TODO: add invisible to this ability
+					active_popup = {PopupType::ABILITY, [this]()
+													{ load_level("Level_1", 1); }, "stealth dash", "Become fast for a short time"};
 					has_popup = true;
 					is_paused = true;
 				}
@@ -1491,15 +1561,15 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	// For debugging flow meter:
-	if (action == GLFW_PRESS && key == GLFW_KEY_F)
-	{
-		if (registry.flows.has(flowMeterEntity))
-		{
-			Flow &flow = registry.flows.get(flowMeterEntity);
-			flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
-			std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
-		}
-	}
+	// if (action == GLFW_PRESS && key == GLFW_KEY_F)
+	// {
+	// 	if (registry.flows.has(flowMeterEntity))
+	// 	{
+	// 		Flow &flow = registry.flows.get(flowMeterEntity);
+	// 		flow.flowLevel = std::min(flow.flowLevel + 10.f, flow.maxFlowLevel); // Increase flow up to max
+	// 		std::cout << "Flow Level: " << flow.flowLevel << " / " << flow.maxFlowLevel << std::endl;
+	// 	}
+	// }
 
 	// Debugging
 	if (key == GLFW_KEY_I && action == GLFW_PRESS)
@@ -1558,31 +1628,39 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					// play sound
 					// Mix_PlayChannel(-1, break_sound, 0);
 
-					// create ui frame background
-					createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y - 100.f}, {100.f, 100.f}, TEXTURE_ASSET_ID::UI_FRAME);
+					float frame_y_offset = -100.f;
+					vec2 frame_scale = {100.f, 100.f};
+					vec2 item_scale = {50.f, 50.f};
 
 					// create box item rendering
+					TEXTURE_ASSET_ID item_texture_id;
+					if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
+					{
+						item_texture_id = TEXTURE_ASSET_ID::MAX_ENERGY;
+					}
+					else if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
+					{
+						item_texture_id = TEXTURE_ASSET_ID::MAX_HEALTH;
+					}
+					else if (treasure_box.item == TreasureBoxItem::WEAPON)
+					{
+						item_texture_id = getWeaponTexture(treasure_box.weapon_type, treasure_box.weapon_level);
+						item_scale = {80.f, 120.f};
+						frame_scale = {80.f, 130.f};
+						frame_y_offset = -100.f;
+					}
+					else
+					{
+						std::cout << "Invalid item type" << std::endl;
+						continue;
+					}
+
+					// create ui frame background
+					createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, frame_scale, TEXTURE_ASSET_ID::UI_FRAME);
+
 					if (treasure_box.item != TreasureBoxItem::NONE)
 					{
-						TEXTURE_ASSET_ID item_texture_id;
-						if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
-						{
-							item_texture_id = TEXTURE_ASSET_ID::MAX_ENERGY;
-						}
-						else if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
-						{
-							item_texture_id = TEXTURE_ASSET_ID::MAX_HEALTH;
-						}
-						else if (treasure_box.item == TreasureBoxItem::WEAPON)
-						{
-							item_texture_id = TEXTURE_ASSET_ID::WEAPON;
-						}
-						else
-						{
-							std::cout << "Invalid item type" << std::endl;
-							continue;
-						}
-						treasure_box.item_entity = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y - 100.f}, {50.f, 50.f}, item_texture_id);
+						treasure_box.item_entity = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, item_scale, item_texture_id);
 					}
 
 					RenderRequest &render_request = registry.renderRequests.get(treasure_box_entity);
@@ -1593,15 +1671,57 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					std::cout << "Treasure box already opened" << std::endl;
 					if (treasure_box.item != TreasureBoxItem::NONE && treasure_box.item_entity != 0)
 					{
+						std::string item_name = "";
+						std::string item_description = "";
 						if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
 						{
 							Health &player_health = registry.healths.get(player_spy);
-							player_health.max_health += 30.f;
+							player_health.max_health += 50.f;
+							player_max_health = player_health.max_health;
+							item_name = "Max Health";
+							item_description = "Max health increased by 50, now " + std::to_string(player_health.max_health);
+						}
+						else if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
+						{
+							Energy &player_energy = registry.energys.get(player_spy);
+							player_energy.max_energy += 50.f;
+							player_max_energy = player_energy.max_energy;
+							item_name = "Max Energy";
+							item_description = "Increase maximum energy by 50, now " + std::to_string(player_energy.max_energy);
+						}
+						else if (treasure_box.item == TreasureBoxItem::WEAPON)
+						{
+							WeaponType weapon_type = treasure_box.weapon_type;
+							WeaponLevel weapon_level = treasure_box.weapon_level;
+							Weapon &weapon = switchWeapon(player_spy, renderer, weapon_type, weapon_level);
+							item_name = get_weapon_name(weapon_type, weapon_level);
+
+							std::stringstream desc_ss;
+							desc_ss << weapon.damage << " damage, " << weapon.attack_speed << " seconds per attack.";
+							item_description = desc_ss.str();
 						}
 
-						// remove item rendering
+						Entity item_entity = treasure_box.item_entity;
+
+						TEXTURE_ASSET_ID item_texture_id = registry.renderRequests.get(item_entity).used_texture;
+						vec2 item_scale = registry.motions.get(item_entity).scale;
+
+						Entity backdrop = createBackdrop(renderer);
+						Entity dialogue_window = createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
+
+						std::cout << "texture id " << (int)item_texture_id << ", scale " << item_scale.x << ", " << item_scale.y << std::endl;
+						Entity item_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, item_scale, item_texture_id);
+						registry.cameraUI.emplace(item_sprite);
+
+						active_popup = {PopupType::TREASURE_BOX, [item_sprite, backdrop, dialogue_window]()
+														{ registry.remove_all_components_of(item_sprite); registry.remove_all_components_of(backdrop); registry.remove_all_components_of((dialogue_window)); }, item_name, item_description};
+						has_popup = true;
+						is_paused = true;
+
+						// remove item rendering from box
 						registry.remove_all_components_of(treasure_box.item_entity);
 
+						// remove item from box
 						treasure_box.item_entity = Entity(0);
 						treasure_box.item = TreasureBoxItem::NONE;
 					}
@@ -1630,7 +1750,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 			Interpolation interpolate;
 			interpolate.elapsed_time = 0.f;
-			interpolate.initial_velocity = player_movement_direction * PLAYER_SPEED * 5.f;
+			interpolate.initial_velocity = player_movement_direction * PLAYER_SPEED * 3.f;
 			if (!registry.interpolations.has(player_spy))
 			{
 				registry.interpolations.emplace(player_spy, interpolate);
@@ -1898,7 +2018,7 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 	}
 }
 
-void WorldSystem::switchWeapon(Entity player, RenderSystem *renderer, WeaponType newType, WeaponLevel newLevel)
+Weapon &WorldSystem::switchWeapon(Entity player, RenderSystem *renderer, WeaponType newType, WeaponLevel newLevel)
 {
 	// Remove the existing weapon
 	Player &player_comp = registry.players.get(player);
@@ -1916,6 +2036,8 @@ void WorldSystem::switchWeapon(Entity player, RenderSystem *renderer, WeaponType
 
 	printf("Switched to new weapon: Type=%d, Level=%d, Damage=%.2f, Attack Speed=%.2f\n",
 				 static_cast<int>(newType), static_cast<int>(newLevel), newWeaponComp.damage, newWeaponComp.attack_speed);
+
+	return newWeaponComp;
 }
 
 void WorldSystem::player_action_finished()

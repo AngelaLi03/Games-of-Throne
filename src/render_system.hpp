@@ -188,6 +188,7 @@ public:
 	void initTextRendering();
 	void loadFont(const std::string &fontPath);
 	void renderDialogueLine(const std::string &line);
+	void renderPopup(const Popup &popup);
 
 	vec2 camera_position = {0.f, 0.f};
 

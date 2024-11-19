@@ -84,10 +84,6 @@ void AISystem::perform_knight_attack(KnightAttack attack)
 		return;
 
 	Motion &knight_motion = registry.motions.get(knight_entity);
-	Motion &player_motion = registry.motions.get(registry.players.entities[0]);
-	vec2 player_position = player_motion.position + player_motion.bb_offset;
-	vec2 knight_position = knight_motion.position + knight_motion.bb_offset;
-	vec2 direction = normalize(player_position - knight_position);
 
 	switch (attack)
 	{

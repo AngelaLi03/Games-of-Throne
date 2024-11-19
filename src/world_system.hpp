@@ -14,11 +14,6 @@
 #include "render_system.hpp"
 // #include "dialogue_system.hpp"
 
-struct Popup
-{
-	std::function<void()> onDismiss;
-};
-
 // Container for all our entities and game logic. Individual rendering / update is
 // deferred to the relative update() methods
 class WorldSystem
@@ -47,12 +42,10 @@ public:
 	std::vector<std::vector<int>> levelMap;
 	bool isSGesture();
 
-	void switchWeapon(Entity player, RenderSystem *renderer, WeaponType newType, WeaponLevel newLevel);
+	Weapon &switchWeapon(Entity player, RenderSystem *renderer, WeaponType newType, WeaponLevel newLevel);
 	void trigger_dialogue(std::vector<std::string> dialogue);
 
 	bool is_paused = false;
-	bool has_popup = false;
-	Popup active_popup = {};
 
 private:
 	void update_camera_view();

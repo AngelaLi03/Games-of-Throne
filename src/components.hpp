@@ -116,15 +116,15 @@ struct Attachment
 
 enum class WeaponType
 {
-	SWORD,
-	DAGGER
+	SWORD = 0,
+	DAGGER = 1
 };
 
 enum class WeaponLevel
 {
-	BASIC,
-	RARE,
-	LEGENDARY
+	BASIC = 0,
+	RARE = 1,
+	LEGENDARY = 2
 };
 
 struct Weapon
@@ -150,7 +150,7 @@ struct Animation
 struct Interpolation
 {
 	float elapsed_time = 0;
-	float total_time_to_0_ms = 700; // time to observe effect
+	float total_time_to_0_ms = 300; // time to observe effect
 	vec2 initial_velocity;					// velocity when button is released
 };
 
@@ -420,14 +420,31 @@ enum class TreasureBoxItem
 {
 	MAX_HEALTH = 0,
 	MAX_ENERGY = MAX_HEALTH + 1,
-	WEAPON = MAX_ENERGY + 1, // TODO: later change to different types of weapon
+	WEAPON = MAX_ENERGY + 1,
 	NONE = WEAPON + 1,
 };
 struct TreasureBox
 {
 	bool is_open = false;
 	TreasureBoxItem item = TreasureBoxItem::NONE;
+	WeaponLevel weapon_level = WeaponLevel::BASIC;
+	WeaponType weapon_type = WeaponType::SWORD;
 	Entity item_entity = Entity(0);
+};
+
+enum class PopupType
+{
+	ABILITY = 0,
+	HELP = ABILITY + 1,
+	TREASURE_BOX = HELP + 1,
+	NONE = TREASURE_BOX + 1,
+};
+struct Popup
+{
+	PopupType type = PopupType::NONE;
+	std::function<void()> onDismiss = nullptr;
+	std::string content_slot_1 = "";
+	std::string content_slot_2 = "";
 };
 
 /**

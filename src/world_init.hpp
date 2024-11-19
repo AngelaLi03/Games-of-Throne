@@ -45,9 +45,11 @@ Entity createDialogueWindow(RenderSystem *renderer, vec2 position, vec2 scale);
 
 Entity createFountain(RenderSystem *renderer, vec2 pos);
 
-Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item);
+Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item, WeaponType weapon_type = WeaponType::SWORD, WeaponLevel weapon_level = WeaponLevel::BASIC);
 
 Entity createPlayerRemnant(RenderSystem *renderer, Motion motion);
 
 // Generic function to create a static sprite without collision
 Entity createSprite(RenderSystem *renderer, vec2 pos, vec2 scale, TEXTURE_ASSET_ID texture_id);
+
+TEXTURE_ASSET_ID getWeaponTexture(WeaponType type, WeaponLevel level);

@@ -38,8 +38,19 @@
 				"id": "Chest",
 				"iid": "f8fac330-9b00-11ef-86e7-d33c28b1a542",
 				"layer": "Fountain",
-				"x": 240,
+				"x": 300,
 				"y": 2340,
+				"width": 120,
+				"height": 120,
+				"color": 7552569,
+				"customFields" : {}
+			},
+			{
+				"id": "Chest",
+				"iid": "cf554680-9b00-11ef-86e7-a303cd210695",
+				"layer": "Fountain",
+				"x": 1800,
+				"y": 2580,
 				"width": 120,
 				"height": 120,
 				"color": 7552569,
@@ -51,8 +62,8 @@
 				"id": "Fountain",
 				"iid": "4ef28360-9b00-11ef-b787-59972f37cf9a",
 				"layer": "Fountain",
-				"x": 1560,
-				"y": 480,
+				"x": 120,
+				"y": 780,
 				"width": 120,
 				"height": 120,
 				"color": 2943221,
@@ -180,6 +191,17 @@
 				"height": 60,
 				"color": 10626611,
 				"customFields" : {}
+			},
+			{
+				"id": "Minions",
+				"iid": "08fad030-9b00-11ef-86e7-b5185738ff5b",
+				"layer": "Fountain",
+				"x": 3240,
+				"y": 2400,
+				"width": 60,
+				"height": 60,
+				"color": 10626611,
+				"customFields" : {}
 			}
 		],
 		"Knight": [
@@ -205,6 +227,96 @@
 				"width": 60,
 				"height": 60,
 				"color": 4073265,
+				"customFields" : {}
+			}
+		],
+		"Ranged_Minion": [
+			{
+				"id": "Ranged_Minion",
+				"iid": "f24f7020-9b00-11ef-86e7-a59f510fb846",
+				"layer": "Fountain",
+				"x": 180,
+				"y": 1380,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
+				"customFields" : {}
+			},
+			{
+				"id": "Ranged_Minion",
+				"iid": "f340adf0-9b00-11ef-86e7-11602186e259",
+				"layer": "Fountain",
+				"x": 180,
+				"y": 360,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
+				"customFields" : {}
+			},
+			{
+				"id": "Ranged_Minion",
+				"iid": "f427d9a0-9b00-11ef-86e7-f9f07ea3831c",
+				"layer": "Fountain",
+				"x": 300,
+				"y": 2520,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
+				"customFields" : {}
+			},
+			{
+				"id": "Ranged_Minion",
+				"iid": "f5991ce0-9b00-11ef-86e7-45c99c1acf18",
+				"layer": "Fountain",
+				"x": 1320,
+				"y": 2640,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
+				"customFields" : {}
+			},
+			{
+				"id": "Ranged_Minion",
+				"iid": "f7498c00-9b00-11ef-86e7-ef4863ca78bc",
+				"layer": "Fountain",
+				"x": 2820,
+				"y": 2640,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
+				"customFields" : {}
+			},
+			{
+				"id": "Ranged_Minion",
+				"iid": "fa3190c0-9b00-11ef-86e7-8b952210df04",
+				"layer": "Fountain",
+				"x": 900,
+				"y": 420,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
+				"customFields" : {}
+			},
+			{
+				"id": "Ranged_Minion",
+				"iid": "0b76ccb0-9b00-11ef-86e7-e59401155274",
+				"layer": "Fountain",
+				"x": 3000,
+				"y": 2040,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
+				"customFields" : {}
+			},
+			{
+				"id": "Ranged_Minion",
+				"iid": "0d131790-9b00-11ef-86e7-7d707de5ab98",
+				"layer": "Fountain",
+				"x": 1200,
+				"y": 2160,
+				"width": 60,
+				"height": 60,
+				"color": 16690740,
 				"customFields" : {}
 			}
 		]

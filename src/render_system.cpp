@@ -20,6 +20,8 @@ extern std::vector<std::string> dialogue_to_render;
 extern bool unlocked_stealth_ability;
 extern bool dashAvailable;
 extern bool dashInUse;
+extern bool has_popup;
+extern Popup active_popup;
 
 glm::mat3 get_transform(const Motion &motion)
 {
@@ -457,7 +459,6 @@ void RenderSystem::draw()
 	}
 
 	bool renderD = false;
-	Player &player = registry.players.get(spy);
 	if (unlocked_stealth_ability)
 	{
 		if (dashAvailable)
@@ -487,6 +488,11 @@ void RenderSystem::draw()
 	if (dialogue_active)
 	{
 		renderDialogueLine(dialogue_to_render[current_dialogue_line]);
+	}
+
+	if (has_popup)
+	{
+		renderPopup(active_popup);
 	}
 
 	// Truely render to the screen
@@ -753,6 +759,27 @@ void RenderSystem::loadFont(const std::string &fontPath)
 
 	// Unbind texture
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void RenderSystem::renderPopup(const Popup &popup)
+{
+	switch (popup.type)
+	{
+	case PopupType::ABILITY:
+	{
+		renderText("You have unlocked the " + popup.content_slot_1 + " ability", window_width_px / 2 - 300, window_height_px / 2 - 100, 1.3f, vec3(0.0f, 0.0f, 0.0f));
+		renderText("Description: " + popup.content_slot_2, window_width_px / 2 - 300, window_height_px / 2 - 200, 0.8f, vec3(0.0f, 0.0f, 0.0f));
+		break;
+	}
+	case PopupType::TREASURE_BOX:
+	{
+		renderText("You received " + popup.content_slot_1 + "!", window_width_px / 2 - 300, window_height_px / 2 - 100, 1.3f, vec3(0.0f, 0.0f, 0.0f));
+		renderText(popup.content_slot_2, window_width_px / 2 - 300, window_height_px / 2 - 200, 0.8f, vec3(0.0f, 0.0f, 0.0f));
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 void RenderSystem::renderDialogueLine(const std::string &line)

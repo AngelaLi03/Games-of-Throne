@@ -4,6 +4,9 @@
 #include "iostream"
 #include "world_system.hpp"
 
+extern float player_max_health;
+extern float player_max_energy;
+
 // Create floor tile entity and add to registry.
 Entity createFloorTile(RenderSystem *renderer, vec2 pos)
 {
@@ -109,10 +112,10 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
 	Entity healthbar = createHealthBar(renderer, {50.f, 50.f}, entity);
-	registry.healths.insert(entity, {100.f, 100.f, healthbar});
+	registry.healths.insert(entity, {player_max_health, player_max_health, healthbar});
 	registry.cameraUI.emplace(healthbar);
 	Entity energybar = createEnergyBar(renderer, {50.f, 75.f}, entity);
-	registry.energys.insert(entity, {100.f, 100.f, energybar});
+	registry.energys.insert(entity, {player_max_energy, player_max_energy, energybar});
 	registry.cameraUI.emplace(energybar);
 
 	return entity;
@@ -278,7 +281,7 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
-void assignWeaponTexture(RenderSystem *renderer, Entity weapon, WeaponType type, WeaponLevel level)
+TEXTURE_ASSET_ID getWeaponTexture(WeaponType type, WeaponLevel level)
 {
 	TEXTURE_ASSET_ID texture;
 	switch (type)
@@ -312,17 +315,7 @@ void assignWeaponTexture(RenderSystem *renderer, Entity weapon, WeaponType type,
 		}
 		break;
 	}
-
-	registry.renderRequests.insert(
-			weapon,
-			{texture,
-			 EFFECT_ASSET_ID::TEXTURED,
-			 (type == WeaponType::DAGGER)
-					 ? GEOMETRY_BUFFER_ID::DAGGER
-					 : GEOMETRY_BUFFER_ID::WEAPON});
-
-	printf("RenderRequest: Geometry Buffer ID = %d\n",
-				 (type == WeaponType::DAGGER) ? (int)GEOMETRY_BUFFER_ID::DAGGER : (int)GEOMETRY_BUFFER_ID::WEAPON);
+	return texture;
 }
 
 Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLevel level)
@@ -358,8 +351,16 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLev
 
 	registry.physicsBodies.insert(entity, {BodyType::NONE});
 
-	// create an empty Spy component for our character
-	assignWeaponTexture(renderer, entity, type, level);
+	registry.renderRequests.insert(
+			entity,
+			{getWeaponTexture(type, level),
+			 EFFECT_ASSET_ID::TEXTURED,
+			 (type == WeaponType::DAGGER)
+					 ? GEOMETRY_BUFFER_ID::DAGGER
+					 : GEOMETRY_BUFFER_ID::WEAPON});
+
+	printf("RenderRequest: Geometry Buffer ID = %d\n",
+				 (type == WeaponType::DAGGER) ? (int)GEOMETRY_BUFFER_ID::DAGGER : (int)GEOMETRY_BUFFER_ID::WEAPON);
 
 	Weapon &weapon = registry.weapons.emplace(entity);
 	weapon.type = type;
@@ -760,7 +761,7 @@ Entity createFountain(RenderSystem *renderer, vec2 pos)
 	motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
 
-	Fountain &fountain = registry.fountains.emplace(entity);
+	registry.fountains.emplace(entity);
 	// fountain.is_active = false;
 
 	// registry.physicsBodies.insert(entity, {BodyType::STATIC});
@@ -773,7 +774,7 @@ Entity createFountain(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
-Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item)
+Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item, WeaponType weapon_type, WeaponLevel weapon_level)
 {
 	auto entity = Entity();
 
@@ -793,6 +794,8 @@ Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item)
 	TreasureBox &treasureBox = registry.treasureBoxes.emplace(entity);
 	treasureBox.is_open = false;
 	treasureBox.item = item;
+	treasureBox.weapon_level = weapon_level;
+	treasureBox.weapon_type = weapon_type;
 
 	registry.physicsBodies.insert(entity, {BodyType::STATIC});
 	registry.renderRequests.insert(
