@@ -56,6 +56,10 @@ bool RenderSystem::init(GLFWwindow *window_arg)
 	glBindVertexArray(vao);
 	gl_has_errors();
 
+	// Disable face culling
+	glDisable(GL_CULL_FACE);
+	glFrontFace(GL_CCW); // Counter clockwise front face
+
 	initScreenTexture();
 	initializeGlTextures();
 	initializeGlEffects();
@@ -171,8 +175,8 @@ void RenderSystem::initializeGlGeometryBuffers()
 	textured_vertices[2].texcoord = {1.f, 0.f};
 	textured_vertices[3].texcoord = {0.f, 0.f};
 
-	// Counterclockwise as it's the default opengl front winding direction.
-	const std::vector<uint16_t> textured_indices = {0, 3, 1, 1, 3, 2};
+	// Counterclockwise winding direction
+	const std::vector<uint16_t> textured_indices = {0, 1, 3, 1, 2, 3};
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SPRITE, textured_vertices, textured_indices);
 
 	// //////////////////////
@@ -198,7 +202,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{{0.5f, 0.15f, 1.f}, {1.f, 0.65f}},	 // 13
 			{{-0.5f, 0.15f, 1.f}, {0.f, 0.65f}}, // 14
 	};
-	std::vector<uint16_t> weapon_indices = {0, 3, 1, 1, 3, 2, 4, 7, 5, 5, 7, 6, 8, 10, 9, 11, 14, 12, 12, 14, 13};
+	std::vector<uint16_t> weapon_indices = {0, 1, 3, 1, 2, 3, 4, 5, 7, 5, 6, 7, 8, 9, 10, 11, 12, 14, 12, 13, 14};
 
 	textured_meshes[(int)GEOMETRY_BUFFER_ID::WEAPON].vertices = weapon_vertices;
 	textured_meshes[(int)GEOMETRY_BUFFER_ID::WEAPON].vertex_indices = weapon_indices;
@@ -223,15 +227,15 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	std::vector<uint16_t> dagger_indices = {
 			// Lower part
-			0, 3, 1,
-			1, 3, 2,
+			0, 1, 3,
+			1, 2, 3,
 			// Upper part
-			4, 7, 5,
-			5, 7, 6,
+			4, 5, 7,
+			5, 6, 7,
 			// Tip
-			8, 10, 9,
-			3, 4, 5,
-			3, 5, 2};
+			8, 9, 10,
+			3, 5, 4,
+			3, 2, 5};
 
 	textured_meshes[(int)GEOMETRY_BUFFER_ID::DAGGER].vertices = dagger_vertices;
 	textured_meshes[(int)GEOMETRY_BUFFER_ID::DAGGER].vertex_indices = dagger_indices;
@@ -279,7 +283,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 	///////////////////////////
 	// Initialize knight
 	std::vector<TexturedVertex> knight_vertices = {
-			// shield
+			// shield (0-6)
 			{{-0.33f, 0.1f, 1.f}, {0.17f, 0.6f}},		 // 0 center
 			{{-0.5f, -0.07f, 1.f}, {0.f, 0.43f}},		 // 1 top left
 			{{-0.5f, 0.17f, 1.f}, {0.f, 0.67f}},		 // 2 middle left
@@ -287,7 +291,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{{-0.16f, -0.07f, 1.f}, {0.34f, 0.43f}}, // 4 top right
 			{{-0.16f, 0.15f, 1.f}, {0.34f, 0.65f}},	 // 5 middle right
 			{{-0.33f, -0.12f, 1.f}, {0.17f, 0.38f}}, // 6 top
-			// head
+			// head (7-15)
 			{{-0.01f, -0.35f, 1.f}, {0.49f, 0.15f}}, // 7 center
 			{{-0.25f, -0.3f, 1.f}, {0.25f, 0.2f}},	 // 8 middle left
 			{{-0.18f, -0.13f, 1.f}, {0.32f, 0.37f}}, // 9 bottom left
@@ -297,7 +301,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{{-0.01f, -0.5f, 1.f}, {0.49f, 0.f}},		 // 13 top
 			{{-0.2f, -0.5f, 1.f}, {0.3f, 0.f}},			 // 14 top left
 			{{0.15f, -0.5f, 1.f}, {0.65f, 0.f}},		 // 15 top right
-			// body
+			// body (16-31)
 			{{0.f, 0.2f, 1.f}, {0.5f, 0.7f}},				 // 16 center
 			{{-0.25f, -0.22f, 1.f}, {0.25f, 0.28f}}, // 17 arm left top
 			{{-0.33f, -0.12f, 1.f}, {0.17f, 0.38f}}, // 18 = 6 top
@@ -314,7 +318,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{{0.29f, -0.1f, 1.f}, {0.79f, 0.4f}},		 // 29 middle right upper
 			{{0.18f, -0.19f, 1.f}, {0.68f, 0.31f}},	 // 30 arm right top
 			{{0.16f, -0.13f, 1.f}, {0.66f, 0.37f}},	 // 31 = 11 bottom right
-			// sword
+			// sword (32-43)
 			{{0.3f, -0.48f, 1.f}, {0.8f, 0.02f}},		// 32 handle top left
 			{{0.4f, -0.48f, 1.f}, {0.9f, 0.02f}},		// 33 handle top right
 			{{0.3f, -0.24f, 1.f}, {0.8f, 0.26f}},		// 34 handle bottom left
@@ -327,48 +331,47 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{{0.4f, -0.15f, 1.f}, {0.9f, 0.35f}},		// 41 blade top right
 			{{0.3f, 0.45f, 1.f}, {0.8f, 0.95f}},		// 42 blade bottom left
 			{{0.4f, 0.45f, 1.f}, {0.9f, 0.95f}},		// 43 blade bottom right
-
 	};
 	std::vector<uint16_t> knight_indices = {
-			// head
-			9, 8, 7,
-			10, 9, 7,
-			10, 7, 11,
-			11, 7, 12,
-			12, 7, 15,
-			15, 7, 13,
-			7, 14, 13,
-			7, 8, 14,
-			// body
-			22, 18, 17,
-			19, 18, 22,
-			19, 22, 23,
-			20, 19, 23,
-			16, 20, 23,
-			16, 21, 20,
-			24, 21, 16,
-			25, 24, 16,
-			26, 25, 16,
-			27, 26, 16,
-			28, 27, 16,
-			28, 16, 29,
-			29, 31, 30,
-			29, 16, 31,
-			31, 16, 23,
-			// shield
-			2, 1, 0,
-			3, 2, 0,
-			3, 0, 5,
-			5, 0, 4,
-			0, 1, 6,
-			0, 6, 4,
-			// sword
-			35, 34, 32,
-			35, 32, 33,
-			39, 38, 36,
-			39, 36, 37,
-			43, 42, 40,
-			43, 40, 41};
+			// head (0-7)
+			9, 7, 8,
+			10, 7, 9,
+			10, 11, 7,
+			11, 12, 7,
+			12, 15, 7,
+			15, 13, 7,
+			7, 13, 14,
+			7, 14, 8,
+			// body (8-22)
+			22, 17, 18,
+			19, 22, 18,
+			19, 23, 22,
+			20, 23, 19,
+			16, 23, 20,
+			16, 20, 21,
+			24, 16, 21,
+			25, 16, 24,
+			26, 16, 25,
+			27, 16, 26,
+			28, 16, 27,
+			28, 29, 16,
+			29, 30, 31,
+			29, 31, 16,
+			31, 23, 16,
+			// shield (23-28)
+			2, 0, 1,
+			3, 0, 2,
+			3, 5, 0,
+			5, 4, 0,
+			0, 6, 1,
+			0, 4, 6,
+			// sword (29-34)
+			35, 32, 34,
+			35, 33, 32,
+			39, 36, 38,
+			39, 37, 36,
+			43, 40, 42,
+			43, 41, 40};
 
 	// Transform knight_transform;
 	// // knight_transform.rotate(2.f);
@@ -382,7 +385,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 	};
 
 	std::vector<glm::ivec4> knight_bone_indices = {
-			// shield
+			// shield (0-6)
 			{1, 0, 0, 0}, // 0
 			{1, 0, 0, 0}, // 1
 			{1, 0, 0, 0}, // 2
@@ -390,6 +393,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{1, 0, 0, 0}, // 4
 			{1, 0, 0, 0}, // 5
 			{1, 0, 0, 0}, // 6
+			// head (7-15)
 			{2, 0, 0, 0}, // 7
 			{2, 0, 0, 0}, // 8
 			{2, 0, 0, 0}, // 9
@@ -399,14 +403,8 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{2, 0, 0, 0}, // 13
 			{2, 0, 0, 0}, // 14
 			{2, 0, 0, 0}, // 15
-			{2, 0, 0, 0}, // 16
-			{2, 0, 0, 0}, //
-			{2, 0, 0, 0}, //
-			{2, 0, 0, 0}, //
-			{2, 0, 0, 0}, //
-			{2, 0, 0, 0}, //
-			{2, 0, 0, 0}, //
-			{2, 0, 0, 0}, //
+			// body (16-31)
+			{0, 0, 0, 0}, // 16
 			{0, 0, 0, 0}, // 17
 			{0, 0, 0, 0}, // 18
 			{0, 0, 0, 0}, // 19
@@ -414,7 +412,15 @@ void RenderSystem::initializeGlGeometryBuffers()
 			{0, 0, 0, 0}, // 21
 			{0, 0, 0, 0}, // 22
 			{0, 0, 0, 0}, // 23
+			{0, 0, 0, 0}, // 24
+			{0, 0, 0, 0}, // 25
+			{0, 0, 0, 0}, // 26
+			{0, 0, 0, 0}, // 27
+			{0, 0, 0, 0}, // 28
+			{0, 0, 0, 0}, // 29
+			{0, 0, 0, 0}, // 30
 			{0, 0, 0, 0}, // 31
+			// sword (32-43)
 			{3, 0, 0, 0}, // 32
 			{3, 0, 0, 0}, // 33
 			{3, 0, 0, 0}, // 34

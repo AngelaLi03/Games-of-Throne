@@ -117,7 +117,7 @@ void RenderSystem::drawTexturedMesh(Entity entity, const mat3 &view, const mat3 
 
 			glBindBuffer(GL_ARRAY_BUFFER, indices_vbo);
 			glEnableVertexAttribArray(in_bone_indices_loc);
-			glVertexAttribPointer(in_bone_indices_loc, 4, GL_INT, GL_FALSE, sizeof(glm::ivec4), (void *)0);
+			glVertexAttribIPointer(in_bone_indices_loc, 4, GL_INT, sizeof(glm::ivec4), (void *)0);
 			gl_has_errors();
 
 			glBindBuffer(GL_ARRAY_BUFFER, weights_vbo);

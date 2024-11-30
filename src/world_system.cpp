@@ -1101,27 +1101,87 @@ void WorldSystem::handle_animations(float elapsed_ms)
 	}
 }
 
-void WorldSystem::draw_mesh_debug(Entity mesh_entity)
+void WorldSystem::draw_mesh_debug(Entity mesh_entity, bool consider_bones)
 {
 	Motion &mesh_motion = registry.motions.get(mesh_entity);
-	// createBox(mesh_motion.position + mesh_motion.bb_offset, get_bounding_box(mesh_motion), {1.f, 1.f, 0.f});
+	glm::mat3 transform = get_transform(mesh_motion);
 
 	TexturedMesh *mesh = registry.texturedMeshPtrs.get(mesh_entity);
 	auto &mesh_vertices = mesh->vertices;
 	auto &mesh_indices = mesh->vertex_indices;
-	glm::mat3 transform = get_transform(mesh_motion);
-	for (uint i = 0; i < mesh_indices.size(); i += 3)
+
+	if (consider_bones && registry.meshBones.has(mesh_entity))
 	{
-		vec2 p1 = xy(transform * mesh_vertices[mesh_indices[i]].position);
-		vec2 p2 = xy(transform * mesh_vertices[mesh_indices[i + 1]].position);
-		vec2 p3 = xy(transform * mesh_vertices[mesh_indices[i + 2]].position);
+		std::vector<glm::mat3> bone_matrices;
+		std::vector<MeshBone> &bones = registry.meshBones.get(mesh_entity).bones;
+		for (MeshBone &bone : bones)
+		{
+			glm::mat3 bone_matrix = bone.local_transform;
+			int parent_index = bone.parent_index;
+			if (parent_index != -1 && parent_index < bone_matrices.size())
+			{
+				bone_matrix = bone_matrices[parent_index] * bone_matrix;
+			}
+			bone_matrices.push_back(bone_matrix);
+		}
 
-		// draw line from p1 to p2, where createLine is function createLine(vec2 position, vec2 scale, vec3 color, float angle)
+		// std::cout << "bone_matrices.size() = " << bone_matrices.size() << std::endl;
 
-		createLine((p1 + p2) / 2.f, {glm::length(p2 - p1), 3.f}, {1.f, 1.f, 0.f}, atan2(p2.y - p1.y, p2.x - p1.x));
-		createLine((p2 + p3) / 2.f, {glm::length(p3 - p2), 3.f}, {1.f, 1.f, 0.f}, atan2(p3.y - p2.y, p3.x - p2.x));
-		createLine((p3 + p1) / 2.f, {glm::length(p1 - p3), 3.f}, {1.f, 1.f, 0.f}, atan2(p1.y - p3.y, p1.x - p3.x));
+		GEOMETRY_BUFFER_ID geometry_buffer_id = registry.renderRequests.get(mesh_entity).used_geometry;
+		auto &bone_indices = renderer->skinned_meshes[(int)geometry_buffer_id].bone_indices;
+		auto &bone_weights = renderer->skinned_meshes[(int)geometry_buffer_id].bone_weights;
+
+		// std::cout << "bone_indices.size() = " << bone_indices.size() << std::endl;
+		// std::cout << "bone_weights.size() = " << bone_weights.size() << std::endl;
+
+		std::vector<glm::mat3> vertex_transforms;
+		for (uint i = 0; i < mesh_vertices.size(); i++)
+		{
+			glm::mat3 vertex_transform = glm::mat3(0.0f);
+			for (int j = 0; j < 4; j++)
+			{
+				int bone_index = bone_indices[i][j];
+				float weight = bone_weights[i][j];
+				if (weight == 0.0f)
+				{
+					continue;
+				}
+				vertex_transform += weight * bone_matrices[bone_index];
+			}
+			vertex_transforms.push_back(vertex_transform);
+		}
+
+		// std::cout << "vertex_transforms.size() = " << vertex_transforms.size() << std::endl;
+
+		for (uint i = 0; i < mesh_indices.size(); i += 3)
+		{
+			vec2 p1 = xy(transform * vertex_transforms[mesh_indices[i]] * mesh_vertices[mesh_indices[i]].position);
+			vec2 p2 = xy(transform * vertex_transforms[mesh_indices[i + 1]] * mesh_vertices[mesh_indices[i + 1]].position);
+			vec2 p3 = xy(transform * vertex_transforms[mesh_indices[i + 2]] * mesh_vertices[mesh_indices[i + 2]].position);
+
+			// draw line from p1 to p2, where createLine is function createLine(vec2 position, vec2 scale, vec3 color, float angle)
+
+			createLine((p1 + p2) / 2.f, {glm::length(p2 - p1), 3.f}, {1.f, 1.f, 0.f}, atan2(p2.y - p1.y, p2.x - p1.x));
+			createLine((p2 + p3) / 2.f, {glm::length(p3 - p2), 3.f}, {1.f, 1.f, 0.f}, atan2(p3.y - p2.y, p3.x - p2.x));
+			createLine((p3 + p1) / 2.f, {glm::length(p1 - p3), 3.f}, {1.f, 1.f, 0.f}, atan2(p1.y - p3.y, p1.x - p3.x));
+		}
 	}
+	else
+	{
+		for (uint i = 0; i < mesh_indices.size(); i += 3)
+		{
+			vec2 p1 = xy(transform * mesh_vertices[mesh_indices[i]].position);
+			vec2 p2 = xy(transform * mesh_vertices[mesh_indices[i + 1]].position);
+			vec2 p3 = xy(transform * mesh_vertices[mesh_indices[i + 2]].position);
+
+			// draw line from p1 to p2, where createLine is function createLine(vec2 position, vec2 scale, vec3 color, float angle)
+
+			createLine((p1 + p2) / 2.f, {glm::length(p2 - p1), 3.f}, {1.f, 1.f, 0.f}, atan2(p2.y - p1.y, p2.x - p1.x));
+			createLine((p2 + p3) / 2.f, {glm::length(p3 - p2), 3.f}, {1.f, 1.f, 0.f}, atan2(p3.y - p2.y, p3.x - p2.x));
+			createLine((p3 + p1) / 2.f, {glm::length(p1 - p3), 3.f}, {1.f, 1.f, 0.f}, atan2(p1.y - p3.y, p1.x - p3.x));
+		}
+	}
+	// createBox(mesh_motion.position + mesh_motion.bb_offset, get_bounding_box(mesh_motion), {1.f, 1.f, 0.f});
 }
 
 // Compute collisions between entities
@@ -1156,11 +1216,14 @@ void WorldSystem::handle_collisions()
 		// draw_mesh_debug(player_weapon.weapon);
 
 		// Draw knight mesh
-		// if (registry.knight.size() > 0)
-		// {
-		// 	Entity knight_entity = registry.knight.entities[0];
-		// 	draw_mesh_debug(knight_entity);
-		// }
+		if (registry.knight.size() > 0)
+		{
+			Entity knight_entity = registry.knight.entities[0];
+			draw_mesh_debug(knight_entity, false);
+
+			// to also consider bone animations:
+			// draw_mesh_debug(knight_entity, true);
+		}
 
 		// Draw damage areas
 		for (uint i = 0; i < registry.damageAreas.components.size(); i++)

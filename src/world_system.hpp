@@ -55,7 +55,7 @@ private:
 	void load_level(const std::string &levelName, const int levelNumber);
 	void player_action_finished();
 
-	void draw_mesh_debug(Entity mesh_entity);
+	void draw_mesh_debug(Entity mesh_entity, bool consider_bones = false);
 
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
