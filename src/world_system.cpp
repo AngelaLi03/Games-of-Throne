@@ -6,8 +6,11 @@
 #include <cassert>
 #include <sstream>
 
+#include "../ext/json.hpp"
+
 #include "physics_system.hpp"
 #include "LDtkLoader/Project.hpp"
+#include <fstream>
 
 // Game configuration
 int ENEMIES_COUNT = 2;
@@ -32,7 +35,7 @@ bool chef_first_damaged = false;
 bool first_dead_minion = false;
 float player_max_health = 100.f;
 float player_max_energy = 100.f;
-
+int current_level = 0;
 std::vector<vec2> mousePath; // Stores points along the mouse path
 bool isTrackingMouse = false;
 // Threshold constants for gesture detection
@@ -227,7 +230,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	Motion &spy_motion = registry.motions.get(player_spy);
 	dashAvailable = player.state != PlayerState::DASHING && player.dash_cooldown_remaining_ms <= 0.0f;
 	dashInUse = (player.state == PlayerState::DASHING);
-
+	// saveProgress();
 	if (elapsed_time >= 1)
 	{
 		// Update FPS every second
@@ -575,7 +578,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (chef_health.is_dead)
 		{
 			registry.remove_all_components_of(chef_entity);
-
+			current_level = 1;
+			saveProgress(); // save since we killed chef i.e level progression
 			trigger_dialogue(chef_death_dialogue);
 			is_in_chef_dialogue = true;
 		}
@@ -715,9 +719,12 @@ void WorldSystem::restart_game()
 
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
-
-	load_level("Level_0", 0);
-
+	loadProgress();
+	// TODO: change this load_level
+	// load_level("Level_0", 0);
+	std::string levelName = (current_level == 0) ? "Level_0" : "Level_1";
+	std::cout << levelName << current_level << std::endl;
+	load_level(levelName, current_level);
 	trigger_dialogue(background_dialogue);
 }
 
@@ -2217,4 +2224,74 @@ void WorldSystem::trigger_dialogue(std::vector<std::string> dialogue)
 	// const Entity &spy_entity = registry.players.entities[0];
 	// Motion &spy_motion = registry.motions.get(spy_entity);
 	// createDialogueWindow(renderer, {spy_motion.position.x - 250.f, spy_motion.position.y + 60.f});
+}
+
+void WorldSystem::saveProgress()
+{
+	// Define the file path for saving progress
+	std::string filePath = PROJECT_SOURCE_DIR "/progress.json";
+
+	nlohmann::json saveData;
+	saveData["player_max_health"] = player_max_health;
+	saveData["player_max_energy"] = player_max_energy;
+	saveData["unlocked_stealth_ability"] = unlocked_stealth_ability;
+	saveData["current_level"] = current_level;
+	saveData["unlocked_weapons"] = nlohmann::json::array();
+	for (const auto &weaponEntity : registry.weapons.entities)
+	{
+		if (registry.weapons.has(weaponEntity))
+		{
+			Weapon &weapon = registry.weapons.get(weaponEntity);
+			nlohmann::json weaponData;
+			weaponData["type"] = static_cast<int>(weapon.type);
+			weaponData["level"] = static_cast<int>(weapon.level);
+			weaponData["damage"] = weapon.damage;
+			weaponData["attack_speed"] = weapon.attack_speed;
+
+			saveData["unlocked_weapons"].push_back(weaponData);
+		}
+	}
+
+	std::ofstream file(filePath);
+	if (file.is_open())
+	{
+		file << saveData.dump(4); // indent value !
+		file.close();
+		std::cout << "Game progress saved successfully.\n";
+	}
+	else
+	{
+		std::cerr << "Failed to open file for saving progress.\n";
+	}
+}
+
+void WorldSystem::loadProgress()
+{
+	std::string filePath = PROJECT_SOURCE_DIR "/progress.json";
+
+	std::ifstream file(filePath);
+	if (file.is_open())
+	{
+		nlohmann::json saveData;
+		file >> saveData;
+		file.close();
+
+		player_max_health = saveData.value("player_max_health", 100.0f);
+		player_max_energy = saveData.value("player_max_energy", 100.0f);
+		unlocked_stealth_ability = saveData.value("unlocked_stealth_ability", false);
+		current_level = saveData.value("current_level", 0);
+
+		std::cout << "Progress loaded successfully.\n";
+	}
+	else
+	{
+		player_max_health = 100.0f;
+		player_max_energy = 100.0f;
+		unlocked_stealth_ability = false;
+		current_level = 0;
+		// we are now initiating a save for systems that dont have the file on disk so it should work now
+		saveProgress();
+
+		std::cout << "No progress file found. Initialized default progress.\n";
+	}
 }

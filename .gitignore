@@ -15,3 +15,4 @@ games_of_throne
 .DS_Store
 /ext/project_path.hpp
 /CMakeSettings.json
+/progress.json
