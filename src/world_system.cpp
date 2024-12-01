@@ -783,6 +783,9 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 	int gridWidth = level.size.x / TILE_SIZE;
 	int gridHeight = level.size.y / TILE_SIZE;
 
+	std::vector<std::pair<Entity, vec2>> chests;
+	std::vector<std::pair<Entity, vec2>> minions;
+
 	level_grid.clear();
 	level_grid.resize(gridWidth, std::vector<int>(gridHeight, 0)); // 0 for walkable
 
@@ -826,17 +829,18 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 
 				if (entity_name == "Chest")
 				{
+					Entity chest_entity = Entity(0);
 					// Determine content of treasure box
 					float type_roll = uniform_dist(rng);
 					if (type_roll < 0.25f)
 					{
 						std::cout << "Creating treasure box with max health" << std::endl;
-						createTreasureBox(renderer, position, TreasureBoxItem::MAX_HEALTH);
+						chest_entity = createTreasureBox(renderer, position, TreasureBoxItem::MAX_HEALTH);
 					}
 					else if (type_roll < 0.5f)
 					{
 						std::cout << "Creating treasure box with max energy" << std::endl;
-						createTreasureBox(renderer, position, TreasureBoxItem::MAX_ENERGY);
+						chest_entity = createTreasureBox(renderer, position, TreasureBoxItem::MAX_ENERGY);
 					}
 					else
 					{
@@ -874,7 +878,12 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 						WeaponLevel wepaon_level = static_cast<WeaponLevel>(rarity);
 
 						std::cout << "Creating treasure box with weapon type " << (int)weapon_type << " and rarity " << (int)wepaon_level << std::endl;
-						createTreasureBox(renderer, position, TreasureBoxItem::WEAPON, weapon_type, wepaon_level);
+						chest_entity = createTreasureBox(renderer, position, TreasureBoxItem::WEAPON, weapon_type, wepaon_level);
+					}
+
+					if ((unsigned int)chest_entity != 0)
+					{
+						chests.push_back(std::make_pair(chest_entity, position));
 					}
 				}
 				else if (entity_name == "Fountain")
@@ -883,7 +892,8 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 				}
 				else if (entity_name == "Minions")
 				{
-					createEnemy(renderer, position);
+					Entity minion_entity = createEnemy(renderer, position);
+					minions.push_back(std::make_pair(minion_entity, position));
 				}
 				else if (entity_name == "Chef")
 				{
@@ -916,6 +926,31 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 	player.weapon_offset = vec2(45.f, -50.f);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
+
+	const float association_distance = 800.f;
+
+	// logic for associate minion w treasure box based on initialization positon
+	for (const auto &chest_pair : chests)
+	{
+		Entity chest_entity = chest_pair.first;
+		vec2 chest_position = chest_pair.second;
+		TreasureBox &treasure_box = registry.treasureBoxes.get(chest_entity);
+		std::cout << "Associating minions with chest!! " << chest_entity << std::endl;
+
+		for (const auto &minion_pair : minions)
+		{
+			Entity minion_entity = minion_pair.first;
+			vec2 minion_position = minion_pair.second;
+
+			float distance = length(chest_position - minion_position);
+			if (distance <= association_distance)
+			{
+				treasure_box.associated_minions.push_back(minion_entity);
+				std::cout << " - Minion " << minion_entity << " associated with chest " << chest_entity
+									<< " (distance: " << distance / TILE_SIZE << " tiles)" << std::endl;
+			}
+		}
+	}
 }
 
 void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
@@ -1445,9 +1480,9 @@ void WorldSystem::handle_collisions()
 													 ? player_weapon_comp.damage * player_comp.damage_multiplier
 													 : player_weapon_comp.damage * 2.5 * player_comp.damage_multiplier;
 
-				printf("Player attack type: %s, Damage: %.2f\n",
-							 player_comp.state == PlayerState::LIGHT_ATTACK ? "Light" : "Heavy",
-							 damage);
+				// printf("Player attack type: %s, Damage: %.2f\n",
+				//			 player_comp.state == PlayerState::LIGHT_ATTACK ? "Light" : "Heavy",
+				//			 damage);
 
 				if (registry.healths.has(entity_other))
 				{
@@ -1702,8 +1737,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	{
 		Motion &player_motion = registry.motions.get(player_spy);
 
-		// check for fountain interaction
-		for (Entity fountain : registry.fountains.entities)
+		// Check for fountain interaction
+		for (Entity &fountain : registry.fountains.entities)
 		{
 			Motion &fountain_motion = registry.motions.get(fountain);
 
@@ -1718,123 +1753,178 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			}
 		}
 
-		// check for treasure box interaction
+		// Check for treasure box interaction
 		for (unsigned int i = 0; i < registry.treasureBoxes.components.size(); i++)
 		{
-			Entity treasure_box_entity = registry.treasureBoxes.entities[i];
+			Entity &treasure_box_entity = registry.treasureBoxes.entities[i];
 			Motion &treasure_box_motion = registry.motions.get(treasure_box_entity);
 			float distance_to_player = length(treasure_box_motion.position - player_motion.position);
+
 			if (distance_to_player < 150.f)
 			{
 				TreasureBox &treasure_box = registry.treasureBoxes.components[i];
-				if (!treasure_box.is_open)
+
+				bool all_minions_defeated = false;
+
+				// proceesing dead minions  associated w chest
+				for (int j = 0; j < treasure_box.associated_minions.size();)
 				{
-					std::cout << "Treasure box opened" << std::endl;
-					treasure_box.is_open = true;
-					// play sound
-					// Mix_PlayChannel(-1, break_sound, 0);
+					Entity &minion_entity = treasure_box.associated_minions[j];
 
-					float frame_y_offset = -100.f;
-					vec2 frame_scale = {100.f, 100.f};
-					vec2 item_scale = {50.f, 50.f};
-
-					// create box item rendering
-					TEXTURE_ASSET_ID item_texture_id;
-					if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
+					if (registry.healths.has(minion_entity))
 					{
-						item_texture_id = TEXTURE_ASSET_ID::MAX_ENERGY;
-					}
-					else if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
-					{
-						item_texture_id = TEXTURE_ASSET_ID::MAX_HEALTH;
-					}
-					else if (treasure_box.item == TreasureBoxItem::WEAPON)
-					{
-						item_texture_id = getWeaponTexture(treasure_box.weapon_type, treasure_box.weapon_level);
-						item_scale = {80.f, 120.f};
-						frame_scale = {80.f, 130.f};
-						frame_y_offset = -100.f;
+						Health &minion_health = registry.healths.get(minion_entity);
+						if (minion_health.is_dead)
+						{
+							std::cout << " - Minion " << minion_entity << " has died and been removed from the list." << std::endl;
+							treasure_box.associated_minions.erase(treasure_box.associated_minions.begin() + j);
+						}
+						else
+						{
+							std::cout << " - Minion " << minion_entity << " is still alive." << std::endl;
+							j++;
+						}
 					}
 					else
-					{
-						std::cout << "Invalid item type" << std::endl;
-						continue;
+					{ // can delete dead min
+						std::cout << " - Minion " << minion_entity << " has been removed (no health component)." << std::endl;
+						treasure_box.associated_minions.erase(treasure_box.associated_minions.begin() + j);
 					}
+				}
 
-					// create ui frame background
-					createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, frame_scale, TEXTURE_ASSET_ID::UI_FRAME);
-
-					if (treasure_box.item != TreasureBoxItem::NONE)
-					{
-						treasure_box.item_entity = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, item_scale, item_texture_id);
-					}
-
-					RenderRequest &render_request = registry.renderRequests.get(treasure_box_entity);
-					render_request.used_texture = TEXTURE_ASSET_ID::TREASURE_BOX_OPEN;
+				if (treasure_box.associated_minions.size() == 0)
+				{
+					all_minions_defeated = true;
+					std::cout << "All associated minions have been defeated." << std::endl;
 				}
 				else
 				{
-					std::cout << "Treasure box already opened" << std::endl;
-					if (treasure_box.item != TreasureBoxItem::NONE && treasure_box.item_entity != 0)
+					all_minions_defeated = false;
+					std::cout << "There are still associated minions alive." << std::endl;
+				}
+
+				if (!all_minions_defeated)
+				{
+					std::cout << "Defeat all nearby minions before opening the chest!" << std::endl;
+					return;
+				}
+				else
+				{
+					if (!treasure_box.is_open)
 					{
-						std::string item_name = "";
-						std::string item_description = "";
-						if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
+						std::cout << "Treasure box opened" << std::endl;
+						treasure_box.is_open = true;
+						// play sound
+						// Mix_PlayChannel(-1, break_sound, 0);
+
+						float frame_y_offset = -100.f;
+						vec2 frame_scale = {100.f, 100.f};
+						vec2 item_scale = {50.f, 50.f};
+
+						// create box item rendering
+						TEXTURE_ASSET_ID item_texture_id;
+						if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
 						{
-							Health &player_health = registry.healths.get(player_spy);
-							player_health.max_health += 50.f;
-							player_max_health = player_health.max_health;
-							item_name = "Max Health";
-							item_description = "Max health increased by 50, now " + std::to_string(player_health.max_health);
+							item_texture_id = TEXTURE_ASSET_ID::MAX_ENERGY;
 						}
-						else if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
+						else if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
 						{
-							Energy &player_energy = registry.energys.get(player_spy);
-							player_energy.max_energy += 50.f;
-							player_max_energy = player_energy.max_energy;
-							item_name = "Max Energy";
-							item_description = "Increase maximum energy by 50, now " + std::to_string(player_energy.max_energy);
+							item_texture_id = TEXTURE_ASSET_ID::MAX_HEALTH;
 						}
 						else if (treasure_box.item == TreasureBoxItem::WEAPON)
 						{
-							WeaponType weapon_type = treasure_box.weapon_type;
-							WeaponLevel weapon_level = treasure_box.weapon_level;
-							Weapon &weapon = switchWeapon(player_spy, renderer, weapon_type, weapon_level);
-							item_name = get_weapon_name(weapon_type, weapon_level);
-
-							std::stringstream desc_ss;
-							desc_ss << weapon.damage << " damage, " << weapon.attack_speed << " seconds per attack.";
-							item_description = desc_ss.str();
+							item_texture_id = getWeaponTexture(treasure_box.weapon_type, treasure_box.weapon_level);
+							item_scale = {80.f, 120.f};
+							frame_scale = {80.f, 130.f};
+							frame_y_offset = -100.f;
+						}
+						else
+						{
+							std::cout << "Invalid item type" << std::endl;
+							continue;
 						}
 
-						Entity item_entity = treasure_box.item_entity;
+						// create ui frame background
+						createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, frame_scale, TEXTURE_ASSET_ID::UI_FRAME);
 
-						TEXTURE_ASSET_ID item_texture_id = registry.renderRequests.get(item_entity).used_texture;
-						vec2 item_scale = registry.motions.get(item_entity).scale;
+						if (treasure_box.item != TreasureBoxItem::NONE)
+						{
+							treasure_box.item_entity = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, item_scale, item_texture_id);
+						}
 
-						Entity backdrop = createBackdrop(renderer);
-						Entity dialogue_window = createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
+						RenderRequest &render_request = registry.renderRequests.get(treasure_box_entity);
+						render_request.used_texture = TEXTURE_ASSET_ID::TREASURE_BOX_OPEN;
+					}
+					else
+					{
+						std::cout << "Treasure box already opened" << std::endl;
+						if (treasure_box.item != TreasureBoxItem::NONE && treasure_box.item_entity != 0)
+						{
+							std::string item_name = "";
+							std::string item_description = "";
+							if (treasure_box.item == TreasureBoxItem::MAX_HEALTH)
+							{
+								Health &player_health = registry.healths.get(player_spy);
+								player_health.max_health += 50.f;
+								player_max_health = player_health.max_health;
+								item_name = "Max Health";
+								item_description = "Max health increased by 50, now " + std::to_string(player_health.max_health);
+							}
+							else if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
+							{
+								Energy &player_energy = registry.energys.get(player_spy);
+								player_energy.max_energy += 50.f;
+								player_max_energy = player_energy.max_energy;
+								item_name = "Max Energy";
+								item_description = "Increase maximum energy by 50, now " + std::to_string(player_energy.max_energy);
+							}
+							else if (treasure_box.item == TreasureBoxItem::WEAPON)
+							{
+								WeaponType weapon_type = treasure_box.weapon_type;
+								WeaponLevel weapon_level = treasure_box.weapon_level;
+								Weapon &weapon = switchWeapon(player_spy, renderer, weapon_type, weapon_level);
+								item_name = get_weapon_name(weapon_type, weapon_level);
 
-						std::cout << "texture id " << (int)item_texture_id << ", scale " << item_scale.x << ", " << item_scale.y << std::endl;
-						Entity item_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, item_scale, item_texture_id);
-						registry.cameraUI.emplace(item_sprite);
+								std::stringstream desc_ss;
+								desc_ss << weapon.damage << " damage, " << weapon.attack_speed << " seconds per attack.";
+								item_description = desc_ss.str();
+							}
 
-						active_popup = {PopupType::TREASURE_BOX, [item_sprite, backdrop, dialogue_window]()
-														{ registry.remove_all_components_of(item_sprite); registry.remove_all_components_of(backdrop); registry.remove_all_components_of((dialogue_window)); }, item_name, item_description};
-						has_popup = true;
-						is_paused = true;
+							Entity item_entity = treasure_box.item_entity;
 
-						// remove item rendering from box
-						registry.remove_all_components_of(treasure_box.item_entity);
+							TEXTURE_ASSET_ID item_texture_id = registry.renderRequests.get(item_entity).used_texture;
+							vec2 item_scale = registry.motions.get(item_entity).scale;
 
-						// remove item from box
-						treasure_box.item_entity = Entity(0);
-						treasure_box.item = TreasureBoxItem::NONE;
+							Entity backdrop = createBackdrop(renderer);
+							Entity dialogue_window = createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
+
+							std::cout << "texture id " << (int)item_texture_id << ", scale " << item_scale.x << ", " << item_scale.y << std::endl;
+							Entity item_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, item_scale, item_texture_id);
+							registry.cameraUI.emplace(item_sprite);
+
+							active_popup = {PopupType::TREASURE_BOX, [item_sprite, backdrop, dialogue_window]()
+															{
+																registry.remove_all_components_of(item_sprite);
+																registry.remove_all_components_of(backdrop);
+																registry.remove_all_components_of(dialogue_window);
+															},
+															item_name, item_description};
+							has_popup = true;
+							is_paused = true;
+
+							// remove item rendering from box
+							registry.remove_all_components_of(treasure_box.item_entity);
+
+							// remove item from box
+							treasure_box.item_entity = Entity(0);
+							treasure_box.item = TreasureBoxItem::NONE;
+						}
 					}
 				}
 			}
 		}
 	}
+
 	Player &player = registry.players.get(player_spy);
 	if (player.state == PlayerState::LIGHT_ATTACK || player.state == PlayerState::HEAVY_ATTACK || player.state == PlayerState::CHARGING_FLOW || player.state == PlayerState::DYING)
 	{
@@ -2073,7 +2163,7 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 		Energy &energy = registry.energys.get(player_spy);
 		if ((player.state == PlayerState::IDLE || player.state == PlayerState::SPRINTING) && energy.energy >= 10.0f)
 		{
-			std::cout << "Player light attack" << std::endl;
+			// std::cout << "Player light attack" << std::endl;
 			player.state = PlayerState::LIGHT_ATTACK;
 			player.current_attack_id = ++attack_id_counter;
 			player.consumedLightAttackEnergy = true;

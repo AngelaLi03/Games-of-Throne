@@ -436,6 +436,8 @@ struct TreasureBox
 	WeaponLevel weapon_level = WeaponLevel::BASIC;
 	WeaponType weapon_type = WeaponType::SWORD;
 	Entity item_entity = Entity(0);
+
+	std::vector<Entity> associated_minions;
 };
 
 enum class PopupType

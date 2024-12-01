@@ -556,7 +556,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			if (enemy.attack_countdown <= 0)
 			{
 				enemy.state = EnemyState::COMBAT;
-				printf("Enemy %d finish attack\n", i);
+				//printf("Enemy %d finish attack\n", i);
 				enemy.attack_countdown = 500;
 				// change to combat animation sprite
 				render_request.used_texture = animation.frames[0];
