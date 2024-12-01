@@ -635,6 +635,42 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		spy_motion.velocity = vec2(0.f, 0.f);
 	}
 
+	if (player.teleport_back_stab_cooldown > 0.0f)
+	{
+		player.teleport_back_stab_cooldown -= elapsed_ms_since_last_update;
+		if (player.teleport_back_stab_cooldown < 0.0f)
+		{
+			player.teleport_back_stab_cooldown = 0.0f;
+			printf("Teleport Backstab ability is ready!\n");
+		}
+	}
+
+	if (player.rage_cooldown > 0.0f)
+	{
+		player.rage_cooldown -= elapsed_ms_since_last_update;
+		if (player.rage_cooldown < 0.0f)
+		{
+			player.rage_cooldown = 0.0f;
+			player.rage_activate = false; // Reset activation flag when cooldown ends
+			printf("Rage ability is ready!\n");
+		}
+	}
+
+	if (player.rage_remaining > 0.0f)
+	{
+		player.rage_remaining -= elapsed_ms_since_last_update;
+		if (player.rage_remaining <= 0.0f)
+		{
+			// Reset rage effects
+			player.rage_remaining = 0.0f;
+			player.damage_multiplier = 1.0f;			 // Reset to normal damage
+			player.attack_speed_multiplier = 1.0f; // Reset to normal attack speed
+			player.rage_activate = false;
+
+			printf("Rage ability ended. Damage and attack speed returned to normal.\n");
+		}
+	}
+
 	return true;
 }
 
@@ -1406,8 +1442,8 @@ void WorldSystem::handle_collisions()
 				}
 
 				float damage = (player_comp.state == PlayerState::LIGHT_ATTACK)
-													 ? player_weapon_comp.damage
-													 : player_weapon_comp.damage * 2.5;
+													 ? player_weapon_comp.damage * player_comp.damage_multiplier
+													 : player_weapon_comp.damage * 2.5 * player_comp.damage_multiplier;
 
 				printf("Player attack type: %s, Damage: %.2f\n",
 							 player_comp.state == PlayerState::LIGHT_ATTACK ? "Light" : "Heavy",
@@ -1904,6 +1940,44 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			knight_health.take_damage(knight_health.health);
 		}
 	}
+
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS) // Example keybinding
+	{
+		Player &player = registry.players.get(player_spy); // Get the player component
+		if (player.teleport_back_stab_cooldown <= 0.0f)		 // Check cooldown
+		{
+			if (perform_teleport_backstab(player_spy))
+			{
+				player.teleport_back_stab_cooldown = 12 * 1000.0f; // Set 12-second cooldown
+			}
+		}
+		else
+		{
+			printf("Teleport Backstab ability is on cooldown! Remaining: %.2f seconds\n",
+						 player.teleport_back_stab_cooldown / 1000.0f);
+		}
+	}
+
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS) // Example keybinding for rage ability
+	{
+		Player &player = registry.players.get(player_spy); // Get the player component
+
+		if (!player.rage_activate && player.rage_cooldown <= 0.0f) // Check if rage is ready
+		{
+			player.rage_activate = true;						 // Set to true while rage is active
+			player.rage_remaining = 10.0f * 1000.0f; // 10 seconds in milliseconds
+			player.rage_cooldown = 40.0f * 1000.0f;	 // 40 seconds cooldown
+			player.damage_multiplier = 2.0f;				 // Double damage during rage
+			player.attack_speed_multiplier = 1.5f;	 // 50% faster attacks
+
+			printf("Rage ability activated: Increased damage and attack speed for 10 seconds.\n");
+		}
+		else if (player.rage_cooldown > 0.0f)
+		{
+			printf("Rage ability is on cooldown! Remaining: %.2f seconds\n",
+						 player.rage_cooldown / 1000.0f);
+		}
+	}
 }
 
 void WorldSystem::on_mouse_move(vec2 mouse_position)
@@ -2015,7 +2089,7 @@ void WorldSystem::on_mouse_button(int button, int action, int mods)
 			Animation animation;
 			animation.name = AnimationName::LIGHT_ATTACK;
 			animation.elapsed_time = 0.f;
-			animation.total_time = 500.f * attack_speed;
+			animation.total_time = 500.f * attack_speed / player.attack_speed_multiplier;
 			registry.animations.emplace(player_spy, animation);
 		}
 		// trigger player attack sound
@@ -2224,6 +2298,85 @@ void WorldSystem::trigger_dialogue(std::vector<std::string> dialogue)
 	// const Entity &spy_entity = registry.players.entities[0];
 	// Motion &spy_motion = registry.motions.get(spy_entity);
 	// createDialogueWindow(renderer, {spy_motion.position.x - 250.f, spy_motion.position.y + 60.f});
+}
+
+bool WorldSystem::perform_teleport_backstab(Entity player_spy)
+{
+	// Find the nearest enemy
+	Entity nearest_enemy = find_nearest_enemy(player_spy);
+
+	if (nearest_enemy == static_cast<Entity>(0))
+	{
+		printf("No enemy found to backstab!\n");
+		return false;
+	}
+
+	// Get enemy's position
+	Motion &enemy_motion = registry.motions.get(nearest_enemy);
+	vec2 enemy_position = enemy_motion.position;
+
+	vec2 screen_size = vec2(window_width_px, window_height_px);
+	vec2 camera_top_left = renderer->camera_position;
+	vec2 camera_bottom_right = camera_top_left + screen_size;
+
+	if (enemy_position.x < camera_top_left.x ||
+			enemy_position.x > camera_bottom_right.x ||
+			enemy_position.y < camera_top_left.y ||
+			enemy_position.y > camera_bottom_right.y)
+	{
+		printf("Enemy is not visible on the screen. Backstab canceled.\n");
+		return false;
+	}
+
+	// Calculate backstab position (slightly behind the enemy)
+	Motion &spy_motion = registry.motions.get(player_spy);
+	vec2 backstab_position = enemy_position - vec2(30.f, 30.f); //-normalize(enemy_motion.velocity) * 50.0f;
+
+	// Teleport the player_spy to the backstab position
+	spy_motion.position = backstab_position;
+	update_camera_view();
+	// printf("Player position: (%.2f, %.2f)\n", spy_motion.position.x, spy_motion.position.y);
+	// printf("Camera position: (%.2f, %.2f)\n", renderer->camera_position.x, renderer->camera_position.y);
+
+	// Deal critical damage
+	Health &enemy_health = registry.healths.get(nearest_enemy);
+	float damage = 125.0f;
+	enemy_health.take_damage(damage);
+
+	printf("Player performed a backstab! Dealt %.2f critical damage.\n", damage);
+
+	// Add visual effects or animations (optional)
+	// createBackstabEffect(backstab_position); // Placeholder for visual effect
+
+	return true;
+}
+
+Entity WorldSystem::find_nearest_enemy(Entity player_spy)
+{
+	Motion &spy_motion = registry.motions.get(player_spy);
+	vec2 spy_position = spy_motion.position;
+
+	Entity nearest_enemy = static_cast<Entity>(0);
+	float min_distance = std::numeric_limits<float>::max();
+
+	for (Entity enemy : registry.enemies.entities)
+	{
+		Health &enemy_health = registry.healths.get(enemy);
+		if (enemy_health.is_dead)
+		{
+			continue;
+		}
+
+		Motion &enemy_motion = registry.motions.get(enemy);
+		float distance = length(spy_position - enemy_motion.position);
+		if (distance < min_distance)
+		{
+			min_distance = distance;
+			nearest_enemy = enemy;
+		}
+	}
+
+	return nearest_enemy;
 }
 
 void WorldSystem::saveProgress()

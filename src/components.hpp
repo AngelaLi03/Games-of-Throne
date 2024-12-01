@@ -43,6 +43,12 @@ struct Player
 	bool current_dodge_is_perfect = false;
 	Motion current_dodge_original_motion;
 	bool damage_prevented = false;
+	float teleport_back_stab_cooldown = 0.0f;
+	float rage_activate = false;
+	float rage_cooldown = 0.0f;
+	float rage_remaining = 10.0f;
+	float damage_multiplier = 1.0f;
+	float attack_speed_multiplier = 1.0f;
 
 	// must call can_take_damage before dealing damage to player
 	bool can_take_damage(bool will_take_damage = true)

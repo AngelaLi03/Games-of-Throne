@@ -55,6 +55,8 @@ private:
 	void update_energy(float energy_time);
 	void load_level(const std::string &levelName, const int levelNumber);
 	void player_action_finished();
+	bool perform_teleport_backstab(Entity player_spy);
+	Entity find_nearest_enemy(Entity player_spy);
 
 	void draw_mesh_debug(Entity mesh_entity, bool consider_bones = false);
 
