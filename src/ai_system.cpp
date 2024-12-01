@@ -409,9 +409,9 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 	assert(player);
 
 	Player &player_comp = registry.players.get(player);
-	if (player_comp.state == PlayerState::DYING)
+	if (player_comp.state == PlayerState::DYING || player_comp.stealth_mode)
 	{
-		// skip all ai processing if player is dead; also make enemies stop moving/attacking
+		// skip all ai processing if player is dead (or in stealth mode); also make enemies stop moving/attacking
 		ComponentContainer<Enemy> &enemies = registry.enemies;
 		for (uint i = 0; i < enemies.components.size(); i++)
 		{
@@ -556,7 +556,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			if (enemy.attack_countdown <= 0)
 			{
 				enemy.state = EnemyState::COMBAT;
-				//printf("Enemy %d finish attack\n", i);
+				// printf("Enemy %d finish attack\n", i);
 				enemy.attack_countdown = 500;
 				// change to combat animation sprite
 				render_request.used_texture = animation.frames[0];

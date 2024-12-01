@@ -40,6 +40,7 @@ struct Player
 	bool consumedLightAttackEnergy = false;
 	bool consumedDodgeEnergy = false;
 	float dash_cooldown_remaining_ms = 0.0f;
+	bool stealth_mode = false;
 	bool current_dodge_is_perfect = false;
 	Motion current_dodge_original_motion;
 	bool damage_prevented = false;
@@ -172,7 +173,7 @@ struct Interpolation
 struct Dash
 {
 	float elapsed_time = 0.f;
-	float total_time_ms = 10000.f;
+	float total_time_ms = 5000.f;
 };
 
 struct PopupUI

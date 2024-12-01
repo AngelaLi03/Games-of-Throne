@@ -370,19 +370,19 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	float energy_time = elapsed_ms_since_last_update / 1000.0f;
 	update_energy(energy_time);
 
-	for (Entity entity : registry.dashes.entities)
+	for (int i = registry.dashes.components.size() - 1; i >= 0; i--)
 	{
 		Motion &spy_motion = registry.motions.get(player_spy);
 		dashAvailable = player.state != PlayerState::DASHING && player.dash_cooldown_remaining_ms <= 0.0f;
 		dashInUse = (player.state == PlayerState::DASHING);
-		Dash &dash = registry.dashes.get(entity);
+		Dash &dash = registry.dashes.components[i];
 		dash.elapsed_time += elapsed_ms_since_last_update;
 
 		if (dash.elapsed_time <= dash.total_time_ms)
 		{
 			float t = dash.elapsed_time / dash.total_time_ms;
 			float scaling_factor = bezzy(t, 1.0f, 2.0f, 1.0f);
-			spy_motion.velocity = player_movement_direction * PLAYER_SPEED * scaling_factor * 5.f;
+			spy_motion.velocity = player_movement_direction * PLAYER_SPEED * scaling_factor * 4.f;
 			// std::cout << "dash active, velocity is (" << spy_motion.velocity.x << ", " << spy_motion.velocity.y << ")" << std::endl;
 		}
 		else
@@ -390,8 +390,14 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 			player_action_finished();
 			dash.elapsed_time = 0;
 			player.dash_cooldown_remaining_ms = dash.total_time_ms;
-			registry.dashes.remove(entity);
+			registry.dashes.remove(registry.dashes.entities[i]);
 			std::cout << "Dash ended" << std::endl;
+			player.stealth_mode = false;
+
+			if (registry.opacities.has(player_spy))
+			{
+				registry.opacities.remove(player_spy);
+			}
 		}
 	}
 
@@ -1992,7 +1998,19 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		if ((player.state == PlayerState::IDLE || player.state == PlayerState::SPRINTING) && player.dash_cooldown_remaining_ms <= 0.0f)
 		{
 			player.state = PlayerState::DASHING;
+			player.stealth_mode = true;
 			std::cout << "DASHING NOW" << std::endl;
+
+			// Set player opacity
+			if (registry.opacities.has(player_spy))
+			{
+				float &opacity = registry.opacities.get(player_spy);
+				opacity = 0.75f;
+			}
+			else
+			{
+				registry.opacities.insert(player_spy, 0.75f);
+			}
 
 			// Add dash component and play dash sound
 			Dash dash;
