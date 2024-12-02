@@ -797,7 +797,7 @@ Entity createPan(RenderSystem *renderer, vec2 position, vec2 velocity)
 	motion.bb_offset = {0.f, 0.f};
 
 	// Create an (empty) Bug component to be able to refer to all bug
-	registry.pans.emplace(entity, Pan(25.f));
+	registry.pans.emplace(entity, Pan(20.f));
 	registry.physicsBodies.insert(entity, {BodyType::NONE});
 	registry.renderRequests.insert(
 			entity,

@@ -249,7 +249,7 @@ void AISystem::process_prince_attack(float elapsed_ms)
 		}
 		if (prince.attack_time_elapsed >= 1700.f)
 		{
-			prince.combat_cooldown = 3000.f;
+			prince.combat_cooldown = 2500.f;
 			prince.state = PrinceState::COMBAT;
 		}
 		break;
@@ -1442,7 +1442,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 						enemy.time_since_last_attack = 0.f;
 
-						createDamageArea(entity, motion.position, {100.f, 70.f}, 10.f, 500.f, 0.f, true, {50.f, 50.f});
+						createDamageArea(entity, motion.position, {100.f, 70.f}, 7.f, 500.f, 0.f, true, {50.f, 50.f});
 					}
 				}
 			}
@@ -1574,7 +1574,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 					play_knight_animation(keyframes);
 
 					// immediately start damage area (no delay)
-					createDamageArea(knight_entity, knight_position, knight_motion.bb_scale * 2.2f, 12.f, 1000.f, 0.f);
+					createDamageArea(knight_entity, knight_position, knight_motion.bb_scale * 2.2f, 9.f, 1000.f, 0.f);
 				}
 			}
 			else if (knight.state == KnightState::MULTI_DASH)
@@ -1627,7 +1627,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 
 					vec2 direction = normalize(player_position - knight_position);
 					knight_motion.velocity = direction * 400.f;
-					createDamageArea(knight_entity, knight_position, knight_motion.bb_scale * 1.8f, 20.f, 1000.f, 0.f, true, knight_motion.bb_offset);
+					createDamageArea(knight_entity, knight_position, knight_motion.bb_scale * 1.8f, 15.f, 1000.f, 0.f, true, knight_motion.bb_offset);
 				}
 			}
 			else if (knight.state == KnightState::DAMAGE_FIELD)
@@ -1639,7 +1639,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 				{
 					// actual damage area lasts 3000ms, 500ms before and after is for animation
 					// can repeatly damage every 1000ms
-					createDamageArea(knight_entity, knight_position, vec2(400.f, 400.f), 25.f, 3000.f, 1000.f);
+					createDamageArea(knight_entity, knight_position, vec2(400.f, 400.f), 18.f, 3000.f, 1000.f);
 					knight.damage_field_active = true;
 				}
 
