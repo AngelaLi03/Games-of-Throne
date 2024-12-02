@@ -2167,16 +2167,16 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		}
 	}
 
-	if (action == GLFW_RELEASE && key == GLFW_KEY_B) // Trigger weapon switch on "B" key
-	{
-		WeaponType randomType = static_cast<WeaponType>(rand() % 2);
-		WeaponLevel randomLevel = static_cast<WeaponLevel>(rand() % 3);
+	// if (action == GLFW_RELEASE && key == GLFW_KEY_B) // Trigger weapon switch on "B" key
+	// {
+	// 	WeaponType randomType = static_cast<WeaponType>(rand() % 2);
+	// 	WeaponLevel randomLevel = static_cast<WeaponLevel>(rand() % 3);
 
-		std::cout << "Switched to weapon type: " << static_cast<int>(randomType)
-							<< " and level: " << static_cast<int>(randomLevel) << std::endl;
+	// 	std::cout << "Switched to weapon type: " << static_cast<int>(randomType)
+	// 						<< " and level: " << static_cast<int>(randomLevel) << std::endl;
 
-		switchWeapon(player_spy, renderer, randomType, randomLevel);
-	}
+	// 	switchWeapon(player_spy, renderer, randomType, randomLevel);
+	// }
 
 	if (action == GLFW_PRESS && key == GLFW_KEY_H)
 	{

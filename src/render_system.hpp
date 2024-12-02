@@ -250,7 +250,6 @@ private:
 			"WASD/Arrow Keys: Basic directional movement",
 			"Shift and hold: Sprint (while holding directional keys)",
 			"Space Bar: Dodge, (Requires energy)",
-			"B: Switch Weapon",
 			"Left Mouse Click: Light Attack (Requires energy)",
 			"Right Mouse Click/Hold: Charge Flow (Hold to charge)",
 			"Right Mouse Click (Release with full flow): Heavy Attack",

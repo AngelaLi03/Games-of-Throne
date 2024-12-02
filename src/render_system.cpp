@@ -805,7 +805,7 @@ void RenderSystem::renderPopup(const Popup &popup)
 		float x_2 = 700.f;
 		float y = window_height_px - 225.0f;
 		float y_2 = window_height_px - 225.0f;
-		float y_3 = window_height_px - 560.f;
+		float y_3 = window_height_px - 500.f;
 		float lineSpacing = 45.0f;
 		float scale = 1.2f;
 		vec3 textColor = vec3(1.0f, 1.0f, 1.0f);
@@ -825,6 +825,7 @@ void RenderSystem::renderPopup(const Popup &popup)
 			renderText(line, x_2, y_3, scale, textColor);
 			y_3 -= lineSpacing;
 		}
+		renderText("Press Enter to start!", window_width_px - 470.f, 60.f, 2.1f, vec3(1.0f, 1.0f, 1.0f));
 		break;
 	}
 	default:
