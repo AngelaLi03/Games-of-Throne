@@ -134,7 +134,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	motion.position = pos;
 	motion.angle = 0.f;
 	// motion.velocity = {0.f, 0.f};
-	motion.velocity = {50.f, 0.f};
+	motion.velocity = {70.f, 0.f};
 	motion.scale = mesh.original_size * 300.f;
 	motion.scale.x *= 1.6;
 	motion.bb_scale = {150.f, 130.f};

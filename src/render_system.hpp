@@ -71,6 +71,8 @@ class RenderSystem
 			textures_path("king.png"),
 			textures_path("fountain.png"),
 			textures_path("stealth.png"),
+			textures_path("ability2.png"),
+			textures_path("ability3.png"),
 			textures_path("treasure_box.png"),
 			textures_path("treasure_box_open.png"),
 			textures_path("ui_frame.png"),
@@ -247,13 +249,13 @@ private:
 	std::vector<std::string> controls = {
 			"WASD/Arrow Keys: Basic directional movement",
 			"Shift and hold: Sprint (while holding directional keys)",
-			"X: Stealth Dash (Unlocked after defeating the chef)",
 			"Space Bar: Dodge, (Requires energy)",
 			"B: Switch Weapon",
 			"Left Mouse Click: Light Attack (Requires energy)",
 			"Right Mouse Click/Hold: Charge Flow (Hold to charge)",
 			"Right Mouse Click (Release with full flow): Heavy Attack",
 			"Draw 'S' with Mouse: Enlarge Player (Temporary)",
+			"1: Stealth Dash (Unlocked after defeating the chef)",
 			"2: Teleport Backstab (Unlocked after defeating the knight)",
 			"3: Rage Mode (Unlocked after defeating the prince)",
 	};
@@ -262,7 +264,7 @@ private:
 			"Enter: Continue dialogue/ Exit interaction/help screen",
 			"Escape: Exit Game",
 			"P: Toggle FPS Display",
-			"O: Toggle Help screen",
+			"O: Open Help screen",
 	};
 	std::vector<std::string> mechanisms = {
 			"Treasure box: New weapons/increase health/energy",

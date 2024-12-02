@@ -22,13 +22,15 @@ bool show_help_text = false;
 bool is_right_mouse_button_down = false;
 bool enlarged_player = false;
 float enlarge_countdown = 3000.f;
-const float PLAYER_SPEED = 100.f; // original speed
+const float PLAYER_SPEED = 175.f; // original speed
 const float SPRINTING_MULTIPLIER = 3.f;
 bool is_holding_shift = false;
 bool unlocked_stealth_ability = false;
+bool unlocked_teleport_stab_ability = false;
+bool unlocked_rage_ability = false;
 bool dashAvailable = true;
 bool dashInUse = false;
-bool dialogue_active = false;  // Indicates if the dialogue is active
+bool dialogue_active = false;	 // Indicates if the dialogue is active
 int current_dialogue_line = 0; // Tracks the current line of dialogue being shown
 std::vector<std::string> dialogue_to_render;
 bool chef_first_damaged = false;
@@ -52,6 +54,9 @@ bool has_popup = false;
 Popup active_popup = {};
 
 bool is_in_chef_dialogue = false;
+bool is_in_knight_dialogue = false;
+bool is_in_prince_dialogue = false;
+bool is_in_king_dialogue = false;
 
 bool background_dialogue_triggered = false;
 
@@ -192,13 +197,13 @@ GLFWwindow *WorldSystem::create_window()
 	if (salmon_dead_sound == nullptr || perfect_dodge_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
 	{
 		fprintf(stderr, "Failed to load sounds: %s\n %s\n %s\n %s\n %s\n %s\n %s\n make sure the data directory is present",
-				audio_path("soundtrack_1.wav").c_str(),
-				audio_path("death_sound.wav").c_str(),
-				audio_path("eat_sound.wav").c_str(),
-				audio_path("spy_death.wav").c_str(),
-				audio_path("spy_dash.wav").c_str(),
-				audio_path("spy_attack.wav").c_str(),
-				audio_path("break.wav").c_str());
+						audio_path("soundtrack_1.wav").c_str(),
+						audio_path("death_sound.wav").c_str(),
+						audio_path("eat_sound.wav").c_str(),
+						audio_path("spy_death.wav").c_str(),
+						audio_path("spy_dash.wav").c_str(),
+						audio_path("spy_attack.wav").c_str(),
+						audio_path("break.wav").c_str());
 		return nullptr;
 	}
 
@@ -608,7 +613,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (knight_health.is_dead)
 		{
 			registry.remove_all_components_of(knight_entity);
-			load_level("Level_2", 2);
+			trigger_dialogue(knight_death_dialogue);
+			is_in_knight_dialogue = true;
 		}
 	}
 
@@ -619,7 +625,8 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (prince_health.is_dead)
 		{
 			registry.remove_all_components_of(prince_entity);
-			load_level("Level_3", 3);
+			trigger_dialogue(prince_death_dialogue);
+			is_in_prince_dialogue = true;
 		}
 	}
 
@@ -630,7 +637,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (king_health.is_dead)
 		{
 			registry.remove_all_components_of(king_entity);
-			// TODO: show final dialogue
+			trigger_dialogue(king_death_dialogue);
 		}
 	}
 
@@ -692,7 +699,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		{
 			// Reset rage effects
 			player.rage_remaining = 0.0f;
-			player.damage_multiplier = 1.0f;	   // Reset to normal damage
+			player.damage_multiplier = 1.0f;			 // Reset to normal damage
 			player.attack_speed_multiplier = 1.0f; // Reset to normal attack speed
 			player.rage_activate = false;
 
@@ -747,7 +754,7 @@ void createRoom(std::vector<std::vector<int>> &levelMap, int x_start, int y_star
 }
 
 void createCorridor(std::vector<std::vector<int>> &levelMap, int x_start, int y_start, int length, int width,
-					bool add_wall_left = true, bool add_wall_right = true, bool add_wall_top = true, bool add_wall_bottom = true)
+										bool add_wall_left = true, bool add_wall_right = true, bool add_wall_top = true, bool add_wall_bottom = true)
 {
 	for (int i = x_start; i < x_start + length; ++i)
 	{
@@ -758,7 +765,7 @@ void createCorridor(std::vector<std::vector<int>> &levelMap, int x_start, int y_
 			if (is_edge)
 			{
 				if ((i == x_start && add_wall_left) || (i == x_start + length - 1 && add_wall_right) ||
-					(j == y_start && add_wall_top) || (j == y_start + width - 1 && add_wall_bottom))
+						(j == y_start && add_wall_top) || (j == y_start + width - 1 && add_wall_bottom))
 				{
 					levelMap[i][j] = 1; // Wall
 				}
@@ -899,10 +906,10 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 						type_roll = (type_roll - 0.5f) * 2.f;
 
 						std::vector<std::vector<float>> chance_tables = {
-							{0.7, 0.25, 0.05}, // level 0
-							{0.5, 0.4, 0.1},   // level 1
-							{0.3, 0.5, 0.2},   // etc
-							{0.1, 0.5, 0.4},
+								{0.7, 0.25, 0.05}, // level 0
+								{0.5, 0.4, 0.1},	 // level 1
+								{0.3, 0.5, 0.2},	 // etc
+								{0.1, 0.5, 0.4},
 						};
 						std::vector<float> &chance_table = chance_tables[levelNumber];
 						int rarity = 0;
@@ -1007,7 +1014,7 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 			{
 				treasure_box.associated_minions.push_back(minion_entity);
 				std::cout << " - Minion " << minion_entity << " associated with chest " << chest_entity
-						  << " (distance: " << distance / TILE_SIZE << " tiles)" << std::endl;
+									<< " (distance: " << distance / TILE_SIZE << " tiles)" << std::endl;
 			}
 		}
 	}
@@ -1096,7 +1103,7 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 				if (faceDir > 0)
 				{
 					weapon_motion.scale.y = -abs(weapon_motion.scale.y); // Flip for left-facing
-					player.weapon_offset.y = 60.f;						 // Adjust position for flipped scale
+					player.weapon_offset.y = 60.f;											 // Adjust position for flipped scale
 				}
 				else
 				{
@@ -1117,7 +1124,7 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 				if (faceDir > 0)
 				{
 					weapon_motion.scale.y = -abs(weapon_motion.scale.y); // Flip for left-facing
-					player.weapon_offset.y = 60.f;						 // Adjust position for flipped scale
+					player.weapon_offset.y = 60.f;											 // Adjust position for flipped scale
 				}
 				else
 				{
@@ -1522,8 +1529,8 @@ void WorldSystem::handle_collisions()
 				}
 
 				float damage = (player_comp.state == PlayerState::LIGHT_ATTACK)
-								   ? player_weapon_comp.damage * player_comp.damage_multiplier
-								   : player_weapon_comp.damage * 2.5 * player_comp.damage_multiplier;
+													 ? player_weapon_comp.damage * player_comp.damage_multiplier
+													 : player_weapon_comp.damage * 2.5 * player_comp.damage_multiplier;
 
 				// printf("Player attack type: %s, Damage: %.2f\n",
 				//			 player_comp.state == PlayerState::LIGHT_ATTACK ? "Light" : "Heavy",
@@ -1723,14 +1730,15 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 				active_popup.onDismiss();
 			active_popup = {};
 			// dismiss dialogue screen
-			if(show_help_text)
+			if (show_help_text)
 			{
 				show_help_text = false;
 				while (registry.popupUI.entities.size() > 0)
 				{
 					registry.remove_all_components_of(registry.popupUI.entities.back());
 				}
-				if(entergame){
+				if (entergame)
+				{
 					entergame = false;
 					trigger_dialogue(background_dialogue);
 				}
@@ -1766,9 +1774,46 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::STEALTH);
 					registry.cameraUI.emplace(ability_sprite);
 
-					// TODO: add invisible to this ability
 					active_popup = {PopupType::ABILITY, [this]()
-									{ load_level("Level_1", 1); }, "stealth dash", "Become fast for a short time"};
+													{ load_level("Level_1", 1); }, "stealth dash", "Become fast for a short time"};
+					has_popup = true;
+					is_paused = true;
+				}
+
+				if (is_in_knight_dialogue)
+				{
+					is_in_knight_dialogue = false;
+
+					// gain stab ability
+					unlocked_teleport_stab_ability = true;
+					saveProgress();
+					createBackdrop(renderer);
+					createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
+
+					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::TELPORT_BACK_STAB);
+					registry.cameraUI.emplace(ability_sprite);
+
+					active_popup = {PopupType::ABILITY, [this]()
+													{ load_level("Level_2", 2); }, "Backstab", "Teleport to the back of enemy and perform a backstab"};
+					has_popup = true;
+					is_paused = true;
+				}
+
+				if (is_in_prince_dialogue)
+				{
+					is_in_prince_dialogue = false;
+
+					// gain stab ability
+					unlocked_rage_ability = true;
+					saveProgress(); // saving after unlock flag set - imp
+					createBackdrop(renderer);
+					createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
+
+					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::RAGE);
+					registry.cameraUI.emplace(ability_sprite);
+
+					active_popup = {PopupType::ABILITY, [this]()
+													{ load_level("Level_3", 3); }, "Rage", "increase attack speed and damage for a short time"};
 					has_popup = true;
 					is_paused = true;
 				}
@@ -1850,7 +1895,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 				Health &player_health = registry.healths.get(player_spy);
 				player_health.health = player_health.max_health;
 				printf("Player healed to max health: %.2f / %.2f\n",
-					   player_health.health, player_health.max_health);
+							 player_health.health, player_health.max_health);
 				return;
 			}
 		}
@@ -2005,12 +2050,12 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 							registry.cameraUI.insert(item_sprite, {1});
 
 							active_popup = {PopupType::TREASURE_BOX, [item_sprite, backdrop, dialogue_window]()
-											{
-												registry.remove_all_components_of(item_sprite);
-												registry.remove_all_components_of(backdrop);
-												registry.remove_all_components_of(dialogue_window);
-											},
-											item_name, item_description};
+															{
+																registry.remove_all_components_of(item_sprite);
+																registry.remove_all_components_of(backdrop);
+																registry.remove_all_components_of(dialogue_window);
+															},
+															item_name, item_description};
 							has_popup = true;
 							is_paused = true;
 
@@ -2079,7 +2124,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		motion.velocity = player_movement_direction * PLAYER_SPEED * speed_multiplier;
 	}
 
-	if (action == GLFW_PRESS && key == GLFW_KEY_X)
+	if (action == GLFW_PRESS && key == GLFW_KEY_1)
 	{
 		Player &player = registry.players.get(player_spy);
 
@@ -2123,7 +2168,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		WeaponLevel randomLevel = static_cast<WeaponLevel>(rand() % 3);
 
 		std::cout << "Switched to weapon type: " << static_cast<int>(randomType)
-				  << " and level: " << static_cast<int>(randomLevel) << std::endl;
+							<< " and level: " << static_cast<int>(randomLevel) << std::endl;
 
 		switchWeapon(player_spy, renderer, randomType, randomLevel);
 	}
@@ -2156,7 +2201,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS) // Example keybinding
 	{
 		Player &player = registry.players.get(player_spy); // Get the player component
-		if (player.teleport_back_stab_cooldown <= 0.0f)	   // Check cooldown
+		if (player.teleport_back_stab_cooldown <= 0.0f)		 // Check cooldown
 		{
 			if (perform_teleport_backstab(player_spy))
 			{
@@ -2166,7 +2211,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		else
 		{
 			printf("Teleport Backstab ability is on cooldown! Remaining: %.2f seconds\n",
-				   player.teleport_back_stab_cooldown / 1000.0f);
+						 player.teleport_back_stab_cooldown / 1000.0f);
 		}
 	}
 
@@ -2176,10 +2221,10 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 		if (!player.rage_activate && player.rage_cooldown <= 0.0f) // Check if rage is ready
 		{
-			player.rage_activate = true;			 // Set to true while rage is active
+			player.rage_activate = true;						 // Set to true while rage is active
 			player.rage_remaining = 10.0f * 1000.0f; // 10 seconds in milliseconds
 			player.rage_cooldown = 40.0f * 1000.0f;	 // 40 seconds cooldown
-			player.damage_multiplier = 2.0f;		 // Double damage during rage
+			player.damage_multiplier = 2.0f;				 // Double damage during rage
 			player.attack_speed_multiplier = 1.5f;	 // 50% faster attacks
 
 			printf("Rage ability activated: Increased damage and attack speed for 10 seconds.\n");
@@ -2187,7 +2232,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		else if (player.rage_cooldown > 0.0f)
 		{
 			printf("Rage ability is on cooldown! Remaining: %.2f seconds\n",
-				   player.rage_cooldown / 1000.0f);
+						 player.rage_cooldown / 1000.0f);
 		}
 	}
 }
@@ -2398,7 +2443,7 @@ Weapon &WorldSystem::switchWeapon(Entity player, RenderSystem *renderer, WeaponT
 	player_comp.weapon_offset = vec2(45.f, -50.f);
 
 	printf("Switched to new weapon: Type=%d, Level=%d, Damage=%.2f, Attack Speed=%.2f\n",
-		   static_cast<int>(newType), static_cast<int>(newLevel), newWeaponComp.damage, newWeaponComp.attack_speed);
+				 static_cast<int>(newType), static_cast<int>(newLevel), newWeaponComp.damage, newWeaponComp.attack_speed);
 
 	return newWeaponComp;
 }
@@ -2540,9 +2585,9 @@ bool WorldSystem::perform_teleport_backstab(Entity player_spy)
 	vec2 camera_bottom_right = camera_top_left + screen_size;
 
 	if (enemy_position.x < camera_top_left.x ||
-		enemy_position.x > camera_bottom_right.x ||
-		enemy_position.y < camera_top_left.y ||
-		enemy_position.y > camera_bottom_right.y)
+			enemy_position.x > camera_bottom_right.x ||
+			enemy_position.y < camera_top_left.y ||
+			enemy_position.y > camera_bottom_right.y)
 	{
 		printf("Enemy is not visible on the screen. Backstab canceled.\n");
 		return false;
@@ -2608,6 +2653,8 @@ void WorldSystem::saveProgress()
 	saveData["player_max_health"] = player_max_health;
 	saveData["player_max_energy"] = player_max_energy;
 	saveData["unlocked_stealth_ability"] = unlocked_stealth_ability;
+	saveData["unlocked_teleport_stab_ability"] = unlocked_teleport_stab_ability;
+	saveData["unlocked_rage_ability"] = unlocked_rage_ability;
 	saveData["current_level"] = current_level;
 	saveData["unlocked_weapons"] = nlohmann::json::array();
 	for (const auto &weaponEntity : registry.weapons.entities)
@@ -2652,6 +2699,8 @@ void WorldSystem::loadProgress()
 		player_max_health = saveData.value("player_max_health", 100.0f);
 		player_max_energy = saveData.value("player_max_energy", 100.0f);
 		unlocked_stealth_ability = saveData.value("unlocked_stealth_ability", false);
+		unlocked_teleport_stab_ability = saveData.value("unlocked_teleport_stab_ability", false);
+		unlocked_rage_ability = saveData.value("unlocked_rage_ability", false);
 		current_level = saveData.value("current_level", 0);
 
 		std::cout << "Progress loaded successfully.\n";
@@ -2661,6 +2710,8 @@ void WorldSystem::loadProgress()
 		player_max_health = 100.0f;
 		player_max_energy = 100.0f;
 		unlocked_stealth_ability = false;
+		unlocked_teleport_stab_ability = false;
+		unlocked_rage_ability = false;
 		current_level = 0;
 
 		std::cout << "No progress file found. Initialized default progress.\n";

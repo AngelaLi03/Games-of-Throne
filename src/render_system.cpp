@@ -18,6 +18,7 @@ extern int current_dialogue_line; // Tracks the current line of dialogue being s
 extern std::vector<std::string> dialogue_to_render;
 // for DASH rendering
 extern bool unlocked_stealth_ability;
+extern bool unlocked_teleport_stab_ability;
 extern bool dashAvailable;
 extern bool dashInUse;
 extern bool has_popup;
@@ -784,8 +785,8 @@ void RenderSystem::renderPopup(const Popup &popup)
 	{
 	case PopupType::ABILITY:
 	{
-		renderText("You have unlocked the " + popup.content_slot_1 + " ability", window_width_px / 2 - 300, window_height_px / 2 - 100, 1.3f, vec3(0.0f, 0.0f, 0.0f));
-		renderText("Description: " + popup.content_slot_2, window_width_px / 2 - 300, window_height_px / 2 - 200, 0.8f, vec3(0.0f, 0.0f, 0.0f));
+		renderText("You have unlocked the " + popup.content_slot_1 + " ability", window_width_px / 2 - 300, window_height_px / 2 - 100, 1.3f, vec3(1.0f, 1.0f, 1.0f));
+		renderText("Description: " + popup.content_slot_2, window_width_px / 2 - 300, window_height_px / 2 - 200, 0.8f, vec3(1.0f, 1.0f, 1.0f));
 		break;
 	}
 	case PopupType::TREASURE_BOX:
