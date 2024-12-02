@@ -360,6 +360,11 @@ void RenderSystem::draw()
 		// albeit iterating through all Sprites in sequence. A good point to optimize
 		if (registry.cameraUI.has(entity))
 		{
+			CameraUI &camera_ui = registry.cameraUI.get(entity);
+			if (camera_ui.layer != 0)
+			{
+				continue;
+			}
 			mat3 identity_view = mat3(1.0f); // Identity matrix
 			drawTexturedMesh(entity, identity_view, projection_2D);
 		}
@@ -367,6 +372,18 @@ void RenderSystem::draw()
 		{
 			drawTexturedMesh(entity, camera_view, projection_2D);
 		}
+	}
+
+	// hack to force UI elements to show above others (set layer to 1 instead of the default 0)
+	for (Entity entity : registry.cameraUI.entities)
+	{
+		CameraUI &camera_ui = registry.cameraUI.get(entity);
+		if (camera_ui.layer == 0 || !registry.renderRequests.has(entity))
+		{
+			continue;
+		}
+		mat3 identity_view = mat3(1.0f); // Identity matrix
+		drawTexturedMesh(entity, identity_view, projection_2D);
 	}
 
 	for (Entity enemy : registry.enemies.entities)

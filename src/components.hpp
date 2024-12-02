@@ -491,8 +491,9 @@ struct BackGround
 {
 };
 
-struct MoveUI
+struct CameraUI
 {
+	int layer = 0;
 };
 
 enum class TreasureBoxItem

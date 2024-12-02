@@ -40,7 +40,7 @@ public:
 	ComponentContainer<SpinArea> spinareas;
 	ComponentContainer<Attachment> attachments;
 	ComponentContainer<SpriteAnimation> spriteAnimations;
-	ComponentContainer<MoveUI> cameraUI;
+	ComponentContainer<CameraUI> cameraUI;
 	ComponentContainer<DamageArea> damageAreas;
 	ComponentContainer<BossAnimation> bossAnimations;
 	ComponentContainer<Knight> knight;

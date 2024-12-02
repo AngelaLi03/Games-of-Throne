@@ -1932,7 +1932,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 								player_health.max_health += 50.f;
 								player_max_health = player_health.max_health;
 								item_name = "Max Health";
-								item_description = "Max health increased by 50, now " + std::to_string(player_health.max_health);
+								item_description = "Max health increased by 50, now " + std::to_string(static_cast<int>(player_health.max_health));
 							}
 							else if (treasure_box.item == TreasureBoxItem::MAX_ENERGY)
 							{
@@ -1940,7 +1940,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 								player_energy.max_energy += 50.f;
 								player_max_energy = player_energy.max_energy;
 								item_name = "Max Energy";
-								item_description = "Increase maximum energy by 50, now " + std::to_string(player_energy.max_energy);
+								item_description = "Increase maximum energy by 50, now " + std::to_string(static_cast<int>(player_energy.max_energy));
 							}
 							else if (treasure_box.item == TreasureBoxItem::WEAPON)
 							{
@@ -1963,8 +1963,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 							Entity dialogue_window = createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
 
 							std::cout << "texture id " << (int)item_texture_id << ", scale " << item_scale.x << ", " << item_scale.y << std::endl;
-							Entity item_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, item_scale, item_texture_id);
-							registry.cameraUI.emplace(item_sprite);
+							Entity item_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, item_scale * 3.f, item_texture_id);
+							registry.cameraUI.insert(item_sprite, {1});
 
 							active_popup = {PopupType::TREASURE_BOX, [item_sprite, backdrop, dialogue_window]()
 															{
