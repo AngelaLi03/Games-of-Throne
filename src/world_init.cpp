@@ -875,7 +875,7 @@ Entity createBackdrop(RenderSystem *renderer)
 	registry.cameraUI.emplace(entity);
 	registry.popupUI.emplace(entity);
 	registry.colors.insert(entity, vec3(0.f, 0.f, 0.f));
-	registry.opacities.insert(entity, 0.5f);
+	registry.opacities.insert(entity, 0.8f);
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::TEXTURE_COUNT,

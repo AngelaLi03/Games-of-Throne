@@ -46,6 +46,7 @@ public:
 	void trigger_dialogue(std::vector<std::string> dialogue);
 	void saveProgress();
 	void loadProgress();
+	void instruction_screen();
 	void updateBackgroundForLevel(int levelNumber);
 	bool is_paused = false;
 	float w_angle;

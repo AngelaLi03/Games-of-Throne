@@ -462,17 +462,17 @@ void RenderSystem::draw()
 
 	if (show_help_text)
 	{
-		float x = 10.0f;										 // Starting x position
-		float y = window_height_px - 100.0f; // Starting y position (from top)
-		float lineSpacing = 25.0f;
-		float scale = 0.8f;
-		vec3 textColor = vec3(1.0f, 1.0f, 1.0f);
+		// float x = 10.0f;										 // Starting x position
+		// float y = window_height_px - 100.0f; // Starting y position (from top)
+		// float lineSpacing = 25.0f;
+		// float scale = 0.8f;
+		// vec3 textColor = vec3(1.0f, 1.0f, 1.0f);
 
-		for (const std::string &line : gameInstructions)
-		{
-			renderText(line, x, y, scale, textColor);
-			y -= lineSpacing;
-		}
+		// for (const std::string &line : gameInstructions)
+		// {
+		// 	renderText(line, x, y, scale, textColor);
+		// 	y -= lineSpacing;
+		// }
 	}
 
 	bool renderD = false;
@@ -794,6 +794,37 @@ void RenderSystem::renderPopup(const Popup &popup)
 		renderText(popup.content_slot_2, window_width_px / 2 - 300, window_height_px / 2 - 200, 0.8f, vec3(0.0f, 0.0f, 0.0f));
 		break;
 	}
+	case PopupType::HELP:
+	{
+		renderText("HOW TO PLAY", window_width_px / 2 - 175, 630.f, 3.f, vec3(1.0f, 1.0f, 1.0f));
+		renderText(popup.content_slot_1, window_width_px / 2 - 400, 550.f, 1.7f, vec3(1.0f, 1.0f, 1.0f));
+		renderText(popup.content_slot_2, window_width_px / 2 + 200, 550.f, 1.7f, vec3(1.0f, 1.0f, 1.0f));
+		float x = 50.0f;
+		float x_2 = 700.f;
+		float y = window_height_px - 225.0f;
+		float y_2 = window_height_px - 225.0f;
+		float y_3 = window_height_px - 560.f;
+		float lineSpacing = 45.0f;
+		float scale = 1.2f;
+		vec3 textColor = vec3(1.0f, 1.0f, 1.0f);
+
+		for (const std::string &line : controls)
+		{
+			renderText(line, x, y, scale, textColor);
+			y -= lineSpacing;
+		}
+		for (const std::string &line : UI_interactions)
+		{
+			renderText(line, x_2, y_2, scale, textColor);
+			y_2 -= lineSpacing;
+		}
+		for (const std::string &line : mechanisms)
+		{
+			renderText(line, x_2, y_3, scale, textColor);
+			y_3 -= lineSpacing;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -803,8 +834,8 @@ void RenderSystem::renderDialogueLine(const std::string &line)
 {
 	float x = 100.f; // Starting x position for the text
 	float y = 250.f; // Position inside the dialogue window
-	float scale = 1.f;
-	vec3 textColor = vec3(0.2f, 0.2f, 0.2f); // Dark gray text color
+	float scale = 1.2f;
+	vec3 textColor = vec3(1.0f, 1.0f, 1.0f); // Dark gray text color
 
 	// std::cout << "Render text length: " << line.size() << std::endl;
 	if (line.size() > 100)

@@ -68,7 +68,7 @@ bool RenderSystem::init(GLFWwindow *window_arg)
 
 	initializeGlGeometryBuffers();
 	initTextRendering();
-	loadFont(font_path("Arial.ttf"));
+	loadFont(font_path("Orange.ttf"));
 
 	gl_has_errors();
 

@@ -82,7 +82,7 @@ class RenderSystem
 			textures_path("firerain.png"),
 			textures_path("lasers.png"),
 			textures_path("summon_soldier.png"),
-			textures_path("dialogue_window.png"),
+			textures_path("dialogue_bg.png"),
 			textures_path("level1_bg.png"),
 			textures_path("level2_bg.png"),
 			textures_path("level3_bg.png"),
@@ -243,6 +243,31 @@ private:
 			"Right Mouse Click (Hold): Charge Flow (Hold to charge)",
 			"Right Mouse Click (Release with full flow): Heavy Attack",
 			"Draw 'S' with Mouse: Enlarge Player (Temporary)",
+	};
+	std::vector<std::string> controls = {
+			"WASD/Arrow Keys: Basic directional movement",
+			"Shift and hold: Sprint (while holding directional keys)",
+			"X: Stealth Dash (Unlocked after defeating the chef)",
+			"Space Bar: Dodge, (Requires energy)",
+			"B: Switch Weapon",
+			"Left Mouse Click: Light Attack (Requires energy)",
+			"Right Mouse Click/Hold: Charge Flow (Hold to charge)",
+			"Right Mouse Click (Release with full flow): Heavy Attack",
+			"Draw 'S' with Mouse: Enlarge Player (Temporary)",
+			"2: Teleport Backstab (Unlocked after defeating the knight)",
+			"3: Rage Mode (Unlocked after defeating the prince)",
+	};
+	std::vector<std::string> UI_interactions = {
+			"E: Interact with fountain/ treasure box",
+			"Enter: Continue dialogue/ Exit interaction/help screen",
+			"Escape: Exit Game",
+			"P: Toggle FPS Display",
+			"O: Toggle Help screen",
+	};
+	std::vector<std::string> mechanisms = {
+			"Treasure box: New weapons/increase health/energy",
+			"Fountains will heal you to full health",
+			"Take on your journey to bring peace to Astraeth!",
 	};
 };
 
