@@ -322,7 +322,14 @@ Entity createArrow(RenderSystem *renderer, vec2 position, vec2 velocity)
 	motion.velocity = velocity;
 	motion.angle = atan2(velocity.y, velocity.x);
 	motion.scale = {100.f, 20.f};
-	motion.bb_scale = motion.scale;
+	float w = motion.scale.x;
+    float h = motion.scale.y;
+    float cos_theta = std::abs(std::cos(motion.angle));
+    float sin_theta = std::abs(std::sin(motion.angle));
+    float new_bb_width = w * cos_theta + h * sin_theta;
+    float new_bb_height = w * sin_theta + h * cos_theta;
+    motion.bb_scale = {new_bb_width, new_bb_height};
+	// motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
 
 	registry.damages.insert(entity, {10.f});
