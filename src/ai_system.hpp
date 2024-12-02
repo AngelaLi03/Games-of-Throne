@@ -80,11 +80,21 @@ private:
 
     DecisionNode *chef_decision_tree;
     DecisionNode *knight_decision_tree;
+    DecisionNode *prince_decision_tree;
+    DecisionNode *king_decision_tree;
     DecisionNode *create_chef_decision_tree();
     DecisionNode *create_knight_decision_tree();
+    DecisionNode *create_prince_decision_tree();
+    DecisionNode *create_king_decision_tree();
     void perform_chef_attack(ChefAttack attack);
     void perform_knight_attack(KnightAttack attack);
+    void perform_prince_attack(PrinceAttack attack);
+    void process_prince_attack(float elapsed_ms);
+    void perform_king_attack(KingAttack attack);
+    void process_king_attack(float elapsed_ms);
     void play_knight_animation(std::vector<BoneKeyframe> &keyframes);
+    void play_prince_animation(std::vector<BoneKeyframe> &keyframes);
+    void play_king_animation(std::vector<BoneKeyframe> &keyframes);
 
     // bool isWalkable(int x, int y, const std::vector<std::vector<int>>& grid);
     // std::vector<Node> findPathBFS(int startX, int startY, int targetX, int targetY, const std::vector<std::vector<int>>& grid);

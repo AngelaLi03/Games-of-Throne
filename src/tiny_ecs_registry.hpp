@@ -44,6 +44,8 @@ public:
 	ComponentContainer<DamageArea> damageAreas;
 	ComponentContainer<BossAnimation> bossAnimations;
 	ComponentContainer<Knight> knight;
+	ComponentContainer<Prince> prince;
+	ComponentContainer<King> king;
 	ComponentContainer<PopupUI> popupUI;
 	ComponentContainer<Fountain> fountains;
 	ComponentContainer<TreasureBox> treasureBoxes;
@@ -88,6 +90,8 @@ public:
 		registry_list.push_back(&damageAreas);
 		registry_list.push_back(&bossAnimations);
 		registry_list.push_back(&knight);
+		registry_list.push_back(&prince);
+		registry_list.push_back(&king);
 		registry_list.push_back(&popupUI);
 		registry_list.push_back(&fountains);
 		registry_list.push_back(&treasureBoxes);

@@ -373,10 +373,6 @@ void RenderSystem::initializeGlGeometryBuffers()
 			43, 40, 42,
 			43, 41, 40};
 
-	// Transform knight_transform;
-	// // knight_transform.rotate(2.f);
-	// knight_transform.scale({1.5f, 1.5f});
-
 	std::vector<MeshBone> knight_bones = {
 			{-1}, // 0 body
 			{0},	// 1 shield
@@ -498,6 +494,430 @@ void RenderSystem::initializeGlGeometryBuffers()
 	glBindBuffer(GL_ARRAY_BUFFER, bone_indices_vbo[(uint)GEOMETRY_BUFFER_ID::KNIGHT]);
 	glBufferData(GL_ARRAY_BUFFER,
 							 sizeof(knight_bone_indices[0]) * knight_bone_indices.size(), knight_bone_indices.data(), GL_STATIC_DRAW);
+	gl_has_errors();
+
+	///////////////////////////
+	// Initialize prince
+	std::vector<TexturedVertex> prince_vertices = {
+			// head (0-7)
+			{{0.01f, -0.25f, 1.f}, {0.51f, 0.25f}},	 // 0 center
+			{{0.1f, -0.5f, 1.f}, {0.6f, 0.f}},			 // 1 hat top middle
+			{{-0.3f, -0.3f, 1.f}, {0.2f, 0.2f}},		 // 2 hat left
+			{{0.32f, -0.28f, 1.f}, {0.82f, 0.22f}},	 // 3 hat right
+			{{-0.06, -0.48f, 1.f}, {0.44f, 0.02f}},	 // 4 hat top left
+			{{0.22f, -0.48f, 1.f}, {0.72f, 0.02f}},	 // 5 hat top right
+			{{-0.25f, -0.08f, 1.f}, {0.25f, 0.42f}}, // 6 bottom left
+			{{0.28, -0.07f, 1.f}, {0.78f, 0.43f}},	 // 7 bottom right
+			// body (8-21)
+			{{0.0f, 0.0f, 1.f}, {0.5f, 0.5f}},			 // 8 center
+			{{0.01f, -0.25f, 1.f}, {0.51f, 0.25f}},	 // 9 = 0 top of body
+			{{-0.25f, -0.08f, 1.f}, {0.25f, 0.42f}}, // 10 = 6 top left of body
+			{{0.28, -0.07f, 1.f}, {0.78f, 0.43f}},	 // 11 = 7 top right of body
+			{{-0.13f, -0.03f, 1.f}, {0.37f, 0.47f}}, // 12 middle left
+			{{0.14f, -0.03f, 1.f}, {0.64f, 0.47f}},	 // 13 middle right
+			{{-0.32f, 0.45f, 1.f}, {0.18f, 0.95f}},	 // 14 bottom left
+			{{0.35f, 0.44f, 1.f}, {0.85f, 0.94f}},	 // 15 bottom right
+			{{-0.37f, 0.49f, 1.f}, {0.13f, 0.99f}},	 // 16 bottom left tip
+			{{0.43f, 0.49f, 1.f}, {0.93f, 0.99f}},	 // 17 bottom right tip
+			{{0.01f, 0.31f, 1.f}, {0.51f, 0.81f}},	 // 18 lower center
+			{{0.01f, 0.5f, 1.f}, {0.51f, 1.f}},			 // 19 bottom center
+			{{0.21f, 0.21f, 1.f}, {0.71f, 0.71f}},	 // 20 right, beside hand
+			{{0.23f, 0.2f, 1.f}, {0.73f, 0.70f}},		 // 21 right, below hand
+			// hand on the right (22-25)
+			{{0.21f, 0.21f, 1.f}, {0.71f, 0.71f}},	// 22 = 20 bottom left of hand
+			{{0.4f, 0.19f, 1.f}, {0.9f, 0.69f}},		// 23 bottom right
+			{{0.14f, -0.03f, 1.f}, {0.64f, 0.47f}}, // 24 = 13 top left
+			{{0.23f, -0.05f, 1.f}, {0.73f, 0.45f}}, // 25 top right
+			// arm on the left (26-30)
+			{{-0.13f, -0.03f, 1.f}, {0.37f, 0.47f}}, // 26 = 12 right
+			{{-0.25f, -0.08f, 1.f}, {0.25f, 0.42f}}, // 27 = 6 top right ish
+			{{-0.16f, 0.08f, 1.f}, {0.34f, 0.58f}},	 // 28 bottom right ish
+			{{-0.34f, 0.12f, 1.f}, {0.16f, 0.62f}},	 // 29 bottom left
+			{{-0.34f, -0.07f, 1.f}, {0.16f, 0.43f}}, // 30 top left
+			// wand (31-40)
+			{{-0.5f, -0.47f, 1.f}, {0.f, 0.03f}},		 // 31 top left of top box
+			{{-0.3f, -0.47f, 1.f}, {0.2f, 0.03f}},	 // 32 top right of top box
+			{{-0.5f, -0.12f, 1.f}, {0.f, 0.38f}},		 // 33 bottom left of top box
+			{{-0.3f, -0.12f, 1.f}, {0.2f, 0.38f}},	 // 34 bottom right of top box
+			{{-0.45f, -0.12f, 1.f}, {0.05f, 0.38f}}, // 35 top left of bottom box
+			{{-0.34f, -0.12f, 1.f}, {0.16f, 0.38f}}, // 36 top right of bottom box
+			{{-0.45f, 0.47f, 1.f}, {0.05f, 0.97f}},	 // 37 bottom left of bottom box
+			{{-0.34f, 0.47f, 1.f}, {0.16f, 0.97f}},	 // 38 bottom right of bottom box
+			{{-0.25f, -0.08f, 1.f}, {0.25f, 0.42f}}, // 39 = 6 connector to body
+			{{-0.3f, -0.3f, 1.f}, {0.2f, 0.2f}},		 // 40 = 2 hat left
+	};
+	std::vector<uint16_t> prince_indices = {
+			// head
+			1, 4, 0,
+			4, 2, 0,
+			5, 1, 0,
+			3, 5, 0,
+			0, 2, 6,
+			7, 3, 0,
+			// hand on the right
+			23, 24, 22,
+			25, 24, 23,
+			// arm on the left
+			26, 27, 28,
+			28, 27, 30,
+			28, 30, 29,
+			// body
+			9, 10, 8,
+			11, 9, 8,
+			8, 12, 14,
+			8, 14, 18,
+			18, 14, 19,
+			14, 16, 19,
+			13, 8, 20,
+			20, 8, 18,
+			21, 20, 18,
+			21, 18, 15,
+			15, 18, 19,
+			17, 18, 19,
+			// wand
+			32, 31, 34,
+			31, 33, 34,
+			34, 39, 40,
+			36, 35, 38,
+			38, 35, 37
+			//
+	};
+
+	std::vector<MeshBone> prince_bones = {
+			{-1}, // 0 body
+			{0},	// 1 head
+			{0},	// 2 hand on the right
+			{0},	// 3 arm on the left
+			{3},	// 4 wand
+	};
+
+	std::vector<glm::ivec4> prince_bone_indices = {
+			// head (0-7)
+			{1, 0, 0, 0}, // 0
+			{1, 0, 0, 0}, // 1
+			{1, 0, 0, 0}, // 2
+			{1, 0, 0, 0}, // 3
+			{1, 0, 0, 0}, // 4
+			{1, 0, 0, 0}, // 5
+			{1, 0, 0, 0}, // 6
+			{1, 0, 0, 0}, // 7
+			// body (8-21)
+			{0, 0, 0, 0}, // 8
+			{0, 0, 0, 0}, // 9
+			{0, 0, 0, 0}, // 10
+			{0, 0, 0, 0}, // 11
+			{0, 0, 0, 0}, // 12
+			{0, 0, 0, 0}, // 13
+			{0, 0, 0, 0}, // 14
+			{0, 0, 0, 0}, // 15
+			{0, 0, 0, 0}, // 16
+			{0, 0, 0, 0}, // 17
+			{0, 0, 0, 0}, // 18
+			{0, 0, 0, 0}, // 19
+			{0, 0, 0, 0}, // 20
+			{0, 0, 0, 0}, // 21
+			// hand on the right (22-25)
+			{2, 0, 0, 0}, // 22
+			{2, 0, 0, 0}, // 23
+			{2, 0, 0, 0}, // 24
+			{2, 0, 0, 0}, // 25
+			// arm on the left (26-30)
+			{3, 0, 0, 0}, // 26
+			{3, 0, 0, 0}, // 27
+			{3, 0, 0, 0}, // 28
+			{3, 0, 0, 0}, // 29
+			{3, 0, 0, 0}, // 30
+			// wand (31-40)
+			{4, 0, 0, 0}, // 31
+			{4, 0, 0, 0}, // 32
+			{4, 0, 0, 0}, // 33
+			{4, 0, 0, 0}, // 34
+			{4, 0, 0, 0}, // 35
+			{4, 0, 0, 0}, // 36
+			{4, 0, 0, 0}, // 37
+			{4, 0, 0, 0}, // 38
+			{4, 0, 0, 0}, // 39
+			{4, 0, 0, 0}, // 40
+	};
+
+	std::vector<glm::vec4> prince_bone_weights = {
+			{1.f, 0.f, 0.f, 0.f}, // 0
+			{1.f, 0.f, 0.f, 0.f}, // 1
+			{1.f, 0.f, 0.f, 0.f}, // 2
+			{1.f, 0.f, 0.f, 0.f}, // 3
+			{1.f, 0.f, 0.f, 0.f}, // 4
+			{1.f, 0.f, 0.f, 0.f}, // 5
+			{1.f, 0.f, 0.f, 0.f}, // 6
+			{1.f, 0.f, 0.f, 0.f}, // 7
+			{1.f, 0.f, 0.f, 0.f}, // 8
+			{1.f, 0.f, 0.f, 0.f}, // 9
+			{1.f, 0.f, 0.f, 0.f}, // 10
+			{1.f, 0.f, 0.f, 0.f}, // 11
+			{1.f, 0.f, 0.f, 0.f}, // 12
+			{1.f, 0.f, 0.f, 0.f}, // 13
+			{1.f, 0.f, 0.f, 0.f}, // 14
+			{1.f, 0.f, 0.f, 0.f}, // 15
+			{1.f, 0.f, 0.f, 0.f}, // 16
+			{1.f, 0.f, 0.f, 0.f}, // 17
+			{1.f, 0.f, 0.f, 0.f}, // 18
+			{1.f, 0.f, 0.f, 0.f}, // 19
+			{1.f, 0.f, 0.f, 0.f}, // 20
+			{1.f, 0.f, 0.f, 0.f}, // 21
+			{1.f, 0.f, 0.f, 0.f}, // 22
+			{1.f, 0.f, 0.f, 0.f}, // 23
+			{1.f, 0.f, 0.f, 0.f}, // 24
+			{1.f, 0.f, 0.f, 0.f}, // 25
+			{1.f, 0.f, 0.f, 0.f}, // 26
+			{1.f, 0.f, 0.f, 0.f}, // 27
+			{1.f, 0.f, 0.f, 0.f}, // 28
+			{1.f, 0.f, 0.f, 0.f}, // 29
+			{1.f, 0.f, 0.f, 0.f}, // 30
+			{1.f, 0.f, 0.f, 0.f}, // 31
+			{1.f, 0.f, 0.f, 0.f}, // 32
+			{1.f, 0.f, 0.f, 0.f}, // 33
+			{1.f, 0.f, 0.f, 0.f}, // 34
+			{1.f, 0.f, 0.f, 0.f}, // 35
+			{1.f, 0.f, 0.f, 0.f}, // 36
+			{1.f, 0.f, 0.f, 0.f}, // 37
+			{1.f, 0.f, 0.f, 0.f}, // 38
+			{1.f, 0.f, 0.f, 0.f}, // 39
+			{1.f, 0.f, 0.f, 0.f}, // 40
+	};
+
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::PRINCE].vertices = prince_vertices;
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::PRINCE].vertex_indices = prince_indices;
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::PRINCE, prince_vertices, prince_indices);
+
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::PRINCE].bones = prince_bones;
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::PRINCE].bone_indices = prince_bone_indices;
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::PRINCE].bone_weights = prince_bone_weights;
+
+	glBindBuffer(GL_ARRAY_BUFFER, bone_weights_vbo[(uint)GEOMETRY_BUFFER_ID::PRINCE]);
+	glBufferData(GL_ARRAY_BUFFER,
+							 sizeof(prince_bone_weights[0]) * prince_bone_weights.size(), prince_bone_weights.data(), GL_STATIC_DRAW);
+	gl_has_errors();
+
+	glBindBuffer(GL_ARRAY_BUFFER, bone_indices_vbo[(uint)GEOMETRY_BUFFER_ID::PRINCE]);
+	glBufferData(GL_ARRAY_BUFFER,
+							 sizeof(prince_bone_indices[0]) * prince_bone_indices.size(), prince_bone_indices.data(), GL_STATIC_DRAW);
+	gl_has_errors();
+
+	///////////////////////////
+	// Initialize king
+	std::vector<TexturedVertex> king_vertices = {
+			// head (0-8)
+			{{0.07f, -0.18f, 1.f}, {0.57f, 0.32f}},	 // 0 center
+			{{-0.28f, -0.48f, 1.f}, {0.22f, 0.02f}}, // 1 top left
+			{{0.07f, -0.5f, 1.f}, {0.57f, 0.f}},		 // 2 top middle
+			{{0.40f, -0.48f, 1.f}, {0.9f, 0.02f}},	 // 3 top right
+			{{-0.2f, -0.23f, 1.f}, {0.3f, 0.27f}},	 // 4 middle left
+			{{-0.29f, -0.08f, 1.f}, {0.21f, 0.42f}}, // 5 bottom left
+			{{0.34f, -0.23f, 1.f}, {0.84f, 0.27f}},	 // 6 middle right
+			{{0.44f, -0.08f, 1.f}, {0.94f, 0.42f}},	 // 7 bottom right
+			{{0.07f, 0.05f, 1.f}, {0.57f, 0.55f}},	 // 8 beard center (bottom)
+			// body (9-21)
+			{{0.07f, 0.25f, 1.f}, {0.57f, 0.75f}},	 // 9 center
+			{{-0.16f, 0.10f, 1.f}, {0.34, 0.60f}},	 // 10 beard bottom left
+			{{0.27, 0.14f, 1.f}, {0.77f, 0.64f}},		 // 11 beard bottom right
+			{{0.07f, 0.05f, 1.f}, {0.57f, 0.55f}},	 // 12 = 8 beard center
+			{{-0.29f, -0.08f, 1.f}, {0.21f, 0.42f}}, // 13 = 5 beard middle left
+			{{0.44f, -0.08f, 1.f}, {0.94f, 0.42f}},	 // 14 = 7 beard middle right
+			{{-0.31f, 0.37f, 1.f}, {0.19f, 0.87f}},	 // 15 clothes bottom left
+			{{0.46f, 0.38f, 1.f}, {0.96f, 0.88f}},	 // 16 clothes bottom right
+			{{0.19f, 0.21f, 1.f}, {0.69f, 0.71f}},	 // 17 hand left
+			{{0.22f, 0.26f, 1.f}, {0.72f, 0.76f}},	 // 18 hand left bottom
+			{{0.40f, 0.30f, 1.f}, {0.90f, 0.80f}},	 // 19 hand bottom
+			{{0.07f, 0.46f, 1.f}, {0.57f, 0.96f}},	 // 20 clothes bottom
+			{{0.23f, 0.2f, 1.f}, {0.73f, 0.70f}},		 // 21 (unused)
+			// hand on the right (22-28)
+			{{0.44f, -0.08f, 1.f}, {0.94f, 0.42f}}, // 22 = 7 bottom right of face
+			{{0.27, 0.14f, 1.f}, {0.77f, 0.64f}},		// 23 = 11 beard bottom right
+			{{0.50f, 0.12f, 1.f}, {1.f, 0.62f}},		// 24 right middle
+			{{0.50f, 0.21f, 1.f}, {1.f, 0.71f}},		// 25 right bottom
+			{{0.19f, 0.21f, 1.f}, {0.69f, 0.71f}},	// 26 = 17 hand left
+			{{0.22f, 0.26f, 1.f}, {0.72f, 0.76f}},	// 27 = 18 hand left bottom
+			{{0.40f, 0.30f, 1.f}, {0.90f, 0.80f}},	// 28 = 19 hand bottom
+			// arm and staff (29-37)
+			{{-0.5f, -0.35f, 1.f}, {0.f, 0.15f}},		 // 29 top left
+			{{-0.24f, -0.35f, 1.f}, {0.26f, 0.15f}}, // 30 top right
+			{{-0.29f, -0.08f, 1.f}, {0.21f, 0.42f}}, // 31 = 5 beard middle left
+			{{-0.16f, 0.10f, 1.f}, {0.34, 0.60f}},	 // 32 = 10 arm right
+			{{-0.5f, -0.02f, 1.f}, {0.f, 0.52f}},		 // 33 left middle
+			{{-0.5f, 0.47f, 1.f}, {0.f, 0.97f}},		 // 34 bottom left
+			{{-0.29f, 0.47f, 1.f}, {0.21f, 0.97f}},	 // 35 bottom right
+			{{-0.31f, 0.37f, 1.f}, {0.19f, 0.87f}},	 // 36 = 15 clothes bottom left
+			{{-0.2f, -0.23f, 1.f}, {0.3f, 0.27f}},	 // 37 = 4 middle left of head
+			// feet (38-42)
+			{{-0.31f, 0.37f, 1.f}, {0.19f, 0.87f}}, // 38 = 15 clothes bottom left
+			{{0.46f, 0.38f, 1.f}, {0.96f, 0.88f}},	// 39 = 16 clothes bottom right
+			{{-0.27f, 0.48f, 1.f}, {0.23f, 0.98f}}, // 40 feet bottom left
+			{{0.41f, 0.48f, 1.f}, {0.91f, 0.98f}},	// 41 feet bottom right
+			{{0.07f, 0.46f, 1.f}, {0.57f, 0.96f}},	// 42 = 20 clothes bottom
+	};
+	std::vector<uint16_t> king_indices = {
+			// head
+			2, 1, 0,
+			1, 4, 0,
+			4, 5, 0,
+			3, 2, 0,
+			6, 3, 0,
+			7, 6, 0,
+			5, 8, 0,
+			8, 7, 0,
+			// arm and staff
+			30, 29, 37,
+			29, 31, 37,
+			29, 33, 31,
+			31, 33, 32,
+			32, 33, 36,
+			33, 34, 36,
+			36, 34, 35,
+			// hand on the right
+			22, 23, 24,
+			24, 23, 25,
+			25, 23, 26,
+			25, 26, 27,
+			25, 27, 28,
+			// feet
+			38, 40, 42,
+			39, 42, 41,
+			42, 40, 41,
+			// body
+			12, 10, 13,
+			12, 14, 11,
+			12, 10, 9,
+			11, 12, 9,
+			10, 15, 9,
+			15, 20, 9,
+			9, 17, 11,
+			9, 18, 17,
+			9, 19, 18,
+			9, 16, 19,
+			9, 20, 16
+			//
+	};
+
+	std::vector<MeshBone> king_bones = {
+			{-1}, // 0 body
+			{0},	// 1 head
+			{0},	// 2 hand on the right
+			{0},	// 3 arm and staff
+			{0},	// 4 feet
+	};
+
+	std::vector<glm::ivec4> king_bone_indices = {
+			// head (0-8)
+			{1, 0, 0, 0}, // 0
+			{1, 0, 0, 0}, // 1
+			{1, 0, 0, 0}, // 2
+			{1, 0, 0, 0}, // 3
+			{1, 0, 0, 0}, // 4
+			{1, 0, 0, 0}, // 5
+			{1, 0, 0, 0}, // 6
+			{1, 0, 0, 0}, // 7
+			{1, 0, 0, 0}, // 8
+			// body (9-21)
+			{0, 0, 0, 0}, // 9
+			{0, 0, 0, 0}, // 10
+			{0, 0, 0, 0}, // 11
+			{0, 0, 0, 0}, // 12
+			{0, 0, 0, 0}, // 13
+			{0, 0, 0, 0}, // 14
+			{0, 0, 0, 0}, // 15
+			{0, 0, 0, 0}, // 16
+			{0, 0, 0, 0}, // 17
+			{0, 0, 0, 0}, // 18
+			{0, 0, 0, 0}, // 19
+			{0, 0, 0, 0}, // 20
+			{0, 0, 0, 0}, // 21
+			// hand on the right (22-28)
+			{2, 0, 0, 0}, // 22
+			{2, 0, 0, 0}, // 23
+			{2, 0, 0, 0}, // 24
+			{2, 0, 0, 0}, // 25
+			{2, 0, 0, 0}, // 26
+			{2, 0, 0, 0}, // 27
+			{2, 0, 0, 0}, // 28
+			// arm and staff (29-37)
+			{3, 0, 0, 0}, // 29
+			{3, 0, 0, 0}, // 30
+			{3, 0, 0, 0}, // 31
+			{3, 0, 0, 0}, // 32
+			{3, 0, 0, 0}, // 33
+			{3, 0, 0, 0}, // 34
+			{3, 0, 0, 0}, // 35
+			{3, 0, 0, 0}, // 36
+			{3, 0, 0, 0}, // 37
+			// feet (38-42)
+			{4, 0, 0, 0}, // 38
+			{4, 0, 0, 0}, // 39
+			{4, 0, 0, 0}, // 40
+			{4, 0, 0, 0}, // 41
+			{4, 0, 0, 0}, // 42
+	};
+
+	std::vector<glm::vec4> king_bone_weights = {
+			{1.f, 0.f, 0.f, 0.f}, // 0
+			{1.f, 0.f, 0.f, 0.f}, // 1
+			{1.f, 0.f, 0.f, 0.f}, // 2
+			{1.f, 0.f, 0.f, 0.f}, // 3
+			{1.f, 0.f, 0.f, 0.f}, // 4
+			{1.f, 0.f, 0.f, 0.f}, // 5
+			{1.f, 0.f, 0.f, 0.f}, // 6
+			{1.f, 0.f, 0.f, 0.f}, // 7
+			{1.f, 0.f, 0.f, 0.f}, // 8
+			{1.f, 0.f, 0.f, 0.f}, // 9
+			{1.f, 0.f, 0.f, 0.f}, // 10
+			{1.f, 0.f, 0.f, 0.f}, // 11
+			{1.f, 0.f, 0.f, 0.f}, // 12
+			{1.f, 0.f, 0.f, 0.f}, // 13
+			{1.f, 0.f, 0.f, 0.f}, // 14
+			{1.f, 0.f, 0.f, 0.f}, // 15
+			{1.f, 0.f, 0.f, 0.f}, // 16
+			{1.f, 0.f, 0.f, 0.f}, // 17
+			{1.f, 0.f, 0.f, 0.f}, // 18
+			{1.f, 0.f, 0.f, 0.f}, // 19
+			{1.f, 0.f, 0.f, 0.f}, // 20
+			{1.f, 0.f, 0.f, 0.f}, // 21
+			{1.f, 0.f, 0.f, 0.f}, // 22
+			{1.f, 0.f, 0.f, 0.f}, // 23
+			{1.f, 0.f, 0.f, 0.f}, // 24
+			{1.f, 0.f, 0.f, 0.f}, // 25
+			{1.f, 0.f, 0.f, 0.f}, // 26
+			{1.f, 0.f, 0.f, 0.f}, // 27
+			{1.f, 0.f, 0.f, 0.f}, // 28
+			{1.f, 0.f, 0.f, 0.f}, // 29
+			{1.f, 0.f, 0.f, 0.f}, // 30
+			{1.f, 0.f, 0.f, 0.f}, // 31
+			{1.f, 0.f, 0.f, 0.f}, // 32
+			{1.f, 0.f, 0.f, 0.f}, // 33
+			{1.f, 0.f, 0.f, 0.f}, // 34
+			{1.f, 0.f, 0.f, 0.f}, // 35
+			{1.f, 0.f, 0.f, 0.f}, // 36
+			{1.f, 0.f, 0.f, 0.f}, // 37
+			{1.f, 0.f, 0.f, 0.f}, // 38
+			{1.f, 0.f, 0.f, 0.f}, // 39
+			{1.f, 0.f, 0.f, 0.f}, // 40
+			{1.f, 0.f, 0.f, 0.f}, // 41
+			{1.f, 0.f, 0.f, 0.f}, // 42
+	};
+
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::KING].vertices = king_vertices;
+	textured_meshes[(int)GEOMETRY_BUFFER_ID::KING].vertex_indices = king_indices;
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::KING, king_vertices, king_indices);
+
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::KING].bones = king_bones;
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::KING].bone_indices = king_bone_indices;
+	skinned_meshes[(int)GEOMETRY_BUFFER_ID::KING].bone_weights = king_bone_weights;
+
+	glBindBuffer(GL_ARRAY_BUFFER, bone_weights_vbo[(uint)GEOMETRY_BUFFER_ID::KING]);
+	glBufferData(GL_ARRAY_BUFFER,
+							 sizeof(king_bone_weights[0]) * king_bone_weights.size(), king_bone_weights.data(), GL_STATIC_DRAW);
+	gl_has_errors();
+
+	glBindBuffer(GL_ARRAY_BUFFER, bone_indices_vbo[(uint)GEOMETRY_BUFFER_ID::KING]);
+	glBufferData(GL_ARRAY_BUFFER,
+							 sizeof(king_bone_indices[0]) * king_bone_indices.size(), king_bone_indices.data(), GL_STATIC_DRAW);
 	gl_has_errors();
 
 	///////////////////////////////////////////////////////

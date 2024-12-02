@@ -209,6 +209,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	};
 
 	bossAnimation.frame_duration = 100.f; // 0.1s per frame
+
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
@@ -250,33 +251,127 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	registry.knight.emplace(entity);
 	registry.enemies.emplace(entity);
 
-	auto &bossAnimation = registry.bossAnimations.emplace(entity);
-	// bossAnimation.attack_1 = std::vector<TEXTURE_ASSET_ID>{
-	// TODO: follow chef loading to load all images
-	// };
-
-	bossAnimation.frame_duration = 100.f; // 0.1s per frame
-
-	// std::vector<BoneKeyframe> keyframes = {
-	// 		{0.0f, 3000.f, {{}, {}, {}}},
-	// 		{3000.f, 3000.f, {{}, {}, {{0.f, -0.2f}, 0.f, {1.5f, 1.5f}}}},
-	// 		{6000.f, 3000.f, {{}, {}, {}}}};
-
-	// BoneAnimation &bone_animation = registry.boneAnimations.emplace(entity);
-	// bone_animation.keyframes = keyframes;
-
 	registry.meshBones.insert(entity, {renderer->skinned_meshes[(int)GEOMETRY_BUFFER_ID::KNIGHT].bones});
 
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
-			{TEXTURE_ASSET_ID::KNIGHT, // bossAnimation.attack_1[bossAnimation.current_frame], change when loaded all images
+			{TEXTURE_ASSET_ID::KNIGHT,
 			 EFFECT_ASSET_ID::SKINNED,
 			 GEOMETRY_BUFFER_ID::KNIGHT});
 
 	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
 	// registry.healths.insert(entity, {0.5f, 500.f, healthbar});
 	registry.healths.insert(entity, {750.f, 750.f, healthbar});
+
+	return entity;
+}
+
+Entity createPrince(RenderSystem *renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::PRINCE);
+	registry.meshPtrs.emplace(entity, &mesh);
+	TexturedMesh &prince_mesh = renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::PRINCE);
+	registry.texturedMeshPtrs.emplace(entity, &prince_mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+
+	motion.position = pos;
+	// motion.position = {pos.x - 2000.f, pos.y};
+
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = mesh.original_size * 200.f;
+	motion.scale.y *= 1.34;
+	motion.bb_scale = {180.f, 180.f};
+	motion.bb_offset = {0.f, 30.f};
+
+	registry.prince.emplace(entity);
+	registry.enemies.emplace(entity);
+
+	// {3000.f, 3000.f, {{}, {}, {}, {{0.f, 0.f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {}}}, // rotate arm with wand
+	// {9000.f, 3000.f, {{}, {}, {}, {{0.f, 0.f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {{0.03f, -0.18f}, -30.f / 180.f * M_PI, {1.f, 1.f}}}}, // raise wand with arm
+
+	// std::vector<BoneKeyframe> keyframes = {
+	// 		{0.0f, 3000.f, {{}, {}, {}, {}, {}}},
+	// 		{3000.f, 3000.f, {{}, {}, {{-0.015f, -0.015f}, -30.f / 180.f * M_PI, {1.f, 1.f}}, {}, {}}}, // rotate hand
+	// 		{6000.f, 3000.f, {{}, {}, {}, {}, {}}},
+	// 		{9000.f, 3000.f, {{}, {{0.f, 0.05f}, 0.f, {.8f, .8f}}, {}, {}, {}}}, // retract head
+	// 		{12000.f, 3000.f, {{}, {}, {}, {}, {}}}};
+
+	// BoneAnimation &bone_animation = registry.boneAnimations.emplace(entity);
+	// bone_animation.keyframes = keyframes;
+
+	registry.meshBones.insert(entity, {renderer->skinned_meshes[(int)GEOMETRY_BUFFER_ID::PRINCE].bones});
+
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::PRINCE,
+			 EFFECT_ASSET_ID::SKINNED,
+			 GEOMETRY_BUFFER_ID::PRINCE});
+
+	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
+	// registry.healths.insert(entity, {0.5f, 500.f, healthbar});
+	registry.healths.insert(entity, {400.f, 400.f, healthbar});
+
+	return entity;
+}
+
+Entity createKing(RenderSystem *renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::KING);
+	registry.meshPtrs.emplace(entity, &mesh);
+	TexturedMesh &king_mesh = renderer->getTexturedMesh(GEOMETRY_BUFFER_ID::KING);
+	registry.texturedMeshPtrs.emplace(entity, &king_mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+
+	motion.position = pos;
+	// motion.position = {pos.x - 2000.f, pos.y};
+
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = mesh.original_size * 210.f;
+	motion.scale.y *= 1.36;
+	motion.bb_scale = {150.f, 130.f};
+	motion.bb_offset = {0.f, 50.f};
+
+	registry.king.emplace(entity);
+	registry.enemies.emplace(entity);
+
+	// {9000.f, 3000.f, {{}, {{0.f, 0.05f}, 0.f, {.8f, .8f}}, {}, {}, {}}}, // retract head
+
+	// std::vector<BoneKeyframe> keyframes = {
+	// 		{0.0f, 3000.f, {{}, {}, {}, {}, {}}},
+	// 		{3000.f, 3000.f, {{}, {}, {}, {{0.03f, 0.02f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {}}}, // rotate arm with staff
+	// 		{6000.f, 3000.f, {{}, {}, {}, {}, {}}},
+	// 		{9000.f, 3000.f, {{}, {}, {}, {{0.f, -0.05f}, 0.f, {1.f, 1.05f}}, {}}}, // raise staff and arm
+	// 		{12000.f, 3000.f, {{}, {}, {}, {}, {}}}};
+
+	// BoneAnimation &bone_animation = registry.boneAnimations.emplace(entity);
+	// bone_animation.keyframes = keyframes;
+
+	registry.meshBones.insert(entity, {renderer->skinned_meshes[(int)GEOMETRY_BUFFER_ID::KING].bones});
+
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::KING,
+			 EFFECT_ASSET_ID::SKINNED,
+			 GEOMETRY_BUFFER_ID::KING});
+
+	Entity healthbar = createHealthBar(renderer, motion.position + vec2(0.f, 100.f), entity, vec3(1.f, 0.f, 0.f));
+	// registry.healths.insert(entity, {0.5f, 500.f, healthbar});
+	registry.healths.insert(entity, {500.f, 500.f, healthbar});
 
 	return entity;
 }
@@ -823,6 +918,113 @@ Entity createPlayerRemnant(RenderSystem *renderer, Motion motion)
 	registry.renderRequests.insert(
 			entity,
 			{TEXTURE_ASSET_ID::SPY,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
+Entity createKingRemnant(RenderSystem *renderer, Motion motion)
+{
+	auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion &created_motion = registry.motions.insert(entity, motion);
+	created_motion.velocity = {0.f, 0.f};
+
+	registry.opacities.insert(entity, 0.5f);
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::KING,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
+Entity createSoldier(RenderSystem *renderer, vec2 pos, float health, float damage)
+{
+	auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = mesh.original_size * 100.f;
+	motion.bb_scale = motion.scale;
+	motion.bb_offset = {0.f, 0.f};
+
+	Enemy &enemy = registry.enemies.emplace(entity);
+
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
+
+	Entity healthbar = createHealthBar(renderer, pos + vec2(0.f, 50.f), entity);
+	registry.healths.insert(entity, {health, health, healthbar});
+
+	registry.damages.insert(entity, {damage});
+
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::SUMMON_SOLDIER,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
+Entity createFireRain(RenderSystem *renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = mesh.original_size * 300.f;
+	motion.bb_scale = {motion.scale.x * 0.95f, motion.scale.y * 0.75f};
+	motion.bb_offset = {0.f, 40.f};
+
+	registry.physicsBodies.insert(entity, {BodyType::NONE});
+
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::FIRERAIN,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	return entity;
+}
+
+Entity createLaser(RenderSystem *renderer, vec2 pos)
+{
+	auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion &motion = registry.motions.emplace(entity);
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.scale = {mesh.original_size.x * 500.f, mesh.original_size.y * 40.f};
+	motion.bb_scale = motion.scale;
+	motion.bb_offset = {0.f, 0.f};
+	motion.pivot_offset = {0.5f, 0.f};
+	motion.position = {pos.x + motion.scale.x / 2.f, pos.y};
+
+	// collision of lasers is handled by the boss ai; the physicsBodies component here is only for visualizing the pivot and bb
+	// registry.physicsBodies.insert(entity, {BodyType::NONE});
+
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::LASER,
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 

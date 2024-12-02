@@ -105,7 +105,7 @@ private:
 	unsigned int attack_id_counter = 0;
 
 	// music references
-	Mix_Music *background_music;
+	std::vector<Mix_Music *> background_music;
 	Mix_Chunk *salmon_dead_sound;
 	Mix_Chunk *perfect_dodge_sound;
 	Mix_Chunk *spy_death_sound;

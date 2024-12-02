@@ -9,9 +9,21 @@
 #include <unordered_map>
 #include "world_system.hpp"
 #include "world_init.hpp"
+#include "physics_system.hpp"
+
+extern bool line_intersects(const vec2 &a1, const vec2 &a2, const vec2 &b1, const vec2 &b2);
 
 extern std::vector<std::vector<int>> level_grid;
 float MINION_SPEED = 80.f;
+
+bool isWalkable(int x, int y)
+{
+	if (x >= 0 && y >= 0 && x < level_grid.size() && y < level_grid[x].size())
+	{
+		return level_grid[x][y] == 1;
+	}
+	return false;
+}
 
 float distance_squared(vec2 a, vec2 b)
 {
@@ -130,6 +142,644 @@ void AISystem::perform_knight_attack(KnightAttack attack)
 		break;
 	}
 
+	default:
+		break;
+	}
+}
+
+void AISystem::play_prince_animation(std::vector<BoneKeyframe> &keyframes)
+{
+	Entity prince_entity = registry.prince.entities[0];
+
+	if (registry.boneAnimations.has(prince_entity))
+	{
+		registry.boneAnimations.remove(prince_entity);
+	}
+	BoneAnimation &bone_animation = registry.boneAnimations.emplace(prince_entity);
+	bone_animation.keyframes = keyframes;
+}
+
+void AISystem::perform_prince_attack(PrinceAttack attack)
+{
+	if (registry.prince.size() == 0 || registry.players.size() == 0)
+		return;
+
+	Prince &prince = registry.prince.components[0];
+
+	prince.state = PrinceState::ATTACK;
+	prince.attack_time_elapsed = 0.f;
+
+	switch (attack)
+	{
+	case PrinceAttack::WAND_SWING:
+	{
+		prince.damage_field_created = false;
+
+		std::vector<BoneKeyframe> keyframes = {
+				{0.0f, 300.f, {{}, {}, {}, {}, {}}},
+				{300.f, 700.f, {{}, {}, {}, {{0.f, 0.f}, -5.f / 180.f * M_PI, {1.f, 1.f}}, {}}}, // pre-attack animation
+				{1000.f, 700.f, {{}, {}, {}, {{0.f, 0.f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {}}},
+				{1700.f, 0.f, {{}, {}, {}, {}, {}}}};
+		play_prince_animation(keyframes);
+		break;
+	}
+	case PrinceAttack::TELEPORT:
+	{
+		prince.has_teleported = false;
+		prince.has_fired = false;
+
+		Motion &prince_motion = registry.motions.get(registry.prince.entities[0]);
+		prince.original_scale = prince_motion.scale;
+
+		break;
+	}
+	case PrinceAttack::FIELD:
+	{
+		prince.damage_field_created = false;
+
+		std::vector<BoneKeyframe> keyframes = {
+				{0.0f, 500.f, {{}, {}, {}, {}, {}}},
+				{500.f, 2000.f, {{}, {}, {}, {{0.f, 0.f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {{0.03f, -0.18f}, -30.f / 180.f * M_PI, {1.f, 1.f}}}}, // raise wand with arm
+				{2500.f, 500.f, {{}, {}, {}, {{0.f, 0.f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {{0.03f, -0.18f}, -30.f / 180.f * M_PI, {1.f, 1.f}}}},
+				{3000.f, 0.f, {{}, {}, {}, {}, {}}}};
+		play_prince_animation(keyframes);
+		break;
+	}
+	case PrinceAttack::SUMMON_SPIRITS:
+	{
+		prince.has_spirits = false;
+		prince.spirits_time_elapsed = 0.f;
+
+		std::vector<BoneKeyframe> keyframes = {
+				{0.0f, 500.f, {{}, {}, {}, {}, {}}},
+				{500.f, 1000.f, {{}, {{0.f, 0.05f}, 0.f, {.8f, .8f}}, {}, {}, {}}}, // retract head
+				{1500.f, 500.f, {{}, {{0.f, 0.05f}, 0.f, {.8f, .8f}}, {}, {}, {}}},
+				{2000.f, 0.f, {{}, {}, {}, {}, {}}}};
+		play_prince_animation(keyframes);
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+void AISystem::process_prince_attack(float elapsed_ms)
+{
+	if (registry.prince.size() == 0 || registry.players.size() == 0)
+		return;
+
+	Prince &prince = registry.prince.components[0];
+	Entity prince_entity = registry.prince.entities[0];
+	Motion &prince_motion = registry.motions.get(prince_entity);
+
+	if (prince.state != PrinceState::ATTACK)
+		return;
+
+	prince.attack_time_elapsed += elapsed_ms;
+
+	switch (prince.current_attack)
+	{
+	case PrinceAttack::WAND_SWING:
+	{
+		if (!prince.damage_field_created && prince.attack_time_elapsed >= 300.f)
+		{
+			prince.damage_field_created = true;
+			vec2 prince_position = prince_motion.position + prince_motion.bb_offset;
+			createDamageArea(prince_entity, prince_position, prince_motion.bb_scale * 1.5f, 10.f, 1100.f); // last 300ms of swing has no damage
+		}
+		if (prince.attack_time_elapsed >= 1700.f)
+		{
+			prince.combat_cooldown = 3000.f;
+			prince.state = PrinceState::COMBAT;
+		}
+		break;
+	}
+	case PrinceAttack::TELEPORT:
+	{
+		if (!prince.has_teleported)
+		{
+			float t = min(prince.attack_time_elapsed / 500.f, 1.f);
+			prince_motion.scale = prince.original_scale * (1.f - t);
+			if (t >= 1.f)
+			{
+				prince.has_teleported = true;
+				Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+				vec2 player_position = player_motion.position + player_motion.bb_offset;
+				float teleport_target_side = player_motion.position.x > prince_motion.position.x ? 1.f : -1.f;
+				prince_motion.position = player_position + vec2(teleport_target_side * (abs(prince.original_scale.x) * 0.5f + 50.f), 0.f) - prince_motion.bb_offset;
+			}
+		}
+		else if (!prince.has_fired)
+		{
+			float t = min((prince.attack_time_elapsed - 500.f) / 500.f, 1.f);
+			prince_motion.scale = prince.original_scale * t;
+			if (t >= 1.f)
+			{
+				prince.has_fired = true;
+
+				// TODO: replace with pulse that lasts 1000ms
+				createDamageArea(prince_entity, prince_motion.position + prince_motion.bb_offset, prince_motion.bb_scale * 1.5f, 10.f, 600.f);
+
+				std::vector<BoneKeyframe> keyframes = {
+						{0.0f, 300.f, {{}, {}, {}, {}, {}}},
+						{300.f, 300.f, {{}, {}, {{-0.015f, -0.015f}, -30.f / 180.f * M_PI, {1.f, 1.f}}, {}, {}}}, // rotate hand
+						{600.f, 0.f, {{}, {}, {}, {}, {}}}};
+				play_prince_animation(keyframes);
+			}
+		}
+		else if (prince.has_fired && prince.attack_time_elapsed >= 1600.f)
+		{
+			prince.combat_cooldown = 6000.f;
+			prince.state = PrinceState::COMBAT;
+		}
+		break;
+	}
+	case PrinceAttack::FIELD:
+	{
+		if (!prince.damage_field_created && prince.attack_time_elapsed >= 500.f)
+		{
+			prince.damage_field_created = true;
+			vec2 prince_position = prince_motion.position + prince_motion.bb_offset;
+			createDamageArea(prince_entity, prince_position, prince_motion.bb_scale * 2.f, 15.f, 2000.f, 500.f); // damage every 500ms
+		}
+		if (prince.attack_time_elapsed >= 3000.f)
+		{
+			prince.combat_cooldown = 6000.f;
+			prince.state = PrinceState::COMBAT;
+		}
+		break;
+	}
+	case PrinceAttack::SUMMON_SPIRITS:
+	{
+		if (!prince.has_spirits && prince.attack_time_elapsed >= 500.f)
+		{
+			prince.has_spirits = true;
+			// vec2 prince_position = prince_motion.position + prince_motion.bb_offset;
+			std::cout << "Prince summons several spirits (soldiers)!!" << std::endl;
+
+			// summon 5 soldiers around prince
+			vec2 pos = prince_motion.position + prince_motion.bb_offset;
+			vec2 bb = prince_motion.bb_scale / 2.f;
+
+			float soldier_health = 1.f; // can be defeated in one hit
+			float soldier_damage = 10.f;
+			std::vector<vec2> positions = {
+					{pos.x + bb.x + 40.f, pos.y},
+					{pos.x - bb.x - 40.f, pos.y},
+					{pos.x, pos.y + bb.y + 40.f},
+					{pos.x, pos.y - bb.y - 40.f},
+					{pos.x, pos.y + bb.y + 100.f}};
+
+			for (vec2 position : positions)
+			{
+				// check if position is on a floor
+				int tileX = static_cast<int>(position.x / 60);
+				int tileY = static_cast<int>(position.y / 60);
+				if (isWalkable(tileX, tileY))
+				{
+					createSoldier(renderer, position, soldier_health, soldier_damage);
+				}
+			}
+		}
+		if (prince.attack_time_elapsed >= 2000.f)
+		{
+			prince.combat_cooldown = 3000.f;
+			prince.state = PrinceState::COMBAT;
+		}
+	}
+	default:
+		break;
+	}
+}
+
+void AISystem::play_king_animation(std::vector<BoneKeyframe> &keyframes)
+{
+	Entity king_entity = registry.king.entities[0];
+
+	if (registry.boneAnimations.has(king_entity))
+	{
+		registry.boneAnimations.remove(king_entity);
+	}
+	BoneAnimation &bone_animation = registry.boneAnimations.emplace(king_entity);
+	bone_animation.keyframes = keyframes;
+}
+
+void AISystem::perform_king_attack(KingAttack attack)
+{
+	if (registry.king.size() == 0 || registry.players.size() == 0)
+		return;
+
+	King &king = registry.king.components[0];
+	Entity king_entity = registry.king.entities[0];
+	Motion &king_motion = registry.motions.get(king_entity);
+
+	king.state = KingState::ATTACK;
+	king.attack_time_elapsed = 0.f;
+
+	switch (attack)
+	{
+	case KingAttack::LASER:
+	{
+		std::cout << "Laser attack" << std::endl;
+		if ((unsigned int)king.laser_entity != 0)
+		{
+			registry.remove_all_components_of(king.laser_entity);
+			king.laser_entity = Entity(0);
+		}
+
+		king.has_fired = false;
+
+		std::vector<BoneKeyframe> keyframes = {
+				{0.0f, 500.f, {{}, {}, {}, {}, {}}},
+				{500.f, 3000.f, {{}, {}, {}, {{0.f, -0.05f}, 0.f, {1.f, 1.05f}}, {}}}, // raise staff and arm
+				{3500.f, 500.f, {{}, {}, {}, {{0.f, -0.05f}, 0.f, {1.f, 1.05f}}, {}}},
+				{4000.f, 0.f, {{}, {}, {}, {}, {}}}};
+		play_king_animation(keyframes);
+
+		break;
+	}
+	case KingAttack::DASH_HIT:
+	{
+		king.dash_counter = 0;
+		break;
+	}
+	case KingAttack::SUMMON_SOLDIERS:
+	{
+		vec2 pos = king_motion.position + king_motion.bb_offset;
+		vec2 bb = king_motion.bb_scale / 2.f;
+
+		float soldier_health = 100.f;
+		float soldier_damage = 10.f;
+
+		std::vector<vec2> positions = {
+				{pos.x + bb.x + 40.f, pos.y},
+				{pos.x - bb.x - 40.f, pos.y}};
+
+		for (vec2 position : positions)
+		{
+			// check if position is on a floor
+			int tileX = static_cast<int>(position.x / 60);
+			int tileY = static_cast<int>(position.y / 60);
+			if (isWalkable(tileX, tileY))
+			{
+				createSoldier(renderer, position, soldier_health, soldier_damage);
+			}
+		}
+
+		king.combat_cooldown = 6000.f;
+		king.state = KingState::COMBAT;
+
+		break;
+	}
+	case KingAttack::FIRE_RAIN:
+	{
+		if ((unsigned int)king.fire_rain_entity != 0)
+		{
+			registry.remove_all_components_of(king.fire_rain_entity);
+			king.fire_rain_entity = Entity(0);
+		}
+
+		king.has_fired = false;
+		king.damage_field_created = false;
+
+		std::vector<BoneKeyframe> keyframes = {
+				{0.0f, 500.f, {{}, {}, {}, {}, {}}},
+				{500.f, 3000.f, {{}, {{0.f, 0.05f}, 0.f, {1.2f, 1.2f}}, {}, {{0.f, -0.05f}, 0.f, {1.f, 1.05f}}, {}}}, // raise staff and arm, enlarge head
+				{3500.f, 500.f, {{}, {{0.f, 0.05f}, 0.f, {1.2f, 1.2f}}, {}, {{0.f, -0.05f}, 0.f, {1.f, 1.05f}}, {}}},
+				{4000.f, 0.f, {{}, {}, {}, {}, {}}}};
+		play_king_animation(keyframes);
+
+		break;
+	}
+	case KingAttack::TRIPLE_DASH:
+	{
+		king.dash_counter = 0;
+		break;
+	}
+	case KingAttack::TELEPORT:
+	{
+		king.has_teleported = false;
+		king.has_fired = false;
+
+		// create remnant of king (no longer used)
+		// king.remnant_entity = createKingRemnant(renderer, king_motion);
+
+		if (!registry.opacities.has(king_entity))
+		{
+			registry.opacities.insert(king_entity, 0.5f);
+		}
+		else
+		{
+			float &opacity = registry.opacities.get(king_entity);
+			opacity = 0.5f;
+		}
+
+		// make king temporarily invincible
+		king.is_invincible = true;
+
+		break;
+	}
+	case KingAttack::MORE_SOLDIERS:
+	{
+		// summon 5 soldiers around king
+		vec2 pos = king_motion.position + king_motion.bb_offset;
+		vec2 bb = king_motion.bb_scale / 2.f;
+
+		float soldier_health = 150.f;
+		float soldier_damage = 10.f;
+		std::vector<vec2> positions = {
+				{pos.x + bb.x + 40.f, pos.y},
+				{pos.x - bb.x - 40.f, pos.y},
+				{pos.x, pos.y + bb.y + 40.f},
+				{pos.x, pos.y - bb.y - 40.f},
+				{pos.x, pos.y + bb.y + 100.f}};
+
+		for (vec2 position : positions)
+		{
+			// check if position is on a floor
+			int tileX = static_cast<int>(position.x / 60);
+			int tileY = static_cast<int>(position.y / 60);
+			if (isWalkable(tileX, tileY))
+			{
+				createSoldier(renderer, position, soldier_health, soldier_damage);
+			}
+		}
+
+		king.combat_cooldown = 8000.f;
+		king.state = KingState::COMBAT;
+
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+void AISystem::process_king_attack(float elapsed_ms)
+{
+	if (registry.king.size() == 0 || registry.players.size() == 0)
+		return;
+
+	King &king = registry.king.components[0];
+	Entity king_entity = registry.king.entities[0];
+	Motion &king_motion = registry.motions.get(king_entity);
+
+	if (king.state != KingState::ATTACK)
+		return;
+
+	king.attack_time_elapsed += elapsed_ms;
+
+	switch (king.current_attack)
+	{
+	case KingAttack::LASER:
+	{
+		if (!king.has_fired && king.attack_time_elapsed >= 500.f)
+		{
+			king.has_fired = true;
+			king.laser_damage_cooldown = 0.f;
+
+			king.laser_entity = createLaser(renderer, king_motion.position + king_motion.bb_offset);
+		}
+		else if (king.attack_time_elapsed >= 4000.f)
+		{
+			if ((unsigned int)king.laser_entity != 0)
+			{
+				registry.remove_all_components_of(king.laser_entity);
+				king.laser_entity = Entity(0);
+			}
+
+			king.combat_cooldown = 5000.f;
+			king.state = KingState::COMBAT;
+		}
+		else if (king.has_fired && king.attack_time_elapsed >= 500.f)
+		{
+			if (king.laser_damage_cooldown > 0.f)
+			{
+				king.laser_damage_cooldown -= elapsed_ms;
+			}
+
+			float t = min((king.attack_time_elapsed - 500.f) / 3000.f, 1.f);
+			float angle = t * 2.f * M_PI;
+
+			if (registry.motions.has(king.laser_entity))
+			{
+				Motion &laser_motion = registry.motions.get(king.laser_entity);
+				laser_motion.angle = angle;
+
+				// Check for angled collision (laser start pos is king pos)
+				if (king.laser_damage_cooldown <= 0.f)
+				{
+					vec2 laser_start = king_motion.position + king_motion.bb_offset;
+					float laser_length = laser_motion.bb_scale.x;
+					vec2 laser_end = {laser_start.x + cos(angle) * laser_length, laser_start.y + sin(angle) * laser_length};
+
+					Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+					vec2 player_position = player_motion.position + player_motion.bb_offset;
+					vec2 player_bb = player_motion.bb_scale / 2.f;
+
+					// check laser line intersection with the two diagonals of the player bounding box
+					if (line_intersects(laser_start, laser_end, player_position - player_bb, player_position + player_bb) || line_intersects(laser_start, laser_end, player_position + vec2(-player_bb.x, player_bb.y), player_position + vec2(player_bb.x, -player_bb.y)))
+					{
+						Player &player = registry.players.get(registry.players.entities[0]);
+						if (player.can_take_damage())
+						{
+							std::cout << "Laser hit player for 10 damage" << std::endl;
+							Health &player_health = registry.healths.get(registry.players.entities[0]);
+							player_health.take_damage(10.f);
+							king.laser_damage_cooldown = 500.f;
+						}
+						else
+						{
+							std::cout << "Laser damage prevented by player" << std::endl;
+						}
+					}
+				}
+			}
+		}
+		break;
+	}
+	case KingAttack::DASH_HIT:
+	{
+		Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+		vec2 player_position = player_motion.position + player_motion.bb_offset;
+		vec2 king_position = king_motion.position + king_motion.bb_offset;
+		if (king.attack_time_elapsed >= 2000.f * (float)king.dash_counter)
+		{
+			king.dash_counter++;
+			king.has_fired = false;
+			king.damage_field_created = false;
+
+			if (king.dash_counter == 3)
+			{
+				king.combat_cooldown = 4000.f;
+				king.state = KingState::COMBAT;
+				break;
+			}
+
+			vec2 direction = normalize(player_position - king_position);
+			float dash_speed = 500.f;
+			king_motion.velocity = direction * dash_speed;
+		}
+		else if (!king.has_fired && king.attack_time_elapsed >= 2000.f * (float)king.dash_counter - 1000.f)
+		{
+			king.has_fired = true;
+			// after 1s dash, hit with staff for 1s
+			king_motion.velocity = {0.f, 0.f};
+
+			std::vector<BoneKeyframe> keyframes = {
+					{0.0f, 500.f, {{}, {}, {}, {}, {}}},
+					{500.f, 500.f, {{}, {}, {}, {{0.03f, 0.02f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {}}}, // rotate arm with staff
+					{1000.f, 0.f, {{}, {}, {}, {}, {}}}};
+			play_king_animation(keyframes);
+		}
+		else if (!king.damage_field_created && king.attack_time_elapsed >= 2000.f * (float)king.dash_counter - 500.f)
+		{
+			king.damage_field_created = true;
+			createDamageArea(king_entity, king_position, king_motion.bb_scale * 2.1f, 10.f, 300.f);
+		}
+
+		if (length(player_position - king_position) < 150.f)
+		{
+			king_motion.velocity = {0.f, 0.f};
+		}
+		break;
+	}
+	case KingAttack::SUMMON_SOLDIERS:
+	{
+		break;
+	}
+	case KingAttack::FIRE_RAIN:
+	{
+		if (!king.has_fired && king.attack_time_elapsed >= 500.f)
+		{
+			king.has_fired = true;
+			Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+			king.fire_rain_entity = createFireRain(renderer, player_motion.position + player_motion.bb_offset);
+
+			registry.opacities.insert(king.fire_rain_entity, 0.2f);
+		}
+		if (!king.damage_field_created && king.attack_time_elapsed >= 1000.f)
+		{
+			king.damage_field_created = true;
+
+			if (registry.opacities.has(king.fire_rain_entity))
+			{
+				registry.opacities.remove(king.fire_rain_entity);
+			}
+
+			Motion &fire_rain_motion = registry.motions.get(king.fire_rain_entity);
+			createDamageArea(king_entity, fire_rain_motion.position + fire_rain_motion.bb_offset, fire_rain_motion.bb_scale, 15.f, 2000.f, 1000.f);
+		}
+		else if (!king.damage_field_created && king.has_fired)
+		{
+			float t = min((king.attack_time_elapsed - 500.f) / 500.f, 1.f);
+			if (registry.opacities.has(king.fire_rain_entity))
+			{
+				float &opacity = registry.opacities.get(king.fire_rain_entity);
+				opacity = 0.2f + 0.8f * t;
+			}
+		}
+		if (king.attack_time_elapsed >= 3000.f)
+		{
+			if ((unsigned int)king.fire_rain_entity != 0)
+			{
+				registry.remove_all_components_of(king.fire_rain_entity);
+				king.fire_rain_entity = Entity(0);
+			}
+
+			king.combat_cooldown = 3000.f;
+			king.state = KingState::COMBAT;
+		}
+		break;
+	}
+	case KingAttack::TRIPLE_DASH:
+	{
+		Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+		vec2 player_position = player_motion.position + player_motion.bb_offset;
+		vec2 king_position = king_motion.position + king_motion.bb_offset;
+		if (king.attack_time_elapsed >= 1500.f * (float)king.dash_counter)
+		{
+			king.dash_counter++;
+			king.damage_field_created = false;
+			king.has_dashed = false;
+			king_motion.velocity = {0.f, 0.f};
+
+			if (king.dash_counter == 4)
+			{
+				king.combat_cooldown = 4000.f;
+				king.state = KingState::COMBAT;
+				break;
+			}
+
+			std::vector<BoneKeyframe> keyframes = {
+					{0.0f, 500.f, {{}, {}, {}, {}, {}}},
+					{500.f, 400.f, {{}, {{0.f, 0.05f}, 0.f, {.8f, .8f}}, {}, {}, {{0.f, 0.f}, 0.f, {.8f, .8f}}}}, // retract head and feet
+					{900.f, 100.f, {{}, {{0.f, 0.05f}, 0.f, {.8f, .8f}}, {}, {}, {{0.f, 0.f}, 0.f, {.8f, .8f}}}}, // retract head and feet
+					{1000.f, 0.f, {{}, {}, {}, {}, {}}}};
+			play_king_animation(keyframes);
+		}
+		else if (!king.has_dashed && king.attack_time_elapsed >= 1500.f * (float)king.dash_counter - 1000.f)
+		{
+			king.has_dashed = true;
+
+			vec2 direction = normalize(player_position - king_position);
+			float dash_speed = 500.f;
+			king_motion.velocity = direction * dash_speed;
+
+			king.damage_field_created = true;
+			createDamageArea(king_entity, king_position, king_motion.bb_scale * 1.8f, 10.f, 1000.f, 0.f, true, king_motion.bb_offset);
+		}
+		break;
+	}
+	case KingAttack::TELEPORT:
+	{
+		if (!king.has_teleported && king.attack_time_elapsed >= 500.f)
+		{
+			king.has_teleported = true;
+			king.is_invincible = false;
+
+			Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+			vec2 player_position = player_motion.position + player_motion.bb_offset;
+			float teleport_target_side = player_motion.position.x > king_motion.position.x ? 1.f : -1.f;
+			king_motion.position = player_position + vec2(teleport_target_side * (abs(king_motion.bb_scale.x) * 0.5f + 50.f), 0.f) - king_motion.bb_offset;
+
+			// destroy remnant
+			if ((unsigned int)king.remnant_entity != 0)
+			{
+				registry.remove_all_components_of(king.remnant_entity);
+			}
+
+			// reveal actual king
+			if (registry.opacities.has(king_entity))
+			{
+				registry.opacities.remove(king_entity);
+			}
+
+			// play staff animation
+			std::vector<BoneKeyframe> keyframes = {
+					{0.0f, 500.f, {{}, {}, {}, {}, {}}},
+					{500.f, 500.f, {{}, {}, {}, {{0.03f, 0.02f}, 30.f / 180.f * M_PI, {1.f, 1.f}}, {}}}, // rotate arm with staff
+					{1000.f, 0.f, {{}, {}, {}, {}, {}}}};
+			play_king_animation(keyframes);
+		}
+		if (!king.has_fired && king.attack_time_elapsed >= 1000.f)
+		{
+			king.has_fired = true;
+
+			createDamageArea(king_entity, king_motion.position + king_motion.bb_offset, king_motion.bb_scale * 1.5f, 25.f, 200.f);
+		}
+		if (king.attack_time_elapsed >= 1500.f)
+		{
+			king.combat_cooldown = 3000.f;
+			king.state = KingState::COMBAT;
+			king.is_invincible = false;
+		}
+		break;
+	}
+	case KingAttack::MORE_SOLDIERS:
+	{
+		break;
+	}
 	default:
 		break;
 	}
@@ -386,16 +1036,199 @@ void knight_attack_finished(Knight &knight)
 	knight.combat_cooldown = 5000.f;
 }
 
+DecisionNode *AISystem::create_prince_decision_tree()
+{
+	DecisionNode *prince_decision_tree = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				Prince &prince = registry.prince.components[0];
+				return prince.state != PrinceState::IDLE;
+			});
+
+	DecisionNode *combat_state_check = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				Prince &prince = registry.prince.components[0];
+				return prince.state == PrinceState::COMBAT;
+			});
+	prince_decision_tree->trueBranch = combat_state_check;
+
+	DecisionNode *combat_cooldown = new DecisionNode(
+			[](float elapsed_ms)
+			{
+				Prince &prince = registry.prince.components[0];
+				prince.combat_cooldown -= elapsed_ms;
+			},
+			[](float)
+			{
+				Prince &prince = registry.prince.components[0];
+				return prince.combat_cooldown <= 0.f;
+			});
+	combat_state_check->trueBranch = combat_cooldown;
+
+	DecisionNode *attack_selection = new DecisionNode(
+			[this](float)
+			{
+				Prince &prince = registry.prince.components[0];
+
+				Health &prince_health = registry.healths.get(registry.prince.entities[0]);
+				float health_percentage = prince_health.health / prince_health.max_health;
+				if ((health_percentage < 0.66f && prince.health_percentage >= 0.66f) || (health_percentage < 0.33f && prince.health_percentage >= 0.33f))
+				{
+					std::cout << "Prince attack: SUMMON_SPIRITS" << std::endl;
+					prince.health_percentage = health_percentage;
+					prince.current_attack = PrinceAttack::SUMMON_SPIRITS;
+				}
+				else
+				{
+					// Randomly select an attack
+					int random_attack = rand() % 3; // 0 to 2
+
+					std::cout << "Prince attack: " << random_attack << std::endl;
+					prince.current_attack = static_cast<PrinceAttack>(random_attack);
+				}
+
+				// prince.current_attack = PrinceAttack::TELEPORT;
+				this->perform_prince_attack(prince.current_attack);
+			},
+			nullptr);
+	combat_cooldown->trueBranch = attack_selection;
+
+	DecisionNode *attack_processing = new DecisionNode(
+			[this](float elapsed_ms)
+			{
+				process_prince_attack(elapsed_ms);
+			},
+			nullptr);
+	combat_state_check->falseBranch = attack_processing; // if not IDLE or COMBAT, must be in attack
+
+	DecisionNode *idle_processing = new DecisionNode(
+			[](float)
+			{
+				Motion &prince_motion = registry.motions.get(registry.prince.entities[0]);
+				Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+				vec2 player_position = player_motion.position + player_motion.bb_offset;
+				vec2 prince_position = prince_motion.position + prince_motion.bb_offset;
+				if (distance_squared(player_position, prince_position) < detection_radius_squared)
+				{
+					Prince &prince = registry.prince.components[0];
+					prince.state = PrinceState::COMBAT;
+				}
+			},
+			nullptr);
+	prince_decision_tree->falseBranch = idle_processing;
+
+	return prince_decision_tree;
+}
+
+DecisionNode *AISystem::create_king_decision_tree()
+{
+	DecisionNode *king_decision_tree = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				King &king = registry.king.components[0];
+				return king.state != KingState::IDLE;
+			});
+
+	DecisionNode *combat_state_check = new DecisionNode(
+			nullptr,
+			[](float)
+			{
+				King &king = registry.king.components[0];
+				return king.state == KingState::COMBAT;
+			});
+	king_decision_tree->trueBranch = combat_state_check;
+
+	DecisionNode *combat_cooldown = new DecisionNode(
+			[](float elapsed_ms)
+			{
+				King &king = registry.king.components[0];
+				king.combat_cooldown -= elapsed_ms;
+			},
+			[](float)
+			{
+				King &king = registry.king.components[0];
+				return king.combat_cooldown <= 0.f;
+			});
+	combat_state_check->trueBranch = combat_cooldown;
+
+	DecisionNode *attack_selection = new DecisionNode(
+			[this](float)
+			{
+				King &king = registry.king.components[0];
+
+				if (king.is_second_stage)
+				{
+					Health &king_health = registry.healths.get(registry.king.entities[0]);
+					float health_percentage = king_health.health / king_health.max_health;
+					if ((health_percentage < 0.66f && king.health_percentage >= 0.66f) || (health_percentage < 0.33f && king.health_percentage >= 0.33f))
+					{
+						king.health_percentage = health_percentage;
+						king.current_attack = KingAttack::MORE_SOLDIERS; // 6
+					}
+					else
+					{
+						int random_attack = 3 + (rand() % 3); // 3 to 5
+						king.current_attack = static_cast<KingAttack>(random_attack);
+					}
+				}
+				else
+				{
+					int random_attack = rand() % 3; // 0 to 2
+					king.current_attack = static_cast<KingAttack>(random_attack);
+				}
+
+				// king.current_attack = !king.is_second_stage ? KingAttack::TRIPLE_DASH : KingAttack::MORE_SOLDIERS;
+				// king.current_attack = KingAttack::MORE_SOLDIERS;
+				this->perform_king_attack(king.current_attack);
+			},
+			nullptr);
+	combat_cooldown->trueBranch = attack_selection;
+
+	DecisionNode *attack_processing = new DecisionNode(
+			[this](float elapsed_ms)
+			{
+				this->process_king_attack(elapsed_ms);
+			},
+			nullptr);
+	combat_state_check->falseBranch = attack_processing; // if not IDLE or COMBAT, must be in attack
+
+	DecisionNode *idle_processing = new DecisionNode(
+			[](float)
+			{
+				Motion &king_motion = registry.motions.get(registry.king.entities[0]);
+				Motion &player_motion = registry.motions.get(registry.players.entities[0]);
+				vec2 player_position = player_motion.position + player_motion.bb_offset;
+				vec2 king_position = king_motion.position + king_motion.bb_offset;
+				if (distance_squared(player_position, king_position) < detection_radius_squared)
+				{
+					King &king = registry.king.components[0];
+					king.state = KingState::COMBAT;
+				}
+			},
+			nullptr);
+	king_decision_tree->falseBranch = idle_processing;
+
+	return king_decision_tree;
+}
+
 AISystem::AISystem()
 {
 	chef_decision_tree = create_chef_decision_tree();
 	knight_decision_tree = create_knight_decision_tree();
+	prince_decision_tree = create_prince_decision_tree();
+	king_decision_tree = create_king_decision_tree();
 }
 
 AISystem::~AISystem()
 {
 	delete chef_decision_tree;
 	delete knight_decision_tree;
+	delete prince_decision_tree;
+	delete king_decision_tree;
 }
 
 void AISystem::init(RenderSystem *renderer)
@@ -440,7 +1273,7 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		Enemy &enemy = enemies.components[i];
 		Entity entity = enemies.entities[i];
 
-		if (registry.chef.has(entity) || registry.knight.has(entity)) // Skip all bosses
+		if (registry.chef.has(entity) || registry.knight.has(entity) || registry.prince.has(entity) || registry.king.has(entity)) // Skip all bosses
 		{
 			continue;
 		}
@@ -549,7 +1382,6 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		// reset state to combat after attack
 		else if (enemy.state == EnemyState::ATTACK)
 		{
-			auto &animation = registry.spriteAnimations.get(entity);
 			auto &render_request = registry.renderRequests.get(entity);
 			enemy.attack_countdown -= elapsed_ms;
 
@@ -558,8 +1390,12 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 				enemy.state = EnemyState::COMBAT;
 				// printf("Enemy %d finish attack\n", i);
 				enemy.attack_countdown = 500;
-				// change to combat animation sprite
-				render_request.used_texture = animation.frames[0];
+				if (registry.spriteAnimations.has(entity))
+				{
+					auto &animation = registry.spriteAnimations.get(entity);
+					// change to combat animation sprite
+					render_request.used_texture = animation.frames[0];
+				}
 				// get motion of the enemy
 				auto &enemy_motion = registry.motions.get(entity);
 				enemy_motion.scale.x /= 1.1;
@@ -744,6 +1580,26 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			}
 		}
 	}
+
+	if (registry.prince.size() > 0)
+	{
+		Entity prince_entity = registry.prince.entities[0];
+		Health &prince_health = registry.healths.get(prince_entity);
+		if (!prince_health.is_dead)
+		{
+			prince_decision_tree->execute(elapsed_ms);
+		}
+	}
+
+	if (registry.king.size() > 0)
+	{
+		Entity king_entity = registry.king.entities[0];
+		Health &king_health = registry.healths.get(king_entity);
+		if (!king_health.is_dead)
+		{
+			king_decision_tree->execute(elapsed_ms);
+		}
+	}
 }
 
 void AISystem::boss_attack(Entity entity, int attack_id, float elapsed_ms)
@@ -808,15 +1664,6 @@ void AISystem::boss_attack(Entity entity, int attack_id, float elapsed_ms)
 float heuristic(int x1, int y1, int x2, int y2)
 {
 	return static_cast<float>(std::abs(x1 - x2) + std::abs(y1 - y2)); // Manhattan distance
-}
-
-bool isWalkable(int x, int y)
-{
-	if (x >= 0 && y >= 0 && x < level_grid.size() && y < level_grid[x].size())
-	{
-		return level_grid[x][y] == 1;
-	}
-	return false;
 }
 
 int nodeKey(int x, int y, int maxHeight)

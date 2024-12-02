@@ -419,6 +419,74 @@ struct Knight
 	bool dash_has_ended = false;
 };
 
+enum class PrinceState
+{
+	IDLE = 0,
+	COMBAT = 1,
+	ATTACK = 2,
+};
+enum class PrinceAttack
+{
+	WAND_SWING = 0,
+	TELEPORT = 1,
+	FIELD = 2,
+	SUMMON_SPIRITS = 3,
+	ATTACK_COUNT = 4,
+};
+struct Prince
+{
+	PrinceState state = PrinceState::IDLE;
+	PrinceAttack current_attack = PrinceAttack::WAND_SWING;
+	float attack_time_elapsed = 0.f; // ms since current attack started
+	float combat_cooldown = 0.f;		 // ms until the next attack is chosen
+	bool damage_field_created = false;
+	float teleport_target_side = 1.f; // 1 or -1
+	bool has_teleported = false;
+	bool has_fired = false;
+	bool has_spirits = false;
+	float spirits_time_elapsed = 0.f;
+	vec2 original_scale;
+	float health_percentage = 1.f;
+};
+
+enum class KingState
+{
+	IDLE = 0,
+	COMBAT = 1,
+	ATTACK = 2,
+};
+enum class KingAttack
+{
+	LASER = 0,
+	DASH_HIT = 1,
+	SUMMON_SOLDIERS = 2,
+	FIRE_RAIN = 3,
+	TRIPLE_DASH = 4,
+	TELEPORT = 5,
+	MORE_SOLDIERS = 6,
+	ATTACK_COUNT = 7,
+};
+struct King
+{
+	KingState state = KingState::IDLE;
+	KingAttack current_attack = KingAttack::LASER;
+	float attack_time_elapsed = 0.f; // ms since current attack started
+	float combat_cooldown = 0.f;		 // ms until the next attack
+	float laser_damage_cooldown = 0.f;
+	bool is_second_stage = false;
+	Entity laser_entity = Entity(0);
+	Entity fire_rain_entity = Entity(0);
+	Entity remnant_entity = Entity(0);
+	int dash_counter = 0;
+	bool damage_field_created = false;
+	float teleport_target_side = 1.f; // 1 or -1
+	bool has_teleported = false;
+	bool has_dashed = false;
+	bool has_fired = false;
+	bool is_invincible = false;
+	float health_percentage = 1.f;
+};
+
 struct MoveUI
 {
 };
@@ -505,14 +573,19 @@ enum class TEXTURE_ASSET_ID
 	DAGGER_RARE = DAGGER_BASIC + 1,
 	DAGGER_LEGENDARY = DAGGER_RARE + 1,
 	KNIGHT = DAGGER_LEGENDARY + 1,
-	FOUNTAIN = KNIGHT + 1,
+	PRINCE = KNIGHT + 1,
+	KING = PRINCE + 1,
+	FOUNTAIN = KING + 1,
 	STEALTH = FOUNTAIN + 1,
 	TREASURE_BOX = STEALTH + 1,
 	TREASURE_BOX_OPEN = TREASURE_BOX + 1,
 	UI_FRAME = TREASURE_BOX_OPEN + 1,
 	MAX_HEALTH = UI_FRAME + 1,
 	MAX_ENERGY = MAX_HEALTH + 1,
-	DIALOGUE_WINDOW = MAX_ENERGY + 1,
+	FIRERAIN = MAX_ENERGY + 1,
+	LASER = FIRERAIN + 1,
+	SUMMON_SOLDIER = LASER + 1,
+	DIALOGUE_WINDOW = SUMMON_SOLDIER + 1,
 
 	CHEF1_0 = DIALOGUE_WINDOW + 1,
 	CHEF1_1 = CHEF1_0 + 1,
@@ -598,7 +671,9 @@ enum class GEOMETRY_BUFFER_ID
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
 	PROGRESS_BAR = SCREEN_TRIANGLE + 1,
 	KNIGHT = PROGRESS_BAR + 1,
-	DAGGER = KNIGHT + 1,
+	PRINCE = KNIGHT + 1,
+	KING = PRINCE + 1,
+	DAGGER = KING + 1,
 	GEOMETRY_COUNT = DAGGER + 1,
 	// // Defined FLOOR_TILE geometry.
 	// FLOOR_TILE = GEOMETRY_COUNT + 1

@@ -52,6 +52,8 @@ Popup active_popup = {};
 
 bool is_in_chef_dialogue = false;
 
+bool background_dialogue_triggered = false;
+
 // create the underwater world
 WorldSystem::WorldSystem()
 {
@@ -61,10 +63,12 @@ WorldSystem::WorldSystem()
 
 WorldSystem::~WorldSystem()
 {
-
 	// destroy music components
-	if (background_music != nullptr)
-		Mix_FreeMusic(background_music);
+	for (auto music : background_music)
+	{
+		if (music != nullptr)
+			Mix_FreeMusic(music);
+	}
 	if (salmon_dead_sound != nullptr)
 		Mix_FreeChunk(salmon_dead_sound);
 	if (perfect_dodge_sound != nullptr)
@@ -163,8 +167,11 @@ GLFWwindow *WorldSystem::create_window()
 		return nullptr;
 	}
 
-	// background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
-	background_music = Mix_LoadMUS(audio_path("soundtrack_1.wav").c_str());
+	background_music = {
+			Mix_LoadMUS(audio_path("GamesOfThrone.1.mp3").c_str()),
+			Mix_LoadMUS(audio_path("GamesOfThrone.2.mp3").c_str()),
+			Mix_LoadMUS(audio_path("GamesOfThrone.3.mp3").c_str()),
+			Mix_LoadMUS(audio_path("GamesOfThrone.4.mp3").c_str())};
 	salmon_dead_sound = Mix_LoadWAV(audio_path("death_sound.wav").c_str());
 	perfect_dodge_sound = Mix_LoadWAV(audio_path("perfect_dodge.wav").c_str());
 	Mix_VolumeChunk(perfect_dodge_sound, 70);
@@ -181,10 +188,9 @@ GLFWwindow *WorldSystem::create_window()
 	heavy_attack_sound = Mix_LoadWAV(audio_path("heavy_attack.wav").c_str());
 	Mix_VolumeChunk(heavy_attack_sound, 80);
 
-	if (background_music == nullptr || salmon_dead_sound == nullptr || perfect_dodge_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
+	if (salmon_dead_sound == nullptr || perfect_dodge_sound == nullptr || spy_death_sound == nullptr || spy_dash_sound == nullptr || spy_attack_sound == nullptr || break_sound == nullptr)
 	{
-		fprintf(stderr, "Failed to load sounds: %s\n %s\n %s\n %s\n %s\n %s\n %s\n make sure the data directory is present",
-						audio_path("soundtrack_1.wav").c_str(),
+		fprintf(stderr, "Failed to load sounds: %s\n %s\n %s\n %s\n %s\n %s\n make sure the data directory is present",
 						audio_path("death_sound.wav").c_str(),
 						audio_path("eat_sound.wav").c_str(),
 						audio_path("spy_death.wav").c_str(),
@@ -200,11 +206,6 @@ GLFWwindow *WorldSystem::create_window()
 void WorldSystem::init(RenderSystem *renderer_arg)
 {
 	this->renderer = renderer_arg;
-	// Playing background music indefinitely
-	// lower volume
-	Mix_VolumeMusic(30);
-	Mix_PlayMusic(background_music, -1);
-	fprintf(stderr, "Loaded music\n");
 
 	// Set all states to default
 	restart_game();
@@ -584,8 +585,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (chef_health.is_dead)
 		{
 			registry.remove_all_components_of(chef_entity);
-			current_level = 1;
-			saveProgress(); // save since we killed chef i.e level progression
 			trigger_dialogue(chef_death_dialogue);
 			is_in_chef_dialogue = true;
 		}
@@ -597,6 +596,39 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 				trigger_dialogue(chef_being_attacked_dialogue);
 				chef_first_damaged = true;
 			}
+		}
+	}
+
+	if (registry.knight.size() > 0)
+	{
+		Entity knight_entity = registry.knight.entities[0];
+		Health &knight_health = registry.healths.get(knight_entity);
+		if (knight_health.is_dead)
+		{
+			registry.remove_all_components_of(knight_entity);
+			load_level("Level_2", 2);
+		}
+	}
+
+	if (registry.prince.size() > 0)
+	{
+		Entity prince_entity = registry.prince.entities[0];
+		Health &prince_health = registry.healths.get(prince_entity);
+		if (prince_health.is_dead)
+		{
+			registry.remove_all_components_of(prince_entity);
+			// load_level("Level_3", 3);
+		}
+	}
+
+	if (registry.king.size() > 0)
+	{
+		Entity king_entity = registry.king.entities[0];
+		Health &king_health = registry.healths.get(king_entity);
+		if (king_health.is_dead)
+		{
+			registry.remove_all_components_of(king_entity);
+			// TODO: show final dialogue
 		}
 	}
 
@@ -613,17 +645,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 				trigger_dialogue(minion_death_dialogue);
 				continue;
 			}
-		}
-	}
-
-	if (registry.knight.size() > 0)
-	{
-		Entity knight_entity = registry.knight.entities[0];
-		Health &knight_health = registry.healths.get(knight_entity);
-		if (knight_health.is_dead)
-		{
-			registry.remove_all_components_of(knight_entity);
-			// load_level("Level_2", 2);
 		}
 	}
 
@@ -762,12 +783,16 @@ void WorldSystem::restart_game()
 	int screen_width, screen_height;
 	glfwGetWindowSize(window, &screen_width, &screen_height);
 	loadProgress();
-	// TODO: change this load_level
-	// load_level("Level_0", 0);
-	std::string levelName = (current_level == 0) ? "Level_0" : "Level_1";
-	std::cout << levelName << current_level << std::endl;
+
+	std::string levelName = "Level_" + std::to_string(current_level);
+	std::cout << "Loading " << levelName << std::endl;
 	load_level(levelName, current_level);
-	trigger_dialogue(background_dialogue);
+
+	if (!background_dialogue_triggered)
+	{
+		background_dialogue_triggered = true;
+		trigger_dialogue(background_dialogue);
+	}
 }
 
 void WorldSystem::load_level(const std::string &levelName, const int levelNumber)
@@ -777,6 +802,17 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 
 	// Debugging for memory/component leaks
 	registry.list_all_components();
+
+	current_level = levelNumber;
+
+	saveProgress(); // save on load_level
+
+	if (background_music.size() > 0)
+	{
+		Mix_VolumeMusic(80);
+		Mix_Music *level_music = background_music.size() > levelNumber ? background_music[levelNumber] : background_music[0];
+		Mix_PlayMusic(level_music, -1);
+	}
 
 	ldtk::Project ldtk_project;
 	ldtk_project.loadFromFile(data_path() + "/levels/levels.ldtk");
@@ -911,7 +947,11 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 				}
 				else if (entity_name == "Prince")
 				{
-					// createPrince (renderer, position);
+					createPrince(renderer, position);
+				}
+				else if (entity_name == "King")
+				{
+					createKing(renderer, position);
 				}
 				else if (entity_name == "Spy")
 				{
@@ -1300,13 +1340,33 @@ void WorldSystem::handle_collisions()
 		// draw_mesh_debug(player_weapon.weapon);
 
 		// Draw knight mesh
-		if (registry.knight.size() > 0)
+		// if (registry.knight.size() > 0)
+		// {
+		// 	Entity knight_entity = registry.knight.entities[0];
+		// 	draw_mesh_debug(knight_entity, false);
+
+		// 	// to also consider bone animations:
+		// 	// draw_mesh_debug(knight_entity, true);
+		// }
+
+		// Draw prince mesh
+		// if (registry.prince.size() > 0)
+		// {
+		// 	Entity prince_entity = registry.prince.entities[0];
+		// 	draw_mesh_debug(prince_entity, false);
+
+		// 	// to also consider bone animations:
+		// 	// draw_mesh_debug(prince_entity, true);
+		// }
+
+		// Draw king mesh
+		if (registry.king.size() > 0)
 		{
-			Entity knight_entity = registry.knight.entities[0];
-			draw_mesh_debug(knight_entity, false);
+			Entity king_entity = registry.king.entities[0];
+			draw_mesh_debug(king_entity, false);
 
 			// to also consider bone animations:
-			// draw_mesh_debug(knight_entity, true);
+			// draw_mesh_debug(king_entity, true);
 		}
 
 		// Draw damage areas
@@ -1364,42 +1424,6 @@ void WorldSystem::handle_collisions()
 				}
 			}
 		}
-
-		// When tomato hits player
-		// bool entity_is_tomato = registry.tomatos.has(entity);
-		// bool entity_other_is_tomato = registry.tomatos.has(entity_other);
-		// if ((entity_is_tomato && entity_other == player_spy) || (entity_other_is_tomato && entity == player_spy))
-		// {
-		// 	Entity tomato_entity = entity_is_tomato ? entity : entity_other;
-		// 	std::cout << "11" << std::endl;
-		// 	Tomato &tomato = registry.tomatos.get(tomato_entity);
-		// 	std::cout << "22" << std::endl;
-		// 	Health &player_spy_health = registry.healths.get(player_spy);
-		// 	std::cout << "33" << std::endl;
-
-		// 	player_spy_health.health -= tomato.damage;
-		// 	if (player_spy_health.health <= 0.f)
-		// 	{
-		// 		player_spy_health.health = 0.f;
-		// 		player_spy_health.is_dead = true;
-		// 		if (!registry.deathTimers.has(player_spy))
-		// 		{
-		// 			registry.deathTimers.emplace(player_spy);
-		// 			Mix_PlayChannel(-1, spy_death_sound, 0);
-		// 		}
-		// 	}
-		// 	registry.remove_all_components_of(tomato_entity);
-		// }
-
-		// When tomato hits wall
-		// bool entity_is_wall = registry.physicsBodies.has(entity) && registry.physicsBodies.get(entity).body_type == BodyType::STATIC;
-		// bool entity_other_is_wall = registry.physicsBodies.has(entity_other) && registry.physicsBodies.get(entity_other).body_type == BodyType::STATIC;
-
-		// if ((entity_is_wall && entity_other_is_tomato) || (entity_other_is_wall && entity_is_tomato))
-		// {
-		// 	Entity tomato_entity = entity_is_tomato ? entity : entity_other;
-		// 	registry.remove_all_components_of(tomato_entity);
-		// }
 
 		// When pan hits player
 		bool entity_is_pan = registry.pans.has(entity);
@@ -1493,6 +1517,25 @@ void WorldSystem::handle_collisions()
 				if (registry.healths.has(entity_other))
 				{
 					Health &enemy_health = registry.healths.get(entity_other);
+
+					// Special behavior when damaging the King boss
+					if (registry.king.has(entity_other))
+					{
+						King &king = registry.king.get(entity_other);
+						if (king.is_invincible)
+						{
+							continue;
+						}
+						if (enemy_health.health - damage <= 0.f && !king.is_second_stage)
+						{
+							king.is_second_stage = true;
+							enemy_health.max_health = 600.f;
+							enemy_health.health = 600.f;
+							king.health_percentage = 1.f;
+							continue;
+						}
+					}
+
 					enemy_health.take_damage(damage);
 
 					if (player_comp.state == PlayerState::LIGHT_ATTACK)
@@ -2047,6 +2090,16 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			Health &knight_health = registry.healths.get(registry.knight.entities[0]);
 			knight_health.take_damage(knight_health.health);
 		}
+		else if (registry.prince.size() > 0)
+		{
+			Health &prince_health = registry.healths.get(registry.prince.entities[0]);
+			prince_health.take_damage(prince_health.health);
+		}
+		else if (registry.king.size() > 0)
+		{
+			Health &king_health = registry.healths.get(registry.king.entities[0]);
+			king_health.take_damage(king_health.health);
+		}
 	}
 
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS) // Example keybinding
@@ -2550,8 +2603,6 @@ void WorldSystem::loadProgress()
 		player_max_energy = 100.0f;
 		unlocked_stealth_ability = false;
 		current_level = 0;
-		// we are now initiating a save for systems that dont have the file on disk so it should work now
-		saveProgress();
 
 		std::cout << "No progress file found. Initialized default progress.\n";
 	}

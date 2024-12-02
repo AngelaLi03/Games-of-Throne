@@ -39,6 +39,10 @@ Entity createDamageArea(Entity owner, vec2 position, vec2 scale, float damage, f
 
 Entity createKnight(RenderSystem *renderer, vec2 pos);
 
+Entity createPrince(RenderSystem *renderer, vec2 pos);
+
+Entity createKing(RenderSystem *renderer, vec2 pos);
+
 Entity createBackdrop(RenderSystem *renderer);
 
 Entity createDialogueWindow(RenderSystem *renderer, vec2 position, vec2 scale);
@@ -48,6 +52,14 @@ Entity createFountain(RenderSystem *renderer, vec2 pos);
 Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item, WeaponType weapon_type = WeaponType::SWORD, WeaponLevel weapon_level = WeaponLevel::BASIC);
 
 Entity createPlayerRemnant(RenderSystem *renderer, Motion motion);
+
+Entity createKingRemnant(RenderSystem *renderer, Motion motion);
+
+Entity createSoldier(RenderSystem *renderer, vec2 pos, float health, float damage);
+
+Entity createFireRain(RenderSystem *renderer, vec2 pos);
+
+Entity createLaser(RenderSystem *renderer, vec2 pos);
 
 // Generic function to create a static sprite without collision
 Entity createSprite(RenderSystem *renderer, vec2 pos, vec2 scale, TEXTURE_ASSET_ID texture_id);
