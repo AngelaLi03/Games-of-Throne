@@ -267,6 +267,79 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	return entity;
 }
 
+Entity createRangedMinion(RenderSystem *renderer, vec2 position)
+{
+
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.angle = 0.f;
+	motion.velocity = {0.f, 0.f};
+	motion.position = position;
+	motion.scale = mesh.original_size * 100.f;
+	motion.scale.x *= -0.8;
+	motion.bb_scale = {60.f, 60.f};
+	motion.bb_offset = {-5.f, 25.f};
+
+	registry.rangedminions.emplace(entity);
+	registry.enemies.emplace(entity);
+
+	auto &spriteAnimation = registry.spriteAnimations.emplace(entity);
+	spriteAnimation.frames = std::vector<TEXTURE_ASSET_ID>{
+			TEXTURE_ASSET_ID::RANGEDMINION,
+			TEXTURE_ASSET_ID::RANGEDMINION_ATTACK,
+	};
+	// spriteAnimation.current_frame = 0; // Initialize to a valid frame index
+	spriteAnimation.frame_duration = 1000.f;
+
+	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
+	registry.renderRequests.insert(
+			entity,
+			{spriteAnimation.frames[spriteAnimation.current_frame],
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	Entity healthbar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+	registry.healths.insert(entity, {50.f, 50.f, healthbar});
+
+	return entity;
+}
+
+Entity createArrow(RenderSystem *renderer, vec2 position, vec2 velocity)
+{
+	auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = position;
+	motion.velocity = velocity;
+	motion.angle = atan2(velocity.y, velocity.x);
+	motion.scale = {100.f, 20.f};
+	motion.bb_scale = motion.scale;
+	motion.bb_offset = {0.f, 0.f};
+
+	registry.damages.insert(entity, {10.f});
+
+	registry.physicsBodies.insert(entity, {BodyType::PROJECTILE});
+
+	registry.renderRequests.insert(
+			entity,
+			{TEXTURE_ASSET_ID::ARROW,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+
+	// registry.deathTimers.emplace(entity, DeathTimer{5000.f});
+
+	return entity;
+}
+
 Entity createPrince(RenderSystem *renderer, vec2 pos)
 {
 	auto entity = Entity();
@@ -1069,24 +1142,24 @@ Entity createBackgroundSprite(RenderSystem *renderer, int levelNumber)
 	motion.scale = {window_width_px, window_height_px};
 
 	TEXTURE_ASSET_ID backgroundTexture;
-	switch(levelNumber)
-    {
-        case 0:
-            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
-            break;
-        case 1:
-            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_1;
-            break;
-        case 2:
-            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_2;
-            break;
-        case 3:
-            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_3;
-            break;
-        default:
-            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
-            break;
-    }
+	switch (levelNumber)
+	{
+	case 0:
+		backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
+		break;
+	case 1:
+		backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_1;
+		break;
+	case 2:
+		backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_2;
+		break;
+	case 3:
+		backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_3;
+		break;
+	default:
+		backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
+		break;
+	}
 	registry.renderRequests.insert(
 			entity,
 			{backgroundTexture,

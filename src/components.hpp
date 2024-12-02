@@ -419,6 +419,15 @@ struct Knight
 	bool dash_has_ended = false;
 };
 
+struct RangedMinion
+{
+	float attack_cooldown = 2000.f;
+	float time_since_last_attack = 0.f;
+	float arrow_speed = 300.f;
+	float movement_speed = 50.f;
+	float attack_radius_squared = 400.f * 400.f;
+};
+
 enum class PrinceState
 {
 	IDLE = 0,
@@ -587,7 +596,10 @@ enum class TEXTURE_ASSET_ID
 	UI_FRAME = TREASURE_BOX_OPEN + 1,
 	MAX_HEALTH = UI_FRAME + 1,
 	MAX_ENERGY = MAX_HEALTH + 1,
-	FIRERAIN = MAX_ENERGY + 1,
+	RANGEDMINION = MAX_ENERGY + 1,
+	RANGEDMINION_ATTACK = RANGEDMINION + 1,
+	ARROW = RANGEDMINION_ATTACK + 1,
+	FIRERAIN = ARROW + 1,
 	LASER = FIRERAIN + 1,
 	SUMMON_SOLDIER = LASER + 1,
 	DIALOGUE_WINDOW = SUMMON_SOLDIER + 1,

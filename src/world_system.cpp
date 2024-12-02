@@ -958,6 +958,10 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 				{
 					player_spy = createSpy(renderer, position);
 				}
+				else if (entity_name == "Ranged_Minion")
+				{
+					createRangedMinion(renderer, position);
+				}
 			}
 		}
 	}

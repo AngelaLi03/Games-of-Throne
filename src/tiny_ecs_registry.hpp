@@ -52,6 +52,7 @@ public:
 	ComponentContainer<BoneAnimation> boneAnimations;
 	ComponentContainer<MeshBones> meshBones;
 	ComponentContainer<PlayerRemnant> playerRemnants;
+	ComponentContainer<RangedMinion> rangedminions;
 	ComponentContainer<BackGround> backgrounds;
 
 	// constructor that adds all containers for looping over them
@@ -99,6 +100,7 @@ public:
 		registry_list.push_back(&boneAnimations);
 		registry_list.push_back(&meshBones);
 		registry_list.push_back(&playerRemnants);
+		registry_list.push_back(&rangedminions);
 		registry_list.push_back(&backgrounds);
 	}
 

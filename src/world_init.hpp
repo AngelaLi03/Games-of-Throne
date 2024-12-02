@@ -64,6 +64,10 @@ Entity createLaser(RenderSystem *renderer, vec2 pos);
 // Generic function to create a static sprite without collision
 Entity createSprite(RenderSystem *renderer, vec2 pos, vec2 scale, TEXTURE_ASSET_ID texture_id);
 
+Entity createRangedMinion(RenderSystem *renderer, vec2 pos);
+
+Entity createArrow(RenderSystem *renderer, vec2 pos, vec2 velocity);
+
 Entity createBackgroundSprite(RenderSystem *renderer, int levelNumber);
 
 TEXTURE_ASSET_ID getWeaponTexture(WeaponType type, WeaponLevel level);

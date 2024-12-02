@@ -1291,6 +1291,75 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 		}
 
 		float distance_to_player = distance_squared(player_position, enemy_position);
+		if (registry.rangedminions.has(entity))
+        {
+            RangedMinion& rangedMinion = registry.rangedminions.get(entity);
+
+            if (enemy.state == EnemyState::IDLE)
+            {
+                if (distance_to_player < detection_radius_squared)
+                {
+                    enemy.state = EnemyState::COMBAT;
+                    std::cout << "Ranged Enemy " << i << " enters combat" << std::endl;
+                }
+            }
+            else if (enemy.state == EnemyState::COMBAT)
+            {
+                if (distance_to_player > detection_radius_squared * 2)
+                {
+                    enemy.state = EnemyState::IDLE;
+                    motion.velocity = {0.f, 0.f};
+                    std::cout << "Ranged Enemy " << i << " enters idle" << std::endl;
+                }
+                else if (distance_to_player > rangedMinion.attack_radius_squared)
+                {
+                    // Move towards player
+                    vec2 direction = player_position - enemy_position;
+                    direction = normalize(direction);
+                    motion.velocity = direction * rangedMinion.movement_speed;
+
+                    // Face the player
+                    motion.scale.x = (direction.x < 0) ? abs(motion.scale.x) : -abs(motion.scale.x);
+                }
+                else
+                {
+                    motion.velocity = {0.f, 0.f};
+
+                    // Face the player
+                    vec2 direction = player_position - enemy_position;
+                    direction = normalize(direction);
+                    motion.scale.x = (direction.x < 0) ? abs(motion.scale.x) : -abs(motion.scale.x);
+
+                    // Attack cooldown
+                    enemy.time_since_last_attack += elapsed_ms;
+                    if (enemy.time_since_last_attack > rangedMinion.attack_cooldown)
+                    {
+                        // Shoot arrow
+                        vec2 arrow_velocity = normalize(player_position - enemy_position) * rangedMinion.arrow_speed;
+                        createArrow(renderer, enemy_position, arrow_velocity);
+
+                        enemy.time_since_last_attack = 0.f;
+
+                        // Play attack animation if available
+                        if (registry.spriteAnimations.has(entity))
+                        {
+                            auto& animation = registry.spriteAnimations.get(entity);
+                            auto& render_request = registry.renderRequests.get(entity);
+
+                            // animation.current_frame = 1;
+                            // render_request.used_texture = animation.frames[animation.current_frame];
+                        }
+                    }
+                }
+            }
+            else if (enemy.state == EnemyState::DEAD)
+            {
+                motion.velocity = {0.f, 0.f};
+                continue;
+            }
+        }
+        else if (!registry.rangedminions.has(entity))
+		{
 		if (enemy.state == EnemyState::IDLE)
 		{
 			if (distance_to_player < detection_radius_squared)
@@ -1406,7 +1475,9 @@ void AISystem::step(float elapsed_ms, std::vector<std::vector<int>> &levelMap)
 			motion.velocity = {0.f, 0.f};
 			continue;
 		}
+		}
 	}
+
 
 	if (registry.chef.size() > 0)
 	{
