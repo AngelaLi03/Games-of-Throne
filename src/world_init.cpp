@@ -22,6 +22,8 @@ Entity createFloorTile(RenderSystem *renderer, vec2 pos)
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = {mesh.original_size.x * TILE_SCALE, mesh.original_size.x * TILE_SCALE};
+	motion.ignore_render_order = true;
+	motion.layer = 0;
 	// std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
 	// create an empty floor tile component for our character
 	registry.renderRequests.insert(
@@ -49,6 +51,8 @@ Entity createWall(RenderSystem *renderer, vec2 pos)
 	motion.scale = {mesh.original_size.x * TILE_SCALE, mesh.original_size.x * TILE_SCALE};
 	motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
+	motion.ignore_render_order = true;
+	motion.layer = 0;
 
 	// Print mesh size for debugging if needed
 	// std::cout << mesh.original_size.x << "," << mesh.original_size.y << std::endl;
@@ -101,9 +105,12 @@ Entity createSpy(RenderSystem *renderer, vec2 pos)
 	motion.scale.x *= -0.8;
 	motion.bb_scale = {60.f, 60.f};
 	motion.bb_offset = {0.f, 40.f};
+	motion.layer = 2;
 
 	// create an empty Spy component for our character
-	registry.players.emplace(entity);
+	Player &player = registry.players.emplace(entity);
+	player.last_health = player_max_health;
+
 	registry.physicsBodies.insert(entity, {BodyType::KINEMATIC});
 	registry.renderRequests.insert(
 			entity,
@@ -139,6 +146,7 @@ Entity createChef(RenderSystem *renderer, vec2 pos)
 	motion.scale.x *= 1.6;
 	motion.bb_scale = {150.f, 130.f};
 	motion.bb_offset = {0.f, 40.f};
+	motion.layer = 2;
 
 	// create an empty Spy component for our character
 	registry.chef.emplace(entity);
@@ -247,6 +255,7 @@ Entity createKnight(RenderSystem *renderer, vec2 pos)
 	motion.scale.x *= 1.2;
 	motion.bb_scale = {150.f, 130.f};
 	motion.bb_offset = {0.f, 40.f};
+	motion.layer = 2;
 
 	registry.knight.emplace(entity);
 	registry.enemies.emplace(entity);
@@ -285,6 +294,7 @@ Entity createRangedMinion(RenderSystem *renderer, vec2 position)
 	motion.scale.x *= -1;
 	motion.bb_scale = {60.f, 60.f};
 	motion.bb_offset = {-5.f, 25.f};
+	motion.layer = 2;
 
 	registry.rangedminions.emplace(entity);
 	registry.enemies.emplace(entity);
@@ -323,14 +333,15 @@ Entity createArrow(RenderSystem *renderer, vec2 position, vec2 velocity)
 	motion.angle = atan2(velocity.y, velocity.x);
 	motion.scale = {100.f, 20.f};
 	float w = motion.scale.x;
-    float h = motion.scale.y;
-    float cos_theta = std::abs(std::cos(motion.angle));
-    float sin_theta = std::abs(std::sin(motion.angle));
-    float new_bb_width = w * cos_theta + h * sin_theta;
-    float new_bb_height = w * sin_theta + h * cos_theta;
-    motion.bb_scale = {new_bb_width, new_bb_height};
+	float h = motion.scale.y;
+	float cos_theta = std::abs(std::cos(motion.angle));
+	float sin_theta = std::abs(std::sin(motion.angle));
+	float new_bb_width = w * cos_theta + h * sin_theta;
+	float new_bb_height = w * sin_theta + h * cos_theta;
+	motion.bb_scale = {new_bb_width, new_bb_height};
 	// motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
+	motion.layer = 2;
 
 	registry.damages.insert(entity, {10.f});
 
@@ -369,6 +380,7 @@ Entity createPrince(RenderSystem *renderer, vec2 pos)
 	motion.scale.y *= 1.34;
 	motion.bb_scale = {180.f, 180.f};
 	motion.bb_offset = {0.f, 30.f};
+	motion.layer = 2;
 
 	registry.prince.emplace(entity);
 	registry.enemies.emplace(entity);
@@ -424,6 +436,7 @@ Entity createKing(RenderSystem *renderer, vec2 pos)
 	motion.scale.y *= 1.36;
 	motion.bb_scale = {150.f, 130.f};
 	motion.bb_offset = {0.f, 50.f};
+	motion.layer = 2;
 
 	registry.king.emplace(entity);
 	registry.enemies.emplace(entity);
@@ -523,6 +536,7 @@ Entity createWeapon(RenderSystem *renderer, vec2 pos, WeaponType type, WeaponLev
 	motion.bb_scale = {max(motion.scale.x, motion.scale.y) * 2.f, max(motion.scale.x, motion.scale.y) * 2.f};
 	motion.bb_offset = {0.f, 50.f};
 	motion.pivot_offset = {0.f, -0.35f};
+	motion.layer = 3;
 
 	registry.physicsBodies.insert(entity, {BodyType::NONE});
 
@@ -605,6 +619,7 @@ Entity createHealthBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, ve
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = {200.f, 20.f};
+	motion.layer = 5;
 
 	registry.healthbar.insert(entity, {motion.scale});
 	registry.renderRequests.insert(
@@ -631,6 +646,7 @@ Entity createEnergyBar(RenderSystem *renderer, vec2 pos, Entity owner_entity, ve
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = {200.f, 20.f};
+	motion.layer = 5;
 
 	registry.energybar.insert(entity, {motion.scale});
 	registry.renderRequests.insert(
@@ -660,6 +676,9 @@ Entity createFlowMeter(RenderSystem *renderer, vec2 pos, float scale)
 	Flow &flow = registry.flows.emplace(entity);
 	flow.flowLevel = 0.f;			 // Start with no flow
 	flow.maxFlowLevel = 100.f; // Max flow level can be adjusted as needed
+
+	CameraUI &camera_ui = registry.cameraUI.emplace(entity);
+	camera_ui.layer = 1;
 
 	// Create a render request for the flow meter texture
 	registry.renderRequests.insert(
@@ -720,6 +739,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 	motion.scale.x *= -0.8;
 	motion.bb_scale = {60.f, 60.f};
 	motion.bb_offset = {-5.f, 25.f};
+	motion.layer = 2;
 
 	// Initialize the animation component with frames
 	auto &spriteAnimation = registry.spriteAnimations.emplace(entity);
@@ -763,6 +783,7 @@ Entity createTomato(RenderSystem *renderer, vec2 position, vec2 velocity)
 	motion.scale.x *= -0.8;
 	motion.bb_scale = {30.f, 30.f};
 	motion.bb_offset = {0.f, 0.f};
+	motion.layer = 2;
 
 	std::cout << "create tomato" << std::endl;
 	registry.damages.insert(entity, {10.f});
@@ -795,6 +816,7 @@ Entity createPan(RenderSystem *renderer, vec2 position, vec2 velocity)
 	motion.scale.x *= -0.8;
 	motion.bb_scale = {30.f, 30.f};
 	motion.bb_offset = {0.f, 0.f};
+	motion.layer = 2;
 
 	// Create an (empty) Bug component to be able to refer to all bug
 	registry.pans.emplace(entity, Pan(20.f));
@@ -835,6 +857,7 @@ Entity createLine(vec2 position, vec2 scale, vec3 color, float angle)
 	motion.velocity = {0, 0};
 	motion.position = position;
 	motion.scale = scale;
+	motion.layer = 6;
 
 	registry.colors.insert(entity, color);
 
@@ -879,7 +902,8 @@ Entity createBackdrop(RenderSystem *renderer)
 	motion.velocity = {0.f, 0.f};
 	motion.scale = {window_width_px, window_height_px};
 
-	registry.cameraUI.emplace(entity);
+	CameraUI &camera_ui = registry.cameraUI.emplace(entity);
+	camera_ui.layer = 10;
 	registry.popupUI.emplace(entity);
 	registry.colors.insert(entity, vec3(0.f, 0.f, 0.f));
 	registry.opacities.insert(entity, 0.8f);
@@ -908,7 +932,8 @@ Entity createDialogueWindow(RenderSystem *renderer, vec2 position, vec2 scale)
 	// motion.scale.x *= 3.3;
 	// motion.scale.y *= 0.7;
 
-	registry.cameraUI.emplace(entity);
+	CameraUI &camera_ui = registry.cameraUI.emplace(entity);
+	camera_ui.layer = 11;
 	registry.popupUI.emplace(entity);
 	registry.renderRequests.insert(
 			entity,
@@ -935,6 +960,7 @@ Entity createFountain(RenderSystem *renderer, vec2 pos)
 	motion.scale = {mesh.original_size.x * TILE_SCALE * 4, mesh.original_size.y * TILE_SCALE * 3};
 	motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
+	motion.layer = 1;
 
 	registry.fountains.emplace(entity);
 	// fountain.is_active = false;
@@ -965,6 +991,7 @@ Entity createTreasureBox(RenderSystem *renderer, vec2 pos, TreasureBoxItem item,
 	motion.scale = {mesh.original_size.x * TILE_SCALE, mesh.original_size.x * TILE_SCALE};
 	motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
+	motion.layer = 2; // same layer as moving entities
 
 	TreasureBox &treasureBox = registry.treasureBoxes.emplace(entity);
 	treasureBox.is_open = false;
@@ -1038,6 +1065,7 @@ Entity createSoldier(RenderSystem *renderer, vec2 pos, float health, float damag
 	motion.scale = mesh.original_size * 100.f;
 	motion.bb_scale = motion.scale;
 	motion.bb_offset = {0.f, 0.f};
+	motion.layer = 2;
 
 	Enemy &enemy = registry.enemies.emplace(entity);
 
@@ -1071,6 +1099,7 @@ Entity createFireRain(RenderSystem *renderer, vec2 pos)
 	motion.scale = mesh.original_size * 300.f;
 	motion.bb_scale = {motion.scale.x * 0.95f, motion.scale.y * 0.75f};
 	motion.bb_offset = {0.f, 40.f};
+	motion.layer = 1;
 
 	registry.physicsBodies.insert(entity, {BodyType::NONE});
 
@@ -1098,6 +1127,7 @@ Entity createLaser(RenderSystem *renderer, vec2 pos)
 	motion.bb_offset = {0.f, 0.f};
 	motion.pivot_offset = {0.5f, 0.f};
 	motion.position = {pos.x + motion.scale.x / 2.f, pos.y};
+	motion.layer = 3;
 
 	// collision of lasers is handled by the boss ai; the physicsBodies component here is only for visualizing the pivot and bb
 	// registry.physicsBodies.insert(entity, {BodyType::NONE});
@@ -1125,6 +1155,7 @@ Entity createSprite(RenderSystem *renderer, vec2 pos, vec2 scale, TEXTURE_ASSET_
 	motion.angle = 0.f;
 	motion.velocity = {0.f, 0.f};
 	motion.scale = scale;
+	motion.layer = 3;
 
 	registry.renderRequests.insert(
 			entity,
@@ -1172,7 +1203,8 @@ Entity createBackgroundSprite(RenderSystem *renderer, int levelNumber)
 			{backgroundTexture,
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
-	registry.cameraUI.emplace(entity);
+	CameraUI &camera_ui = registry.cameraUI.emplace(entity);
+	camera_ui.ignore_render_order = true;
 	registry.backgrounds.emplace(entity);
 
 	return entity;

@@ -12,9 +12,11 @@ struct Motion
 	float angle = 0;
 	vec2 velocity = {0, 0};
 	vec2 scale = {10, 10};
-	vec2 bb_scale = {10, 10};		// scale used for bounding box
-	vec2 bb_offset = {0, 0};		// offset from motion.position to center of bounding box
-	vec2 pivot_offset = {0, 0}; // before scaling
+	vec2 bb_scale = {10, 10};					// scale used for bounding box
+	vec2 bb_offset = {0, 0};					// offset from motion.position to center of bounding box
+	vec2 pivot_offset = {0, 0};				// before scaling
+	bool ignore_render_order = false; // if true, always rendered first (will be covered by others)
+	int layer = 0;										// determines render order (before y-position is considered)
 };
 
 // Player component
@@ -50,6 +52,8 @@ struct Player
 	float rage_remaining = 10.0f;
 	float damage_multiplier = 1.0f;
 	float attack_speed_multiplier = 1.0f;
+	float damage_effect_duration = 0.f;
+	float last_health = 100.f;
 
 	// must call can_take_damage before dealing damage to player
 	bool can_take_damage(bool will_take_damage = true)
@@ -503,6 +507,7 @@ struct BackGround
 struct CameraUI
 {
 	int layer = 0;
+	bool ignore_render_order = false;
 };
 
 enum class TreasureBoxItem

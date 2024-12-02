@@ -17,12 +17,14 @@ extern bool dialogue_active;
 extern int current_dialogue_line; // Tracks the current line of dialogue being shown
 extern std::vector<std::string> dialogue_to_render;
 // for DASH rendering
-//extern bool unlocked_stealth_ability;
+// extern bool unlocked_stealth_ability;
 extern bool unlocked_teleport_stab_ability;
 extern bool dashAvailable;
 extern bool dashInUse;
 extern bool has_popup;
 extern Popup active_popup;
+
+const float VIEW_CULLING_MARGIN = 200.f; // pixels in each direction to still consider in screen
 
 glm::mat3 get_transform(const Motion &motion)
 {
@@ -351,40 +353,78 @@ void RenderSystem::draw()
 	mat3 projection_2D = createProjectionMatrix();
 	mat3 camera_view = createCameraViewMatrix();
 
+	std::vector<Entity> entities_to_draw_first;
+	std::vector<std::pair<Entity, std::pair<int, float>>> entities_to_draw;
+
+	std::vector<Entity> ui_entities_to_draw_first;
+	std::vector<std::pair<Entity, int>> ui_entities_to_draw;
+
 	// Draw all textured meshes that have a position and size component
 	for (Entity entity : registry.renderRequests.entities)
 	{
 		if (!registry.motions.has(entity))
 			continue;
 
-		// Note, its not very efficient to access elements indirectly via the entity
-		// albeit iterating through all Sprites in sequence. A good point to optimize
 		if (registry.cameraUI.has(entity))
 		{
 			CameraUI &camera_ui = registry.cameraUI.get(entity);
-			if (camera_ui.layer != 0)
+
+			if (camera_ui.ignore_render_order)
 			{
+				ui_entities_to_draw_first.push_back(entity);
 				continue;
 			}
-			mat3 identity_view = mat3(1.0f); // Identity matrix
-			drawTexturedMesh(entity, identity_view, projection_2D);
+
+			ui_entities_to_draw.push_back(std::make_pair(entity, camera_ui.layer));
 		}
 		else
 		{
-			drawTexturedMesh(entity, camera_view, projection_2D);
+			// view culling
+			Motion &motion = registry.motions.get(entity);
+			vec2 half_scale = {abs(motion.scale.x) / 2.f, abs(motion.scale.y) / 2.f};
+			if ((motion.position.x + half_scale.x < camera_position.x - VIEW_CULLING_MARGIN || motion.position.x - half_scale.x > camera_position.x + window_width_px + VIEW_CULLING_MARGIN) || (motion.position.y + half_scale.y < camera_position.y - VIEW_CULLING_MARGIN || motion.position.y - half_scale.y > camera_position.y + window_height_px + VIEW_CULLING_MARGIN))
+			{
+				continue;
+			}
+
+			if (motion.ignore_render_order)
+			{
+				entities_to_draw_first.push_back(entity);
+				continue;
+			}
+
+			entities_to_draw.push_back(std::make_pair(entity, std::make_pair(motion.layer, motion.position.y + motion.bb_offset.y)));
 		}
 	}
 
-	// hack to force UI elements to show above others (set layer to 1 instead of the default 0)
-	for (Entity entity : registry.cameraUI.entities)
+	// sort entities by y position
+	std::sort(entities_to_draw.begin(), entities_to_draw.end(), [](const std::pair<Entity, std::pair<int, float>> &a, const std::pair<Entity, std::pair<int, float>> &b)
+						{ return a.second.first < b.second.first || (a.second.first == b.second.first && a.second.second < b.second.second); });
+	std::sort(ui_entities_to_draw.begin(), ui_entities_to_draw.end(), [](const std::pair<Entity, int> &a, const std::pair<Entity, int> &b)
+						{ return a.second < b.second; });
+
+	// std::cout << "Entities to draw: " << entities_to_draw.size() << std::endl;
+
+	mat3 identity_view = mat3(1.0f); // Identity matrix
+
+	for (auto &entity : ui_entities_to_draw_first)
 	{
-		CameraUI &camera_ui = registry.cameraUI.get(entity);
-		if (camera_ui.layer == 0 || !registry.renderRequests.has(entity))
-		{
-			continue;
-		}
-		mat3 identity_view = mat3(1.0f); // Identity matrix
 		drawTexturedMesh(entity, identity_view, projection_2D);
+	}
+
+	for (auto &entity : entities_to_draw_first)
+	{
+		drawTexturedMesh(entity, camera_view, projection_2D);
+	}
+
+	for (auto &entry : entities_to_draw)
+	{
+		drawTexturedMesh(entry.first, camera_view, projection_2D);
+	}
+
+	for (auto &entry : ui_entities_to_draw)
+	{
+		drawTexturedMesh(entry.first, identity_view, projection_2D);
 	}
 
 	for (Entity enemy : registry.enemies.entities)
@@ -476,8 +516,8 @@ void RenderSystem::draw()
 		// }
 	}
 
-	//bool renderD = false;
-	//if (unlocked_stealth_ability)
+	// bool renderD = false;
+	// if (unlocked_stealth_ability)
 	//{
 	//	if (dashAvailable)
 	//	{
@@ -491,9 +531,9 @@ void RenderSystem::draw()
 	//			renderD = true;
 	//		}
 	//	}
-	//}
+	// }
 
-	//if (renderD)
+	// if (renderD)
 	//{
 	//	float x = window_width_px - 220.0f;
 	//	float y = 75.0f;
@@ -792,8 +832,8 @@ void RenderSystem::renderPopup(const Popup &popup)
 	}
 	case PopupType::TREASURE_BOX:
 	{
-		renderText("You received " + popup.content_slot_1 + "!", window_width_px / 2 - 300, window_height_px / 2 - 100, 1.3f, vec3(0.0f, 0.0f, 0.0f));
-		renderText(popup.content_slot_2, window_width_px / 2 - 300, window_height_px / 2 - 200, 0.8f, vec3(0.0f, 0.0f, 0.0f));
+		renderText("You received " + popup.content_slot_1 + "!", window_width_px / 2 - 300, window_height_px / 2 - 100, 1.3f, vec3(1.0f, 1.0f, 1.0f));
+		renderText(popup.content_slot_2, window_width_px / 2 - 300, window_height_px / 2 - 200, 0.8f, vec3(1.0f, 1.0f, 1.0f));
 		break;
 	}
 	case PopupType::HELP:

@@ -23,7 +23,7 @@ bool is_right_mouse_button_down = false;
 bool enlarged_player = false;
 float enlarge_countdown = 3000.f;
 const float PLAYER_SPEED = 192.f; // original speed
-const float SPRINTING_MULTIPLIER = 3.f;
+const float SPRINTING_MULTIPLIER = 2.5f;
 bool is_holding_shift = false;
 bool unlocked_stealth_ability = false;
 bool unlocked_teleport_stab_ability = false;
@@ -390,14 +390,14 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		{
 			float t = dash.elapsed_time / dash.total_time_ms;
 			float scaling_factor = bezzy(t, 1.0f, 2.0f, 1.0f);
-			spy_motion.velocity = player_movement_direction * PLAYER_SPEED * scaling_factor * 4.f;
+			spy_motion.velocity = player_movement_direction * PLAYER_SPEED * scaling_factor * 2.f;
 			// std::cout << "dash active, velocity is (" << spy_motion.velocity.x << ", " << spy_motion.velocity.y << ")" << std::endl;
 		}
 		else
 		{
 			player_action_finished();
 			dash.elapsed_time = 0;
-			player.dash_cooldown_remaining_ms = dash.total_time_ms;
+			player.dash_cooldown_remaining_ms = dash.total_time_ms * 3.f;
 			registry.dashes.remove(registry.dashes.entities[i]);
 			std::cout << "Dash ended" << std::endl;
 			player.stealth_mode = false;
@@ -710,6 +710,45 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 	// initializeAbilityIcons(renderer);
 	updateAbilityIcons(renderer, elapsed_time);
 
+	// player take damage effect
+	if (player.damage_effect_duration > 0.f)
+	{
+		player.damage_effect_duration -= elapsed_ms_since_last_update;
+		if (player.damage_effect_duration <= 0.f)
+		{
+			player.damage_effect_duration = 0.f;
+			if (registry.colors.has(player_spy))
+			{
+				registry.colors.remove(player_spy);
+			}
+		}
+	}
+	if (!health.is_dead)
+	{
+		if (health.health != player.last_health)
+		{
+			if (health.health < player.last_health)
+			{
+				if (registry.colors.has(player_spy))
+				{
+					registry.colors.remove(player_spy);
+				}
+				registry.colors.insert(player_spy, {1.f, 0.f, 0.f});
+				player.damage_effect_duration = 250.f;
+			}
+			else
+			{
+				if (registry.colors.has(player_spy))
+				{
+					registry.colors.remove(player_spy);
+				}
+				registry.colors.insert(player_spy, {0.f, 1.f, 0.f});
+				player.damage_effect_duration = 250.f;
+			}
+			player.last_health = health.health;
+		}
+	}
+
 	return true;
 }
 
@@ -799,7 +838,12 @@ void WorldSystem::restart_game()
 	std::string levelName = "Level_" + std::to_string(current_level);
 	std::cout << "Loading " << levelName << std::endl;
 	load_level(levelName, current_level);
-	instruction_screen();
+
+	if (!background_dialogue_triggered)
+	{
+		// only show for first time
+		instruction_screen();
+	}
 }
 
 void WorldSystem::instruction_screen()
@@ -1777,7 +1821,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
 
 					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::STEALTH);
-					registry.cameraUI.emplace(ability_sprite);
+					CameraUI &camera_ui = registry.cameraUI.emplace(ability_sprite);
+					camera_ui.layer = 12;
 
 					active_popup = {PopupType::ABILITY, [this]()
 													{ load_level("Level_1", 1); }, "stealth dash", "Become fast for a short time"};
@@ -1796,7 +1841,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
 
 					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::TELPORT_BACK_STAB);
-					registry.cameraUI.emplace(ability_sprite);
+					CameraUI &camera_ui = registry.cameraUI.emplace(ability_sprite);
+					camera_ui.layer = 12;
 
 					active_popup = {PopupType::ABILITY, [this]()
 													{ load_level("Level_2", 2); }, "Backstab", "Teleport to the back of enemy and perform a backstab"};
@@ -1815,7 +1861,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					createDialogueWindow(renderer, {window_width_px / 2.f, window_height_px / 2.f}, {650.f, 650.f});
 
 					Entity ability_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, {250.f, 250.f}, TEXTURE_ASSET_ID::RAGE);
-					registry.cameraUI.emplace(ability_sprite);
+					CameraUI &camera_ui = registry.cameraUI.emplace(ability_sprite);
+					camera_ui.layer = 12;
 
 					active_popup = {PopupType::ABILITY, [this]()
 													{ load_level("Level_3", 3); }, "Rage", "increase attack speed and damage for a short time"};
@@ -1997,11 +2044,15 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 						}
 
 						// create ui frame background
-						createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, frame_scale, TEXTURE_ASSET_ID::UI_FRAME);
+						Entity ui_frame = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, frame_scale, TEXTURE_ASSET_ID::UI_FRAME);
+						Motion &ui_frame_motion = registry.motions.get(ui_frame);
+						ui_frame_motion.layer = 3;
 
 						if (treasure_box.item != TreasureBoxItem::NONE)
 						{
 							treasure_box.item_entity = createSprite(renderer, {treasure_box_motion.position.x, treasure_box_motion.position.y + frame_y_offset}, item_scale, item_texture_id);
+							Motion &item_motion = registry.motions.get(treasure_box.item_entity);
+							item_motion.layer = 4;
 						}
 
 						RenderRequest &render_request = registry.renderRequests.get(treasure_box_entity);
@@ -2052,7 +2103,8 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 							std::cout << "texture id " << (int)item_texture_id << ", scale " << item_scale.x << ", " << item_scale.y << std::endl;
 							Entity item_sprite = createSprite(renderer, {window_width_px / 2.f, window_height_px / 2.f - 150.f}, item_scale * 3.f, item_texture_id);
-							registry.cameraUI.insert(item_sprite, {1});
+							CameraUI &camera_ui = registry.cameraUI.emplace(item_sprite);
+							camera_ui.layer = 12;
 
 							active_popup = {PopupType::TREASURE_BOX, [item_sprite, backdrop, dialogue_window]()
 															{
@@ -2764,7 +2816,7 @@ void WorldSystem::initializeAbilityIcons(RenderSystem *renderer)
 	registry.cameraUI.emplace(rage_icon);
 	registry.opacities.emplace(rage_icon, 0.0f); // Fully visible by default
 
-	stealth_icon = createSprite(renderer, { window_width_px - 240.f, window_height_px - 100.f }, { 100.f, 100.f }, TEXTURE_ASSET_ID::STEALTH);
+	stealth_icon = createSprite(renderer, {window_width_px - 240.f, window_height_px - 100.f}, {100.f, 100.f}, TEXTURE_ASSET_ID::STEALTH);
 	registry.cameraUI.emplace(stealth_icon);
 	registry.opacities.emplace(stealth_icon, 0.0f);
 
@@ -2786,12 +2838,12 @@ void WorldSystem::updateAbilityIcons(RenderSystem *renderer, float elapsed_ms)
 			// Fully visible when ready
 			opacity = 1.0f;
 		}
-		//else if (player.stealth_mode)
+		// else if (player.stealth_mode)
 		//{
 		//	// Flashing effect when in use
 		//	float time = static_cast<float>(glfwGetTime());
 		//	opacity = (sin(time * 10.0f) + 1.0f) / 2.0f; // Alternates between 0 and 1
-		//}
+		// }
 		else
 		{
 			// Reduced opacity when on cooldown
@@ -2825,7 +2877,7 @@ void WorldSystem::updateAbilityIcons(RenderSystem *renderer, float elapsed_ms)
 
 	if (unlocked_stealth_ability)
 	{
-		float& opacity = registry.opacities.get(stealth_icon);
+		float &opacity = registry.opacities.get(stealth_icon);
 
 		if (player.dash_cooldown_remaining_ms <= 0.0f && !player.stealth_mode)
 		{
