@@ -17,7 +17,7 @@ extern bool dialogue_active;
 extern int current_dialogue_line; // Tracks the current line of dialogue being shown
 extern std::vector<std::string> dialogue_to_render;
 // for DASH rendering
-extern bool unlocked_stealth_ability;
+//extern bool unlocked_stealth_ability;
 extern bool unlocked_teleport_stab_ability;
 extern bool dashAvailable;
 extern bool dashInUse;
@@ -476,32 +476,32 @@ void RenderSystem::draw()
 		// }
 	}
 
-	bool renderD = false;
-	if (unlocked_stealth_ability)
-	{
-		if (dashAvailable)
-		{
-			renderD = true;
-		}
-		else if (dashInUse)
-		{
-			float time = static_cast<float>(glfwGetTime());
-			if (fmod(time, 1.0f) < 0.5f)
-			{
-				renderD = true;
-			}
-		}
-	}
+	//bool renderD = false;
+	//if (unlocked_stealth_ability)
+	//{
+	//	if (dashAvailable)
+	//	{
+	//		renderD = true;
+	//	}
+	//	else if (dashInUse)
+	//	{
+	//		float time = static_cast<float>(glfwGetTime());
+	//		if (fmod(time, 1.0f) < 0.5f)
+	//		{
+	//			renderD = true;
+	//		}
+	//	}
+	//}
 
-	if (renderD)
-	{
-		float x = window_width_px - 220.0f;
-		float y = 75.0f;
-		float scale = 3.0f;
-		vec3 color = vec3(1.0f, 1.0f, 1.0f);
+	//if (renderD)
+	//{
+	//	float x = window_width_px - 220.0f;
+	//	float y = 75.0f;
+	//	float scale = 3.0f;
+	//	vec3 color = vec3(1.0f, 1.0f, 1.0f);
 
-		renderText("X", x, y, scale, color);
-	}
+	//	renderText("X", x, y, scale, color);
+	//}
 
 	if (dialogue_active)
 	{

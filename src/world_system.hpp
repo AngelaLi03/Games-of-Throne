@@ -60,6 +60,8 @@ private:
 	void player_action_finished();
 	bool perform_teleport_backstab(Entity player_spy);
 	Entity find_nearest_enemy(Entity player_spy);
+	void initializeAbilityIcons(RenderSystem* renderer);
+	void updateAbilityIcons(RenderSystem* renderer, float elapsed_ms);
 
 	void draw_mesh_debug(Entity mesh_entity, bool consider_bones = false);
 
@@ -79,6 +81,9 @@ private:
 	Entity player_salmon;
 	Entity player_spy;
 	Entity flowMeterEntity;
+	Entity backstab_icon;
+	Entity rage_icon;
+	Entity stealth_icon;
 	std::vector<std::string> background_dialogue = {
 		"Astraeth, 1543",
 		"Palace of the royal throne.",

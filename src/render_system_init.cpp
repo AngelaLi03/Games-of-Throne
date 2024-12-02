@@ -1092,6 +1092,5 @@ bool loadEffectFromFile(
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 	gl_has_errors();
-
 	return true;
 }

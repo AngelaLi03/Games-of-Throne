@@ -707,6 +707,9 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		}
 	}
 
+	// initializeAbilityIcons(renderer);
+	updateAbilityIcons(renderer, elapsed_time);
+
 	return true;
 }
 
@@ -993,6 +996,8 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 	player.weapon_offset = vec2(45.f, -50.f);
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
+
+	initializeAbilityIcons(renderer);
 
 	const float association_distance = 600.f;
 
@@ -2743,6 +2748,100 @@ void WorldSystem::updateBackgroundForLevel(int levelNumber)
 		default:
 			renderRequest.used_texture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
 			break;
+		}
+	}
+}
+
+void WorldSystem::initializeAbilityIcons(RenderSystem *renderer)
+{
+	// Create the backstab ability icon
+	backstab_icon = createSprite(renderer, {window_width_px - 360.f, window_height_px - 100.f}, {100.f, 100.f}, TEXTURE_ASSET_ID::TELPORT_BACK_STAB);
+	registry.cameraUI.emplace(backstab_icon);
+	registry.opacities.emplace(backstab_icon, 0.0f); // Fully visible by default
+
+	// Create the rage ability icon
+	rage_icon = createSprite(renderer, {window_width_px - 480.f, window_height_px - 100.f}, {100.f, 100.f}, TEXTURE_ASSET_ID::RAGE);
+	registry.cameraUI.emplace(rage_icon);
+	registry.opacities.emplace(rage_icon, 0.0f); // Fully visible by default
+
+	stealth_icon = createSprite(renderer, { window_width_px - 240.f, window_height_px - 100.f }, { 100.f, 100.f }, TEXTURE_ASSET_ID::STEALTH);
+	registry.cameraUI.emplace(stealth_icon);
+	registry.opacities.emplace(stealth_icon, 0.0f);
+
+	//// Initially hide the icons
+	// registry.renderRequests.remove(backstab_icon);
+	// registry.renderRequests.remove(rage_icon);
+}
+void WorldSystem::updateAbilityIcons(RenderSystem *renderer, float elapsed_ms)
+{
+	Player &player = registry.players.get(player_spy);
+
+	// --- Backstab Ability ---
+	if (unlocked_teleport_stab_ability)
+	{
+		float &opacity = registry.opacities.get(backstab_icon);
+
+		if (player.teleport_back_stab_cooldown <= 0.0f)
+		{
+			// Fully visible when ready
+			opacity = 1.0f;
+		}
+		//else if (player.stealth_mode)
+		//{
+		//	// Flashing effect when in use
+		//	float time = static_cast<float>(glfwGetTime());
+		//	opacity = (sin(time * 10.0f) + 1.0f) / 2.0f; // Alternates between 0 and 1
+		//}
+		else
+		{
+			// Reduced opacity when on cooldown
+			opacity = 0.5f;
+		}
+	}
+
+	// --- Rage Ability ---
+	if (unlocked_rage_ability)
+	{
+
+		float &opacity = registry.opacities.get(rage_icon);
+
+		if (player.rage_cooldown <= 0.0f && !player.rage_activate)
+		{
+			// Fully visible when ready
+			opacity = 1.0f;
+		}
+		else if (player.rage_activate)
+		{
+			// Flashing effect when in use
+			float time = static_cast<float>(glfwGetTime());
+			opacity = (sin(time * 10.0f) + 1.0f) / 2.0f; // Alternates between 0 and 1
+		}
+		else
+		{
+			// Reduced opacity when on cooldown
+			opacity = 0.5f;
+		}
+	}
+
+	if (unlocked_stealth_ability)
+	{
+		float& opacity = registry.opacities.get(stealth_icon);
+
+		if (player.dash_cooldown_remaining_ms <= 0.0f && !player.stealth_mode)
+		{
+			// Fully visible when ready
+			opacity = 1.0f;
+		}
+		else if (player.stealth_mode)
+		{
+			// Flashing effect when in use
+			float time = static_cast<float>(glfwGetTime());
+			opacity = (sin(time * 10.0f) + 1.0f) / 2.0f; // Alternates between 0 and 1
+		}
+		else
+		{
+			// Reduced opacity when on cooldown
+			opacity = 0.5f;
 		}
 	}
 }
