@@ -282,7 +282,7 @@ Entity createRangedMinion(RenderSystem *renderer, vec2 position)
 	motion.velocity = {0.f, 0.f};
 	motion.position = position;
 	motion.scale = mesh.original_size * 100.f;
-	motion.scale.x *= -0.8;
+	motion.scale.x *= -1;
 	motion.bb_scale = {60.f, 60.f};
 	motion.bb_offset = {-5.f, 25.f};
 
@@ -304,7 +304,7 @@ Entity createRangedMinion(RenderSystem *renderer, vec2 position)
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	Entity healthbar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+	Entity healthbar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity, vec3(1.f,0.f,0.f));
 	registry.healths.insert(entity, {50.f, 50.f, healthbar});
 
 	return entity;
@@ -739,7 +739,7 @@ Entity createEnemy(RenderSystem *renderer, vec2 position)
 			 EFFECT_ASSET_ID::TEXTURED,
 			 GEOMETRY_BUFFER_ID::SPRITE});
 
-	Entity healthbar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity);
+	Entity healthbar = createHealthBar(renderer, position + vec2(0.f, 50.f), entity, vec3(1.f,0.f,0.f));
 	registry.healths.insert(entity, {100.f, 100.f, healthbar});
 
 	return entity;
