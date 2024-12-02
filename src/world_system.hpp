@@ -48,6 +48,7 @@ public:
 	void loadProgress();
 	void updateBackgroundForLevel(int levelNumber);
 	bool is_paused = false;
+	float w_angle;
 
 private:
 	void update_camera_view();

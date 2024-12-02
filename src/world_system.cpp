@@ -1007,17 +1007,18 @@ void WorldSystem::process_animation(AnimationName name, float t, Entity entity)
 		Player &player = registry.players.get(entity);
 		Weapon &weapon = registry.weapons.get(player.weapon);
 		Motion &weapon_motion = registry.motions.get(player.weapon);
-		float angle = sin(t * M_PI) + M_PI / 6;
+		float angle = player.weapon_offset.x < 0 ? w_angle - sin(t * M_PI) - M_PI / 6 : w_angle + sin(t * M_PI) + M_PI / 6;
 
 		if (t >= 1.0f)
 		{
-			angle = weapon.type == WeaponType::SWORD ? M_PI / 6 : 0;
+			// angle = weapon.type == WeaponType::SWORD ? M_PI / 6 : 0;
+			angle = w_angle;
 			player_action_finished();
 		}
 
 		if (player.weapon_offset.x < 0)
 		{
-			weapon_motion.angle = -angle;
+			weapon_motion.angle = angle;
 		}
 		else
 		{
@@ -1630,6 +1631,59 @@ std::string get_weapon_name(WeaponType type, WeaponLevel level)
 // On key callback
 void WorldSystem::on_key(int key, int, int action, int mod)
 {
+	// need to update is_holding_shift regardless of other actions
+	if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT)
+	{
+		if (action == GLFW_PRESS)
+		{
+			is_holding_shift = true;
+		}
+		else if (action == GLFW_RELEASE)
+		{
+			is_holding_shift = false;
+		}
+	}
+
+	// track player movement direction (needs to happen when paused as well)
+	if (action == GLFW_PRESS)
+	{
+		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
+		{
+			player_movement_direction.x += 1.f;
+		}
+		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
+		{
+			player_movement_direction.x -= 1.f;
+		}
+		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
+		{
+			player_movement_direction.y -= 1.f;
+		}
+		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
+		{
+			player_movement_direction.y += 1.f;
+		}
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
+		{
+			player_movement_direction.x -= 1.f;
+		}
+		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
+		{
+			player_movement_direction.x += 1.f;
+		}
+		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
+		{
+			player_movement_direction.y += 1.f;
+		}
+		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
+		{
+			player_movement_direction.y -= 1.f;
+		}
+	}
+
 	// close when esc key is pressed
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	{
@@ -1693,46 +1747,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 					is_paused = true;
 				}
 			}
-		}
-	}
-
-	// track player movement direction (needs to happen when paused as well)
-	if (action == GLFW_PRESS)
-	{
-		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
-		{
-			player_movement_direction.x += 1.f;
-		}
-		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
-		{
-			player_movement_direction.x -= 1.f;
-		}
-		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
-		{
-			player_movement_direction.y -= 1.f;
-		}
-		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
-		{
-			player_movement_direction.y += 1.f;
-		}
-	}
-	else if (action == GLFW_RELEASE)
-	{
-		if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_D)
-		{
-			player_movement_direction.x -= 1.f;
-		}
-		else if (key == GLFW_KEY_LEFT || key == GLFW_KEY_A)
-		{
-			player_movement_direction.x += 1.f;
-		}
-		else if (key == GLFW_KEY_UP || key == GLFW_KEY_W)
-		{
-			player_movement_direction.y += 1.f;
-		}
-		else if (key == GLFW_KEY_DOWN || key == GLFW_KEY_S)
-		{
-			player_movement_direction.y -= 1.f;
 		}
 	}
 
@@ -2006,7 +2020,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 		{
 			if (action == GLFW_PRESS)
 			{
-				is_holding_shift = true;
 				if (energy.energy > 0.f)
 				{
 					player.state = PlayerState::SPRINTING;
@@ -2014,7 +2027,6 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			}
 			else if (action == GLFW_RELEASE)
 			{
-				is_holding_shift = false;
 				if (player.state == PlayerState::SPRINTING)
 				{
 					player.state = PlayerState::IDLE;
@@ -2158,6 +2170,13 @@ void WorldSystem::on_mouse_move(vec2 mouse_position)
 	// float spy_angle = atan2(spy_vector.y, spy_vector.x);
 
 	// spy_motion.angle = spy_angle;
+
+	Player &player = registry.players.get(player_spy);
+	Motion &weapon_motion = registry.motions.get(player.weapon);
+
+	float weapon_angle = atan2(spy_vector.y, spy_vector.x) - (3.14159f / 2.0f);
+	weapon_motion.angle = weapon_angle;
+	w_angle = weapon_angle;
 
 	if (spy_vector.x > 0)
 	{
@@ -2352,6 +2371,7 @@ void WorldSystem::player_action_finished()
 	Energy &energy = registry.energys.get(player_spy);
 	if (is_holding_shift && energy.energy > 0.f)
 	{
+		std::cout << "IS HOLDING SHIFT" << std::endl;
 		player.state = PlayerState::SPRINTING;
 	}
 	else
