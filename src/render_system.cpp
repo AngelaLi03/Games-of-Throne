@@ -506,6 +506,7 @@ void RenderSystem::draw()
 	if (dialogue_active)
 	{
 		renderDialogueLine(dialogue_to_render[current_dialogue_line]);
+		renderText("Press Enter to continue", window_width_px - 270.f, 60.f, 1.0f, vec3(1.0f, 1.0f, 1.0f));
 	}
 
 	if (has_popup)
