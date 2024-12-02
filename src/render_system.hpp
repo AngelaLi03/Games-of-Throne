@@ -48,7 +48,7 @@ class RenderSystem
 	const std::array<std::string, texture_count> texture_paths = {
 			textures_path("green_fish.png"),
 			textures_path("eel.png"),
-			textures_path("floor_tile.png"),
+			textures_path("floor_tile_square.png"),
 			textures_path("wall.png"),
 			textures_path("spy_no_weapon.png"),
 			textures_path("enemy_small.png"),
@@ -80,6 +80,10 @@ class RenderSystem
 			textures_path("lasers.png"),
 			textures_path("summon_soldier.png"),
 			textures_path("dialogue_window.png"),
+			textures_path("level1_bg.png"),
+			textures_path("level2_bg.png"),
+			textures_path("level3_bg.png"),
+			textures_path("level4_bg.png"),
 
 			textures_path("/boss_animation/chef_1/chef_attack(1)0.png"),
 			textures_path("/boss_animation/chef_1/chef_attack(1)1.png"),
@@ -194,6 +198,7 @@ public:
 	void loadFont(const std::string &fontPath);
 	void renderDialogueLine(const std::string &line);
 	void renderPopup(const Popup &popup);
+	void set_background_texture(TEXTURE_ASSET_ID background_texture);
 
 	vec2 camera_position = {0.f, 0.f};
 

@@ -1054,3 +1054,46 @@ Entity createSprite(RenderSystem *renderer, vec2 pos, vec2 scale, TEXTURE_ASSET_
 
 	return entity;
 }
+
+Entity createBackgroundSprite(RenderSystem *renderer, int levelNumber)
+{
+	auto entity = Entity();
+
+	// Store a reference to the potentially re-used mesh object
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	// Setting initial motion values
+	Motion &motion = registry.motions.emplace(entity);
+	motion.position = {window_width_px / 2.f, window_height_px / 2.f};
+	motion.scale = {window_width_px, window_height_px};
+
+	TEXTURE_ASSET_ID backgroundTexture;
+	switch(levelNumber)
+    {
+        case 0:
+            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
+            break;
+        case 1:
+            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_1;
+            break;
+        case 2:
+            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_2;
+            break;
+        case 3:
+            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_3;
+            break;
+        default:
+            backgroundTexture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
+            break;
+    }
+	registry.renderRequests.insert(
+			entity,
+			{backgroundTexture,
+			 EFFECT_ASSET_ID::TEXTURED,
+			 GEOMETRY_BUFFER_ID::SPRITE});
+	registry.cameraUI.emplace(entity);
+	registry.backgrounds.emplace(entity);
+
+	return entity;
+}

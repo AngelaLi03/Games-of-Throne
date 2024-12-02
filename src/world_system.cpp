@@ -617,7 +617,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update)
 		if (prince_health.is_dead)
 		{
 			registry.remove_all_components_of(prince_entity);
-			// load_level("Level_3", 3);
+			load_level("Level_3", 3);
 		}
 	}
 
@@ -800,6 +800,7 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 	while (registry.motions.entities.size() > 0)
 		registry.remove_all_components_of(registry.motions.entities.back());
 
+	createBackgroundSprite(renderer, levelNumber);
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
@@ -973,7 +974,7 @@ void WorldSystem::load_level(const std::string &levelName, const int levelNumber
 
 	flowMeterEntity = createFlowMeter(renderer, {window_width_px - 100.f, window_height_px - 100.f}, 100.0f);
 
-	const float association_distance = 800.f;
+	const float association_distance = 600.f;
 
 	// logic for associate minion w treasure box based on initialization positon
 	for (const auto &chest_pair : chests)
@@ -2605,5 +2606,34 @@ void WorldSystem::loadProgress()
 		current_level = 0;
 
 		std::cout << "No progress file found. Initialized default progress.\n";
+	}
+}
+
+void WorldSystem::updateBackgroundForLevel(int levelNumber)
+{
+	if (registry.backgrounds.entities.size() > 0)
+	{
+		Entity backgroundEntity = registry.backgrounds.entities[0];
+		RenderRequest &renderRequest = registry.renderRequests.get(backgroundEntity);
+
+		// Assign the correct texture based on levelNumber
+		switch (levelNumber)
+		{
+		case 0:
+			renderRequest.used_texture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
+			break;
+		case 1:
+			renderRequest.used_texture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_1;
+			break;
+		case 2:
+			renderRequest.used_texture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_2;
+			break;
+		case 3:
+			renderRequest.used_texture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_3;
+			break;
+		default:
+			renderRequest.used_texture = TEXTURE_ASSET_ID::BACKGROUND_LEVEL_0;
+			break;
+		}
 	}
 }

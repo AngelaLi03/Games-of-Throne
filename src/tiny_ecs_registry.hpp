@@ -52,6 +52,7 @@ public:
 	ComponentContainer<BoneAnimation> boneAnimations;
 	ComponentContainer<MeshBones> meshBones;
 	ComponentContainer<PlayerRemnant> playerRemnants;
+	ComponentContainer<BackGround> backgrounds;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -98,6 +99,7 @@ public:
 		registry_list.push_back(&boneAnimations);
 		registry_list.push_back(&meshBones);
 		registry_list.push_back(&playerRemnants);
+		registry_list.push_back(&backgrounds);
 	}
 
 	void clear_all_components()
