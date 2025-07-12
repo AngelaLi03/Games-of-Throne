@@ -8,7 +8,7 @@ You are a rogue assassin born in the shadows of the kingdom. With a corrupt king
 
 ## ✨ Key Features
 
-## Interactions
+### Interactions
 
 Dialogues and popups are navigated with Enter. These occur at moments: when the game starts, when the first minion is killed, when the Chef is first attacked, and when the Chef is defeated.
 Treasure boxes and fountains interacted with E (open boxes, heal fully, collect items).
