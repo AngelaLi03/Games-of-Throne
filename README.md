@@ -1,61 +1,22 @@
-# Games of Throne - CPSC 427 Team 6 (Winter 2024)
+# 🏰 Games of Throne – A 2D RPG Adventure (C++ & OpenGL)
 
-For Playtest Feedback and Changes, refer to the PDF in `doc/Playtest Feedback and Changes.pdf`.
+**Games of Throne** is a custom-built 2D RPG powered by C++ and OpenGL, featuring real-time combat, branching storylines, and AI-driven enemy behaviors. The game offers a fully interactive experience with unique bosses, ability systems, and visually rich levels.
 
-## Coding Convention
+---
 
-- Use snake case (`variable_name_like_this`) for variables and function names whenever possible.
-- Prefer capitalized snake case for constants.
+## 🎮 Game Story: The Rise of the Usurper
 
-# Milestone 4 Feature List
+You are a rogue assassin born in the shadows of the kingdom, trained in silence, speed, and subterfuge. With a corrupt king on the throne and a city suffering under tyranny, your mission is clear: eliminate every royal guard, confront the prince, and assassinate the king to reclaim justice. But the deeper you go, the more you uncover—secrets, betrayals, and a past even you didn't know.
 
-For more details, please refer to the test plan in `doc/test-plan.docx` or the milestone video.
-
-- Player on hit effects and heal effects
-- Light attack follows mouse position
-- Chest only unlocked after defeating all nearby enemies
-- Level layout changes for all levels
-- 2 new levels, 2 new bosses (prince, king), skinned motion for new bosses as well
-- New story element dialogues
-- Level background and popup background
-- New font
-- New help popup, help shown at start
-- Balance changes to player move speed, boss damages and cooldowns.
-- 2 new abilities; existing ability updated
-- Chest popup improved graphics and formatting
-- New, unique, original soundtracks for each level (4 in total)
-- Player max health, max energy, weapon, unlocked abilities all saved at beginning of level; can be reloaded upon reopening the application or upon respawning
-- Enemy healthbars are now all red
-- Ranged minion - new enemy type
-- Render order improvements
-- View culling to improve render performance
-
-# Milestone 3 Feature List
-
-For more details, please refer to the test plan in `doc/test-plan.docx`.
-
-## General Player Features
-
-Player health and energy bars displayed on the top-left corner.
-Energy regenerates while walking and depletes during actions.
-
-## Movement
-
-Basic directional movement using W/A/S/D or arrow keys.
-Sprinting with Shift (consumes energy continuously).
-Dodging with Spacebar (invincibility during dodge, perfect dodge mechanics with flow gain).
-
-## Combat System
-
-Light attacks with Left Mouse Click (energy required, weapon damage applied).
-Flow charge with Right Mouse Click (Hold) and heavy attack on release (high damage, weapon-specific animations).
-S mouse gesture enlarges the player and player hitbox for 3 seconds and then returns to normal; future updates will increase the damage area during this state.
+---
 
 ## Interactions
 
 Dialogues and popups are navigated with Enter. These occur at moments: when the game starts, when the first minion is killed, when the Chef is first attacked, and when the Chef is defeated.
 Treasure boxes and fountains interacted with E (open boxes, heal fully, collect items).
 Treasure boxes spawn random weapons.
+
+## ✨ Key Features
 
 ## Minion AI:
 
@@ -75,24 +36,56 @@ Three attack patterns with cooldowns.
 Skinned motion animations for attacks.
 Shield mechanics (counterattacks when hit during defence).
 
-## Advanced Features M3
+### 🔥 Combat and Abilities
+- Light attacks with Left Mouse Click (energy required, weapon damage applied).
+- Flow charge with Right Mouse Click (Hold) and heavy attack on release (high damage, weapon-specific animations).
+- Sprinting, dodging (with invincibility frames), and a perfect dodge mechanic with flow rewards
+- S mouse gesture enlarges the player and player hitbox for 3 seconds and then returns to normal
 
-A\* Pathfinding: Minions find optimal paths to the player, visible in debug mode.
-Skinned Motion: Knight's mesh animations reflect attack types and timing.
+### 💥 Enemies and Bosses
+- A* pathfinding minions with attack mechanics
+- New ranged minion type
+- Chef Boss with tomato/pan throws, dashes, and unique dialogues
+- Knight Boss with 3 attack patterns, shield counter, and skinned motion animations
+- Prince and King Bosses with distinct mechanics and custom animations
 
-## Debug and Gameplay Toggles
+### 🌍 Levels and Interactions
+- 4 playable levels with unique layouts and pop-up UIs
+- New treasure chests, fountains, and random weapon drops
+- Chest unlocks after defeating all nearby enemies
+- Health/energy persistence across levels and game sessions
 
-I toggles debug mode (visualize bounding boxes, AI paths, weapon collision meshes).
-P displays FPS.
-O renders help text explaining commands.
-0 pauses/unpauses the game.
-Debug-exclusive commands:
-B: Switch weapons randomly.
-R: Reset game state.
-H: Instantly defeat the current boss.
+### 🗺️ Visual and Audio
+- Enhanced level backgrounds and UI overlays
+- New font and styled dialogue popups
+- 4 original level-specific soundtracks
+- Render order and view culling optimizations
 
-## Additional Mechanics
+### 🧪 Debug and Developer Tools
+- Toggle debug mode with bounding boxes, AI paths, hitboxes (I)
+- Show FPS (P), help text (O), and pause (0)
+- Debug-only hotkeys: B (switch weapons), R (reset game), H (auto-kill boss)
 
-Damage areas visualized in debug mode.
-Perfect dodge mechanics with sound, remnant visuals, and flow gain.
-Level loader for multiple levels with unique layouts and improved treasure spawn rates.
+---
+
+## 📁 Project Structure
+
+- `src/`: Source code for gameplay, rendering, physics, and AI
+- `assets/`: Sprites, sounds, fonts, and animation data
+- `doc/`: Test plans and design documents
+
+---
+
+## 📺 Demo & Screenshots
+
+![Game Screenshot](path-to-screenshot.png)  
+_Watch the [demo video](https://youtu.be/4JgAWVdJBeU?si=wZQf9B-B436YYSB3) for full gameplay highlights._
+
+---
+
+## 🤝 Contributions
+
+Created by Angela Li and collaborators as a term project at UBC.  
+Game mechanics, assets, AI systems, and animations are all handcrafted for a cohesive experience.
+
+---
