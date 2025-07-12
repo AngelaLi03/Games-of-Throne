@@ -1,14 +1,12 @@
 # 🏰 Games of Throne – A 2D RPG Adventure (C++ & OpenGL)
 
-**Games of Throne** is a custom-built 2D RPG powered by C++ and OpenGL, featuring real-time combat, branching storylines, and AI-driven enemy behaviors. The game offers a fully interactive experience with unique bosses, ability systems, and visually rich levels.
-
----
+**Games of Throne** is a custom-built 2D RPG powered by C++ and OpenGL, featuring real-time combat and AI-driven enemy behaviors. The game offers a fully interactive experience with unique bosses, ability systems, and visually rich levels.
 
 ## 🎮 Game Story: The Rise of the Usurper
+ 
+You are a rogue assassin born in the shadows of the kingdom. With a corrupt king on the throne and a city suffering under tyranny, your mission is clear: eliminate every royal guard, confront the prince, and assassinate the king to reclaim justice. But the deeper you go, the more you uncover—secrets, betrayals, and a past even you didn't know.
 
-You are a rogue assassin born in the shadows of the kingdom, trained in silence, speed, and subterfuge. With a corrupt king on the throne and a city suffering under tyranny, your mission is clear: eliminate every royal guard, confront the prince, and assassinate the king to reclaim justice. But the deeper you go, the more you uncover—secrets, betrayals, and a past even you didn't know.
-
----
+## ✨ Key Features
 
 ## Interactions
 
@@ -16,25 +14,9 @@ Dialogues and popups are navigated with Enter. These occur at moments: when the 
 Treasure boxes and fountains interacted with E (open boxes, heal fully, collect items).
 Treasure boxes spawn random weapons.
 
-## ✨ Key Features
-
-## Minion AI:
-
-A\* pathfinding to follow the player, visible in debug mode.
-Minions attack when within range.
-
-## Chef Boss:
-
-Patrol and combat states.
-Randomized attacks: tomato throws, pan throws, dashes.
-Dialogue triggered on encounter and defeat.
-
-## Knight Boss:
-
-Patrol and combat states.
-Three attack patterns with cooldowns.
-Skinned motion animations for attacks.
-Shield mechanics (counterattacks when hit during defence).
+### Minion AI:
+- A\* pathfinding to follow the player, visible in debug mode.
+- Minions attack when within range.
 
 ### 🔥 Combat and Abilities
 - Light attacks with Left Mouse Click (energy required, weapon damage applied).
@@ -66,7 +48,6 @@ Shield mechanics (counterattacks when hit during defence).
 - Show FPS (P), help text (O), and pause (0)
 - Debug-only hotkeys: B (switch weapons), R (reset game), H (auto-kill boss)
 
----
 
 ## 📁 Project Structure
 
@@ -74,18 +55,14 @@ Shield mechanics (counterattacks when hit during defence).
 - `assets/`: Sprites, sounds, fonts, and animation data
 - `doc/`: Test plans and design documents
 
----
 
 ## 📺 Demo & Screenshots
 
 ![Game Screenshot](path-to-screenshot.png)  
 _Watch the [demo video](https://youtu.be/4JgAWVdJBeU?si=wZQf9B-B436YYSB3) for full gameplay highlights._
 
----
 
 ## 🤝 Contributions
 
-Created by Angela Li and collaborators as a term project at UBC.  
+Created by Angela Li and collaborators.
 Game mechanics, assets, AI systems, and animations are all handcrafted for a cohesive experience.
-
----
