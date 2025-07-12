@@ -14,10 +14,6 @@ Dialogues and popups are navigated with Enter. These occur at moments: when the 
 Treasure boxes and fountains interacted with E (open boxes, heal fully, collect items).
 Treasure boxes spawn random weapons.
 
-### Minion AI:
-- A\* pathfinding to follow the player, visible in debug mode.
-- Minions attack when within range.
-
 ### 🔥 Combat and Abilities
 - Light attacks with Left Mouse Click (energy required, weapon damage applied).
 - Flow charge with Right Mouse Click (Hold) and heavy attack on release (high damage, weapon-specific animations).
@@ -36,6 +32,8 @@ Treasure boxes spawn random weapons.
 - New treasure chests, fountains, and random weapon drops
 - Chest unlocks after defeating all nearby enemies
 - Health/energy persistence across levels and game sessions
+- A\* pathfinding to follow the player, visible in debug mode.
+- Enemies attack when player is within range.
 
 ### 🗺️ Visual and Audio
 - Enhanced level backgrounds and UI overlays
